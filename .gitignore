@@ -1,0 +1,6 @@
+*__pycache__*
+*__filecache__*
+.venv/
+.idea
+gmon.out
+**.pytest_cache**
