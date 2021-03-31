@@ -4,9 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pytest = "*"
 
 [dev-packages]
+pytest = "*"
+build = "*"
+twine = "*"
 
 [requires]
 python_version = "3.8"
