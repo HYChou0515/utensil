@@ -7,17 +7,6 @@ from typing import Union, Iterable
 
 from utensil import constant
 
-_logger_handlers = []
-if constant.LOG.get('Stream', 'N') == 'Y':
-    _logger_handlers.append(logging.StreamHandler())
-if constant.LOG.get('Syslog', 'N') == 'Y':
-    _logger_handlers.append(handlers.SysLogHandler())
-if constant.LOG.get('File', 'N') == 'Y':
-    log_file_name = constant.LOG.get('FilePrefix', 'log')
-    if not os.path.isdir(os.path.dirname(log_file_name)):
-        os.makedirs(os.path.dirname(log_file_name))
-    _logger_handlers.append(handlers.WatchedFileHandler(log_file_name))
-
 
 def parse_log_level(level):
     if isinstance(level, str):
@@ -37,8 +26,10 @@ def parse_log_level(level):
             return logging.FATAL
         elif level.upper() == 'CRITICAL':
             return logging.CRITICAL
-
-    return int(level)
+    try:
+        return int(level)
+    except ValueError as e:
+        raise ValueError(f"invalid log level: '{level}'") from e
 
 
 @dataclass
@@ -52,6 +43,24 @@ class LoggerConfig:
     datefmt: str = '%Y-%m-%d %I:%M:%S'
 
     def __post_init__(self):
+
+        _logger_handlers = []
+        if constant.LOG.get('Stream', 'NOTSET') != 'NOTSET':
+            handler = logging.StreamHandler()
+            handler.setLevel(parse_log_level(constant.LOG.get('Stream', 'NOTSET')))
+            _logger_handlers.append(handler)
+        if constant.LOG.get('Syslog', 'NOTSET') != 'NOTSET':
+            handler = handlers.SysLogHandler()
+            handler.setLevel(parse_log_level(constant.LOG.get('Syslog', 'NOTSET')))
+            _logger_handlers.append(handler)
+        if constant.LOG.get('File', 'NOTSET') != 'NOTSET':
+            log_file_name = constant.LOG.get('FilePrefix', 'log')
+            if not os.path.isdir(os.path.dirname(log_file_name)):
+                os.makedirs(os.path.dirname(log_file_name))
+            handler = handlers.WatchedFileHandler(log_file_name)
+            handler.setLevel(parse_log_level(constant.LOG.get('File', 'NOTSET')))
+            _logger_handlers.append(handler)
+
         self.level = parse_log_level(self.level)
         if self.handlers == (None,):
             self.handlers = _logger_handlers

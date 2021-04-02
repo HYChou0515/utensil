@@ -4,3 +4,6 @@
 .idea
 gmon.out
 **.pytest_cache**
+utensil.egg-info
+dist
+build

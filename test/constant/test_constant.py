@@ -27,12 +27,12 @@ class TestDefaultConstant(ut.TestCase):
     def test_PROJECT_ProjectName(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('default', constant.PROJECT['ProjectName'])
+        self.assertEqual('.utensil', constant.PROJECT['ProjectName'])
 
     def test_PROJECT_ProjectAbbr(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('default', constant.PROJECT['ProjectAbbr'])
+        self.assertEqual('.utensil', constant.PROJECT['ProjectAbbr'])
 
     def test_PROJECT_ProjectState(self):
         from utensil import constant
@@ -52,27 +52,27 @@ class TestDefaultConstant(ut.TestCase):
     def test_LOG_Dir(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual(os.path.join(self.project_root, 'default', 'log'), constant.LOG['Dir'])
+        self.assertEqual(os.path.join(self.project_root, '.utensil', 'log'), constant.LOG['Dir'])
 
     def test_LOG_Stream(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('Y', constant.LOG['Stream'])
+        self.assertEqual('info', constant.LOG['Stream'])
 
     def test_LOG_Syslog(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('N', constant.LOG['Syslog'])
+        self.assertEqual('notset', constant.LOG['Syslog'])
 
     def test_LOG_File(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('Y', constant.LOG['File'])
+        self.assertEqual('info', constant.LOG['File'])
 
     def test_LOG_FilePrefix(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual(os.path.join(self.project_root, 'default', 'log', 'default.log'), constant.LOG['FilePrefix'])
+        self.assertEqual(os.path.join(self.project_root, '.utensil', 'log', '.utensil.log'), constant.LOG['FilePrefix'])
 
     def test_LOG_Level(self):
         from utensil import constant
@@ -148,17 +148,17 @@ class TestModifiedConstant(ut.TestCase):
     def test_LOG_Stream(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('N', constant.LOG['Stream'])
+        self.assertEqual('notset', constant.LOG['Stream'])
 
     def test_LOG_Syslog(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('Y', constant.LOG['Syslog'])
+        self.assertEqual('info', constant.LOG['Syslog'])
 
     def test_LOG_File(self):
         from utensil import constant
         reload(constant)
-        self.assertEqual('N', constant.LOG['File'])
+        self.assertEqual('notset', constant.LOG['File'])
 
     def test_LOG_FilePrefix(self):
         from utensil import constant

@@ -8,7 +8,7 @@ __all__ = ['PROJECT', 'HOST_INFO', 'LOG']
 if 'UTENSIL_PROJECT_ROOT' in os.environ:
     PROJECT_ROOT = os.environ['UTENSIL_PROJECT_ROOT']
 else:
-    PROJECT_ROOT = None
+    PROJECT_ROOT = '.'
 
 if 'UTENSIL_CONFIG' in os.environ:
     UTENSIL_CONFIG = os.environ['UTENSIL_CONFIG']
@@ -22,7 +22,7 @@ config.read_string(f"""
 [PROJECT]
 ProjectRoot = {PROJECT_ROOT}
 ConfigPath = {PROJECT_ROOT}/{UTENSIL_CONFIG}
-ProjectName = default
+ProjectName = .utensil
 ProjectAbbr = ${{ProjectName}}
 ProjectState = dev
 
@@ -31,9 +31,9 @@ HostName = localhost
 
 [LOG]
 Dir = {PROJECT_ROOT}/${{PROJECT:ProjectAbbr}}/log
-Stream = Y
-Syslog = N
-File = Y
+Stream = info
+Syslog = notset
+File = info
 FilePrefix = ${{Dir}}/${{PROJECT:ProjectAbbr}}.log
 Level = info
 MaxMessageLen = 60000
