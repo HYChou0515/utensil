@@ -5,5 +5,8 @@ from ._random_search import (
     ExponentialBetweenParam,
     RandomizedChoices,
     RandomizedConfig,
-    RandomizedDispatcher
+    RandomizedDispatcher,
+    SeededConfig,
+    RandomSearch,
+    ModelScore
 )
