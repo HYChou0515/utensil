@@ -197,10 +197,10 @@ class RandomSearch(abc.ABC):
             try:
                 model, score = self.do_training(sd_config, train_x, train_y, idx)
             except Exception:
-                self.logger.warning(f'model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, {seed=}',
+                self.logger.warning(f'model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, seed={seed}',
                                stack_info=True)
 
-            self.logger.info(f'model_id={sd_config.cid}: {score=}')
+            self.logger.info(f'model_id={sd_config.cid}: score={score}')
 
             # record model_id, model_config and score
             model_scores[sd_config.cid] = sd_config.config.to_plain_dict()

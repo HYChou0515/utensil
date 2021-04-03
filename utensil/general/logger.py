@@ -35,7 +35,7 @@ def parse_log_level(level):
 @dataclass
 class LoggerConfig:
     level: Union[str, int] = constant.LOG.get('Level')
-    handlers: Iterable[logging.Handler] = None,
+    handlers: Iterable[logging.Handler] = (None,)
     format: str = '{asctime:s}.{msecs:06.0f} ' + constant.HOST_INFO.get('HostName') + ' ' + socket.gethostname() + \
                   ' {processName:s}({process:d}) {threadName:s}({thread:d}) {levelname:s} ' \
                   '({name:s}.{funcName:s}) {message:s} '
