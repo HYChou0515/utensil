@@ -1,0 +1,72 @@
+NODES:
+  P0:
+    PROCESSES:
+      - PROCESS: LOAD_DATA
+        PARAMETERS:
+          URL: /home/hychou/Disk/K/data/covtype.bz2
+          FORMAT: SVMLIGHT
+          TARGET: Cover_Type
+          FEATURES:
+            0: Elevation
+            1: Aspect
+      - PROCESS: FILTER_ROWS
+        PARAMETERS:
+          FILTER_BY:
+            TARGET: [1, 2]
+  P1:
+    PARENTS: [P0]
+    PROCESSES:
+      - PROCESS: GET_FEATURE
+        PARAMETERS: { FEATURE: Elevation }
+      - PROCESS: LINEAR_NORMALIZE
+        PARAMETERS:
+          UPPER: { FROM: MAX, TO: 1 }
+          LOWER: { FROM: MIN, TO: 0 }
+  P2:
+    PARENTS: [P0]
+    PROCESSES:
+      - PROCESS: GET_FEATURE
+        PARAMETERS: { FEATURE: Aspect }
+      - PROCESS: LINEAR_NORMALIZE
+        PARAMETERS:
+          UPPER: { FROM: MAX, TO: 1 }
+          LOWER: { FROM: MIN, TO: 0 }
+  P3:
+    PARENTS: [P1, P2]
+    PROCESSES:
+      - PROCESS: MERGE_FEATURES
+
+  P4:
+    PARENTS: [P0]
+    PROCESSES:
+      - PROCESS: GET_TARGET
+
+  P5:
+    PARENTS: [P4, P3]
+    PROCESSES:
+      - PROCESS: MAKE_DATASET
+
+  P5-0:
+    PROCESSES:
+      - PROCESS: PARAMETER_SEARCH
+        PARAMETERS:
+          SEARCH_MAP:
+            METHODOLOGY:
+              METHOD:
+
+  P5-1:
+    PROCESSES:
+      - PROCESS: MAKE_MODEL
+        PARAMETERS:
+          METHODOLOGY:
+            METHOD: XGBOOST
+
+  P6:
+    PARENTS: [P5-1, P5]
+    PROCESSES:
+      - PROCESS: TRAIN
+
+  P7:
+    PARENTS: [P6, P3]
+    PROCESSES:
+      - PROCESS: EVALUATE
