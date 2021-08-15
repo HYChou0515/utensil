@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+ipython = "*"
+kaggle = "*"
 
 [dev-packages]
 pytest = "*"
@@ -11,4 +13,4 @@ build = "*"
 twine = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.7"
