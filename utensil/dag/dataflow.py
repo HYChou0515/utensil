@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, List
 
@@ -25,7 +26,16 @@ class Target(pd.Series):
     pass
 
 
+@dataclass
+class Dataset:
+    target: Target
+    features: Features
+
+
 class Model:
+    def train(self, dataset: Dataset) -> Model:
+        return NotImplemented
+
     def predict(self, features: Features) -> Target:
         return NotImplemented
 
@@ -34,14 +44,12 @@ class SklearnModel(Model):
     def __init__(self, model):
         self._model = model
 
+    def train(self, dataset: Dataset) -> Model:
+        model = self._model.train(dataset.features, dataset.target)
+        return SklearnModel(model)
+
     def predict(self, features: Features) -> Target:
-        return Target(self.model.predict(features))
-
-
-@dataclass
-class Dataset:
-    target: Target
-    features: Features
+        return Target(self._model.predict(features))
 
 
 @dataclass
@@ -202,7 +210,7 @@ class LinearNormalize(NodeProcess):
 
 
 @dataclass
-class Train(NodeProcess):
+class MakeModel(NodeProcess):
     method: str = None
 
     def __post_init__(self):
@@ -210,21 +218,29 @@ class Train(NodeProcess):
         warn_left_keys(self.params)
         del self.params
 
-    def __call__(self, dataset: Dataset) -> Model:
+    def __call__(self):
         if self.method == 'XGBOOST':
-            model = xgboost.XGBRegressor()
-            model.fit(dataset.features, dataset.target)
-            model = SklearnModel(model)
+            return SklearnModel(xgboost.XGBRegressor())
         else:
-            raise ValueError(self.method)
+            raise ValueError
+
+
+@dataclass
+class Train(NodeProcess):
+    def __post_init__(self):
+        warn_left_keys(self.params)
+        del self.params
+
+    def __call__(self, model: Model, dataset: Dataset) -> Model:
+        model = model.train(dataset)
         return model
 
 
 @dataclass
-class Evaluate(NodeProcess):
+class Predict(NodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
 
     def __call__(self, model: Model, features: Features) -> Target:
-        model.evaluate(features)
+        model.predict(features)
