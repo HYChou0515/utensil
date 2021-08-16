@@ -28,17 +28,17 @@ NODES:
   P3:
     PARENTS: [P1, P2]
     PROCESSES:
-      - MERGE_FEATURES:
+      - MERGE_FEATURES
 
   P4:
     PARENTS: [P0]
     PROCESSES:
-      - GET_TARGET:
+      - GET_TARGET
 
   P5:
     PARENTS: [P4, P3]
     PROCESSES:
-      - MAKE_DATASET:
+      - MAKE_DATASET
 
 #  P5-0:
 #    PROCESSES:
@@ -50,16 +50,16 @@ NODES:
   P5-1:
     PROCESSES:
       - MAKE_MODEL:
-          METHOD: XGBOOST
+          METHOD: XGBOOST_REGRESSOR
 
 
   P6:
     PARENTS: [P5-1, P5]
     PROCESSES:
-      - TRAIN:
+      - TRAIN
 
   P7:
     PARENTS: [P6, P3]
     REQUIRED: True
     PROCESSES:
-      - PREDICT:
+      - PREDICT

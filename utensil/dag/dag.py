@@ -137,12 +137,15 @@ for node_name, node_dscp in dag_dscp['NODES'].items():
 
     node_processes = []
     for proc_dscp in _processes:
-        if len(proc_dscp) != 1:
-            raise ValueError
-        pname, params = proc_dscp.popitem()
-        process_class = process_map[pname]
-        params = {} if params is None else params
-
+        if isinstance(proc_dscp, dict):
+            if len(proc_dscp) != 1:
+                raise ValueError
+            pname, params = proc_dscp.popitem()
+            process_class = process_map[pname]
+            params = {} if params is None else params
+        elif isinstance(proc_dscp, str):
+            process_class = process_map[proc_dscp]
+            params = {}
         process = process_class(params)  # noqa: process_class is a dataclasses
         node_processes.append(process)
 

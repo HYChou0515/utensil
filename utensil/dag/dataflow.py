@@ -231,7 +231,7 @@ class MakeModel(StatelessNodeProcess):
         del self.params
 
     def __call__(self):
-        if self.method == 'XGBOOST':
+        if self.method == 'XGBOOST_REGRESSOR':
             try:
                 import xgboost
             except ImportError as e:
