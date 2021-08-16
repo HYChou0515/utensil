@@ -34,23 +34,26 @@ NODES:
     PARENTS: [P0]
     PROCESSES:
       - GET_TARGET
+      - CHANGE_TYPE_TO: INTEGER
 
   P5:
     PARENTS: [P4, P3]
     PROCESSES:
       - MAKE_DATASET
 
-#  P5-0:
-#    PROCESSES:
-#      - PARAMETER_SEARCH:
-#          SEARCH_MAP:
-#            METHODOLOGY:
-#              METHOD:
+  P5-0:
+    PROCESSES:
+      - PARAMETER_SEARCH:
+          SEARCH_MAP:
+            LEARNING_RATE:
+              EXPONENTIAL_BETWEEN: { LEFT: 0.001, RIGHT: 0.2 }
+            MAX_DEPTH: 3
 
   P5-1:
+    PARENTS: [P5-0]
     PROCESSES:
       - MAKE_MODEL:
-          METHOD: XGBOOST_REGRESSOR
+          METHOD: XGBOOST_CLASSIFIER
 
 
   P6:
@@ -60,6 +63,12 @@ NODES:
 
   P7:
     PARENTS: [P6, P3]
-    REQUIRED: True
     PROCESSES:
       - PREDICT
+
+  P8:
+    PARENTS: [P7, P4]
+    REQUIRED: True
+    EXPORT: PRINT
+    PROCESSES:
+      - SCORE: ACCURACY

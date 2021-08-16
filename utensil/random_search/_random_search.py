@@ -13,10 +13,6 @@ from utensil.general.logger import DUMMY_LOGGER
 
 try:
     import numpy as np
-except ImportError as e:
-    raise e
-
-try:
     import pandas as pd
 except ImportError as e:
     raise e
@@ -26,6 +22,17 @@ class RandomizedParam(abc.ABC):
     @abc.abstractmethod
     def from_random(self, r):
         raise NotImplemented
+
+    @classmethod
+    def create_randomized_param(cls, param_type, options) -> RandomizedParam:
+        if param_type == 'EXPONENTIAL_BETWEEN':
+            _option = {
+                'left': options.pop('LEFT'),
+                'right': options.pop('RIGHT'),
+                'otype': options.pop('TYPE', float),
+            }
+            return ExponentialBetweenParam(**_option)
+        raise ValueError
 
 
 @dataclass
@@ -74,11 +81,8 @@ class RandomizedDispatcher:
     dispatch: Dict[Any, RandomizedConfig]
 
 
-TRandomizedConfig = TypeVar('TRandomizedConfig', bound='RandomizedConfig')
-
-
 class RandomizedConfig(abc.ABC):
-    def get_config(self, model_id, seed=0) -> Tuple[Dict[str, Any], TRandomizedConfig]:
+    def get_config(self, model_id, seed=0) -> Tuple[Dict[str, Any], RandomizedConfig]:
         kwargs = {}
         dispatchers = {}
         params = {}
@@ -142,8 +146,8 @@ class SeededConfig:
     cid: int
     base_seed: int
     seed_r: Dict[str, Any]
-    config: TRandomizedConfig
-    config_temp: TRandomizedConfig
+    config: RandomizedConfig
+    config_temp: RandomizedConfig
 
     @classmethod
     def from_config_template(cls, config_temp: RandomizedConfig, model_id: int, seed: int):

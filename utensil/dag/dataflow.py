@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Dict, Any, Generator, Tuple, List, Type, Union
 
 from utensil.general import warn_left_keys
+from utensil.random_search import RandomizedParam
 
 try:
     import numpy as np
     import pandas as pd
 except ImportError as e:
     raise e
+
+
+class MISSING:
+    pass
 
 
 class Feature(pd.Series):
@@ -60,6 +65,8 @@ class NodeProcess:
 
 @dataclass
 class StatefulNodeProcess(NodeProcess):
+    state: Any = None
+
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -230,13 +237,28 @@ class MakeModel(StatelessNodeProcess):
         warn_left_keys(self.params)
         del self.params
 
-    def __call__(self):
+    def __call__(self, model_params: Dict[str, Any]):
         if self.method == 'XGBOOST_REGRESSOR':
             try:
                 import xgboost
             except ImportError as e:
                 raise e
             return SklearnModel(xgboost.XGBRegressor())
+        elif self.method == 'XGBOOST_CLASSIFIER':
+            try:
+                import xgboost
+            except ImportError as e:
+                raise e
+            _model_params = {
+                'learning_rate': model_params.pop('LEARNING_RATE', MISSING),
+                'max_depth': model_params.pop('MAX_DEPTH', MISSING),
+                'n_estimators': model_params.pop('N_ESTIMATORS', MISSING),
+            }
+            for k, v in list(_model_params.items()):
+                if v is MISSING:
+                    del _model_params[k]
+            warn_left_keys(model_params)
+            return SklearnModel(xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
         else:
             raise ValueError
 
@@ -260,3 +282,107 @@ class Predict(StatelessNodeProcess):
 
     def __call__(self, model: Model, features: Features) -> Target:
         return model.predict(features)
+
+
+@dataclass
+class ParameterSearch(StatefulNodeProcess):
+    search_map: Dict[str, Any] = None
+    nr_randomized_params: int = field(init=False)
+    rng: np.random.Generator = field(init=False)
+
+    seed_gen: Generator[Tuple[int, Tuple]] = field(init=False)
+
+    def __post_init__(self):
+        self.state = self.params.pop('INIT_STATE', 0)
+        self.nr_randomized_params = 0
+        self.rng = np.random.default_rng(self.params.pop('SEED', 0))
+        self.seed_gen = self._generate_seed()
+        self.search_map = {}
+        for param_name, search_method in self.params.pop('SEARCH_MAP', {}).items():
+            if isinstance(search_method, dict):
+                if len(search_method) != 1:
+                    raise ValueError
+                search_type, search_option = search_method.popitem()
+                self.search_map[param_name] = RandomizedParam.create_randomized_param(search_type, search_option)
+                self.nr_randomized_params += 1
+            else:
+                self.search_map[param_name] = search_method
+
+        warn_left_keys(self.params)
+        del self.params
+
+    def __call__(self):
+        state, r_list = next(self.seed_gen)
+        if len(r_list) != self.nr_randomized_params:
+            raise ValueError
+        r = iter(r_list)
+        params = {}
+        for k, v in self.search_map.items():
+            if isinstance(v, RandomizedParam):
+                params[k] = v.from_random(next(r))
+            else:
+                params[k] = v
+        return params
+
+    def _random_between(self, a, b, **kwargs):
+        return self.rng.random(**kwargs) * (b - a) + a
+
+    def _generate_seed(self):
+        rand_space = []
+        while True:
+            base = 2 ** int(np.log2(self.state+1))
+            offset = self.state+1-base
+            if offset == 0 or len(rand_space) == 0:
+                linspace = np.linspace(0, 1, base+1)
+                rand_space = np.array([self._random_between(
+                    linspace[i], linspace[i+1], size=self.nr_randomized_params
+                ) for i in range(base)])
+
+                for i in range(self.nr_randomized_params):
+                    self.rng.shuffle(rand_space[:, i])
+
+            model_r = tuple(rand_space[offset])
+
+            yield self.state, model_r
+            self.state += 1
+
+
+@dataclass
+class Score(StatelessNodeProcess):
+    methods: List[str] = None
+
+    def __post_init__(self):
+        if isinstance(self.params, str):
+            self.methods = [self.params]
+        elif isinstance(self.params, list):
+            self.methods = self.params
+        else:
+            raise TypeError
+        del self.params
+
+    def __call__(self, prediction: Target, ground_truth: Target):
+        ret = []
+        for method in self.methods:
+            if method == 'ACCURACY':
+                ret.append((method, np.sum(prediction.values == ground_truth.values) / prediction.shape[0]))
+        return ret
+
+
+@dataclass
+class ChangeTypeTo(StatelessNodeProcess):
+    to_type: Type = None
+
+    def __post_init__(self):
+        if isinstance(self.params, str):
+            if self.params == 'INTEGER':
+                self.to_type = int
+            elif self.params == 'FLOAT':
+                self.to_type = float
+            else:
+                raise ValueError
+        else:
+            raise TypeError
+        del self.params
+
+    def __call__(self, arr: Union[Feature, Target]):
+        return arr.astype(self.to_type)

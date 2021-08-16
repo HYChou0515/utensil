@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, InitVar
-from typing import List, Dict, Type, Any
+from typing import List, Dict, Type, Any, Union, Callable
 
 from utensil.dag import dataflow
 from utensil.general import warn_left_keys
@@ -21,8 +21,11 @@ process_map: Dict[str, Type[dataflow.NodeProcess]] = {
     'MAKE_DATASET': dataflow.MakeDataset,
     'MAKE_MODEL': dataflow.MakeModel,
     'GET_TARGET': dataflow.GetTarget,
+    'CHANGE_TYPE_TO': dataflow.ChangeTypeTo,
     'TRAIN': dataflow.Train,
     'PREDICT': dataflow.Predict,
+    'PARAMETER_SEARCH': dataflow.ParameterSearch,
+    'SCORE': dataflow.Score,
 }
 
 
@@ -36,16 +39,19 @@ class DagNode:
     parent_names: InitVar[List[str]]
     processes: InitVar[List[dataflow.NodeProcess]]
     required: InitVar[bool]
+    export: InitVar[Union[str, List[str]]]
 
     graph: Dag = None
 
     _name: str = None
     _processes: List[dataflow.NodeProcess] = field(default_factory=list)
     _required: bool = None
+    _export: List[Callable] = None
 
     _parent_nodes: Dict[str, dataflow.NodeProcess] = field(default_factory=dict, init=False)
     _parent_results: Dict[str, Any] = field(default_factory=dict, init=False)
     _result: Any = field(default=MISSING, init=False)
+    _is_dynamic: bool = field(default=MISSING, init=False)
 
     @property
     def name(self):
@@ -66,23 +72,41 @@ class DagNode:
     @property
     def result(self):
         return self._result
+
+    @property
+    def export(self):
+        return self._export
     
     @property
     def is_dynamic(self):
+        if self._is_dynamic is not MISSING:
+            return self._is_dynamic
         for p in self.processes:
             if isinstance(p, dataflow.StatefulNodeProcess):
-                return True
+                self._is_dynamic = True
+                return self._is_dynamic
+        for pname in self.parent_names:
+            if self.graph[pname].is_dynamic:
+                self._is_dynamic = True
+                return self._is_dynamic
+        self._is_dynamic = False
         return False
 
     def __post_init__(self, name: str, parent_names: List[str], processes: List[dataflow.NodeProcess],
-                      required: bool):
+                      required: bool, export: Union[str, List[str]]):
         self._name = name
         self._processes = processes
         self._parent_names = parent_names
         self._required = required
+        self._export = []
+        for exp in export if isinstance(export, list) else [export]:
+            if exp == 'PRINT':
+                self._export.append(print)
+            else:
+                raise ValueError
 
     def run(self):
-        if self.result is MISSING:
+        if self.result is MISSING or self.is_dynamic:
             node_inputs = [self.graph[parent].run() for parent in self.parent_names]
             if len(self._processes) > 0:
                 # first process
@@ -93,9 +117,9 @@ class DagNode:
             else:
                 node_output = None
             self._result = node_output
-        print(f'node={self.name} done')
+        for export in self.export:
+            export(self.result)
         return self.result
-
 
 @dataclass
 class Dag:
@@ -132,6 +156,7 @@ for node_name, node_dscp in dag_dscp['NODES'].items():
     parents = node_dscp.pop('PARENTS', [])  # empty parents means it is a starting point
     _processes = node_dscp.pop('PROCESSES', [])
     required = node_dscp.pop('REQUIRED', False)
+    export = node_dscp.pop('EXPORT', [])
 
     warn_left_keys(node_dscp)
 
@@ -149,6 +174,9 @@ for node_name, node_dscp in dag_dscp['NODES'].items():
         process = process_class(params)  # noqa: process_class is a dataclasses
         node_processes.append(process)
 
-    dag.add_node(DagNode(node_name, parent_names=parents, processes=node_processes, required=required))
+    dag.add_node(DagNode(node_name, parent_names=parents, processes=node_processes,
+                         required=required, export=export))
 
+dag.run()
+dag.run()
 dag.run()
