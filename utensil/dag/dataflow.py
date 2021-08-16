@@ -1,15 +1,13 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any
 
-
-from utensil.dag.helper import warn_left_keys
+from utensil.general import warn_left_keys
 
 try:
-    import xgboost
     import numpy as np
     import pandas as pd
-    import sklearn.datasets
 except ImportError as e:
     raise e
 
@@ -45,7 +43,7 @@ class SklearnModel(Model):
         self._model = model
 
     def train(self, dataset: Dataset) -> Model:
-        model = self._model.train(dataset.features, dataset.target)
+        model = self._model.fit(dataset.features, dataset.target)
         return SklearnModel(model)
 
     def predict(self, features: Features) -> Target:
@@ -61,7 +59,19 @@ class NodeProcess:
 
 
 @dataclass
-class LoadData(NodeProcess):
+class StatefulNodeProcess(NodeProcess):
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+@dataclass
+class StatelessNodeProcess(NodeProcess):
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+@dataclass
+class LoadData(StatelessNodeProcess):
     dformat: str = None
     url: str = None
     target: str = None
@@ -77,6 +87,10 @@ class LoadData(NodeProcess):
 
     def __call__(self) -> Dataset:
         if self.dformat == 'SVMLIGHT':
+            try:
+                import sklearn.datasets
+            except ImportError as e:
+                raise e
             features, target = sklearn.datasets.load_svmlight_file(self.url)
         else:
             raise ValueError(self.dformat)
@@ -87,7 +101,7 @@ class LoadData(NodeProcess):
 
 
 @dataclass
-class FilterRows(NodeProcess):
+class FilterRows(StatelessNodeProcess):
     filter_by: Dict[str, Any] = None
 
     def __post_init__(self):
@@ -108,18 +122,17 @@ class FilterRows(NodeProcess):
 
 
 @dataclass
-class MakeDataset(NodeProcess):
+class MakeDataset(StatelessNodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
 
     def __call__(self, target: Target, features: Features) -> Dataset:
-        print(Dataset(target, features))
         return Dataset(target, features)
 
 
 @dataclass
-class GetTarget(NodeProcess):
+class GetTarget(StatelessNodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
@@ -129,7 +142,7 @@ class GetTarget(NodeProcess):
 
 
 @dataclass
-class GetFeature(NodeProcess):
+class GetFeature(StatelessNodeProcess):
     feature: str = None
 
     def __post_init__(self):
@@ -142,7 +155,7 @@ class GetFeature(NodeProcess):
 
 
 @dataclass
-class MergeFeatures(NodeProcess):
+class MergeFeatures(StatelessNodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
@@ -152,65 +165,64 @@ class MergeFeatures(NodeProcess):
 
 
 def is_number(n):
-    # check whether n is a number
-    try:
-        float(n)
-        return True
-    except Exception:
-        return False
+    return pd.api.types.is_number(n)
+
+
+def get_max(arr):
+    if pd.api.types.is_sparse(arr):
+        if arr.sparse.sp_values.shape[0] < arr.shape[0]:
+            return max(arr.sparse.fill_value, np.max(arr.sparse.sp_values))
+        else:
+            return np.max(arr.sparse.sp_values)
+    else:
+        return np.max(arr)
+
+
+def get_min(arr):
+    if pd.api.types.is_sparse(arr):
+        if arr.sparse.sp_values.shape[0] < arr.shape[0]:
+            return min(arr.sparse.fill_value, np.min(arr.sparse.sp_values))
+        else:
+            return np.min(arr.sparse.sp_values)
+    else:
+        return np.min(arr)
 
 
 @dataclass
-class LinearNormalize(NodeProcess):
+class LinearNormalize(StatelessNodeProcess):
     upper: Dict[str, Any] = None
     lower: Dict[str, Any] = None
 
+    @staticmethod
+    def _compile_limit(cmd, arr1d):
+        if isinstance(cmd, str):
+            if cmd == 'MAX':
+                return get_max(arr1d)
+            elif cmd == 'MIN':
+                return get_min(arr1d)
+        elif is_number(cmd):
+            return cmd
+        raise ValueError(cmd)
+
     def __post_init__(self):
-        self.upper = self.params.pop('UPPER', None)
-        self.lower = self.params.pop('LOWER', None)
+        self.upper = {'FROM': 'MAX', 'TO': 'MAX'}
+        self.upper.update(**self.params.pop('UPPER', {}))
+        self.lower = {'FROM': 'MIN', 'TO': 'MIN'}
+        self.lower.update(**self.params.pop('LOWER', {}))
         warn_left_keys(self.params)
         del self.params
 
     def __call__(self, arr1d: np.ndarray) -> np.ndarray:
-        if self.upper is not None:
-            hifrom = self.upper.pop('FROM')
-            hito = self.upper.pop('TO')
-            if hifrom == 'MAX':
-                hifrom = np.max(arr1d)
-            elif hifrom == 'MIN':
-                hifrom = np.min(arr1d)
-            else:
-                raise ValueError(hifrom)
-            if is_number(hito):
-                hito = float(hito)
-            else:
-                raise ValueError(hito)
-        else:
-            hifrom = np.max(arr1d)
-            hito = np.max(arr1d)
-
-        if self.lower is not None:
-            lofrom = self.lower.pop('FROM')
-            loto = self.lower.pop('TO')
-            if lofrom == 'MAX':
-                lofrom = np.max(arr1d)
-            elif lofrom == 'MIN':
-                lofrom = np.min(arr1d)
-            else:
-                raise ValueError(lofrom)
-            if is_number(loto):
-                loto = float(loto)
-            else:
-                raise ValueError(loto)
-        else:
-            lofrom = np.min(arr1d)
-            loto = np.min(arr1d)
+        hifrom = self._compile_limit(self.upper.pop('FROM'), arr1d)
+        hito = self._compile_limit(self.upper.pop('TO'), arr1d)
+        lofrom = self._compile_limit(self.lower.pop('FROM'), arr1d)
+        loto = self._compile_limit(self.lower.pop('TO'), arr1d)
 
         return arr1d * (hito - loto) / (hifrom - lofrom) + (hito * lofrom - hifrom - loto) / (hifrom - lofrom)
 
 
 @dataclass
-class MakeModel(NodeProcess):
+class MakeModel(StatelessNodeProcess):
     method: str = None
 
     def __post_init__(self):
@@ -220,13 +232,17 @@ class MakeModel(NodeProcess):
 
     def __call__(self):
         if self.method == 'XGBOOST':
+            try:
+                import xgboost
+            except ImportError as e:
+                raise e
             return SklearnModel(xgboost.XGBRegressor())
         else:
             raise ValueError
 
 
 @dataclass
-class Train(NodeProcess):
+class Train(StatelessNodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
@@ -237,10 +253,10 @@ class Train(NodeProcess):
 
 
 @dataclass
-class Predict(NodeProcess):
+class Predict(StatelessNodeProcess):
     def __post_init__(self):
         warn_left_keys(self.params)
         del self.params
 
     def __call__(self, model: Model, features: Features) -> Target:
-        model.predict(features)
+        return model.predict(features)

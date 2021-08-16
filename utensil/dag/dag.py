@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, InitVar
 from typing import List, Dict, Type, Any
 
 from utensil.dag import dataflow
-from utensil.dag.helper import warn_left_keys
+from utensil.general import warn_left_keys
 
 try:
     import yaml
@@ -65,7 +65,14 @@ class DagNode:
 
     @property
     def result(self):
-        return self.result
+        return self._result
+    
+    @property
+    def is_dynamic(self):
+        for p in self.processes:
+            if isinstance(p, dataflow.StatefulNodeProcess):
+                return True
+        return False
 
     def __post_init__(self, name: str, parent_names: List[str], processes: List[dataflow.NodeProcess],
                       required: bool):
