@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from dataclasses import dataclass, field, InitVar
 from typing import List, Dict, Type, Any, Union, Callable
 
@@ -10,7 +11,6 @@ try:
     import yaml
 except ImportError as e:
     raise e
-
 
 process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'LOAD_DATA': dataflow.LoadData,
@@ -76,7 +76,7 @@ class DagNode:
     @property
     def export(self):
         return self._export
-    
+
     @property
     def is_dynamic(self):
         if self._is_dynamic is not MISSING:
@@ -108,6 +108,7 @@ class DagNode:
     def run(self):
         if self.result is MISSING or self.is_dynamic:
             node_inputs = [self.graph[parent].run() for parent in self.parent_names]
+            start_time = datetime.datetime.now()
             if len(self._processes) > 0:
                 # first process
                 node_output = self._processes[0](*node_inputs)
@@ -117,9 +118,13 @@ class DagNode:
             else:
                 node_output = None
             self._result = node_output
+            print(f'{self.name}: {datetime.datetime.now() - start_time}')
+        else:
+            print(f'{self.name}: cache read')
         for export in self.export:
             export(self.result)
         return self.result
+
 
 @dataclass
 class Dag:
