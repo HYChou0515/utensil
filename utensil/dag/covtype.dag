@@ -11,6 +11,10 @@ NODES:
       - FILTER_ROWS:
           FILTER_BY:
             TARGET: [1, 2]
+      - SAMPLING_ROWS:
+          NUMBER: 1000
+          STRATIFIED: True
+
   P1:
     PARENTS: [P0]
     PROCESSES:

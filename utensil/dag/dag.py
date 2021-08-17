@@ -26,6 +26,7 @@ process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'PREDICT': dataflow.Predict,
     'PARAMETER_SEARCH': dataflow.ParameterSearch,
     'SCORE': dataflow.Score,
+    'SAMPLING_ROWS': dataflow.SamplingRows,
 }
 
 

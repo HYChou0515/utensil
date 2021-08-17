@@ -34,6 +34,16 @@ class Dataset:
     target: Target
     features: Features
 
+    @property
+    def nrows(self):
+        if self.target.shape[0] != self.features.shape[0]:
+            raise ValueError('rows of target and that of features should be the same')
+        return self.target.shape[0]
+
+    @property
+    def ncols(self):
+        return self.features.shape[1]
+
 
 class Model:
     def train(self, dataset: Dataset) -> Model:
@@ -126,6 +136,69 @@ class FilterRows(StatelessNodeProcess):
         dataset.target = dataset.target.loc[idx]
         dataset.features = dataset.features.loc[idx]
         return dataset
+
+
+@dataclass
+class SamplingRows(StatelessNodeProcess):
+    number: int = field(init=False)
+    ratio: float = field(init=False)
+    stratified: bool = field(init=False)
+    replace: bool = field(init=False)
+    random_seed: bool = field(init=False)
+
+    _rng: np.random.Generator = field(init=False, repr=False)
+
+    def __post_init__(self):
+        self.number = self.params.pop('NUMBER', MISSING)
+        self.ratio = self.params.pop('RATIO', MISSING)
+        self.stratified = self.params.pop('STRATIFIED', False)
+        self.replace = self.params.pop('REPLACE', False)
+        self.random_seed = self.params.pop('RANDOM_SEED', 0)
+
+        if self.ratio is MISSING and self.number is MISSING:
+            self.ratio = 1.0
+
+        warn_left_keys(self.params)
+        del self.params
+
+    def _get_number_each(self, value_counts: pd.Series, ttl_number: int):
+        if self.replace or ttl_number // value_counts.shape[0] <= value_counts.min():
+            number_each = pd.Series(0, index=value_counts.index) + ttl_number // value_counts.shape[0]
+            categories = number_each.index.to_numpy(copy=True)
+            self._rng.shuffle(categories)
+            residual = ttl_number - number_each.sum()
+            number_each += pd.Series({cat: 1 if i < residual else 0 for i, cat in enumerate(categories)})
+        else:
+            number_each = pd.Series(value_counts.min(), index=value_counts.index)
+            residual = self._get_number_each(
+                value_counts.drop(labels=value_counts.idxmin()) - value_counts.min(),
+                ttl_number - np.sum(number_each)
+            )
+            number_each += (residual + pd.Series(0, index=number_each.index)).astype(int)
+        return number_each
+
+    def __call__(self, dataset: Dataset) -> Dataset:
+        if self.stratified:
+            ttl_number = int(self.ratio * dataset.nrows) if self.ratio is not MISSING else self.number
+            value_counts = dataset.target.value_counts()
+            self._rng = np.random.default_rng(self.random_seed)
+            if not self.replace and ttl_number > dataset.nrows:
+                raise ValueError('sampling number should at most the same size as the dataset '
+                                 'when \"replace\" is set False')
+            number_each = self._get_number_each(value_counts, ttl_number)
+            selected_idx = []
+            for cat, idx in dataset.target.groupby(dataset.target).groups.items():
+                selected_idx.append(self._rng.choice(idx, number_each[cat], replace=self.replace))
+            selected_idx = np.concatenate(selected_idx)
+            imap = {idx: i for i, idx in enumerate(dataset.target.index)}
+            selected_idx = np.array(sorted(selected_idx, key=imap.__getitem__))
+            new_target = dataset.target.loc[selected_idx]
+        elif self.ratio is not MISSING:
+            new_target = dataset.target.sample(frac=self.ratio, replace=self.replace, random_state=self.random_seed)
+        else:
+            new_target = dataset.target.sample(n=self.number, replace=self.replace, random_state=self.random_seed)
+        new_features = dataset.features.loc[new_target.index]
+        return Dataset(Target(new_target), Features(new_features))
 
 
 @dataclass
@@ -345,12 +418,12 @@ class ParameterSearch(StatefulNodeProcess):
     def _generate_seed(self):
         rand_space = []
         while True:
-            base = 2 ** int(np.log2(self.state+1))
-            offset = self.state+1-base
+            base = 2 ** int(np.log2(self.state + 1))
+            offset = self.state + 1 - base
             if offset == 0 or len(rand_space) == 0:
-                linspace = np.linspace(0, 1, base+1)
+                linspace = np.linspace(0, 1, base + 1)
                 rand_space = np.array([self._random_between(
-                    linspace[i], linspace[i+1], size=self._nr_randomized_params
+                    linspace[i], linspace[i + 1], size=self._nr_randomized_params
                 ) for i in range(base)])
 
                 for i in range(self._nr_randomized_params):
