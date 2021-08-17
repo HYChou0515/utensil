@@ -237,6 +237,13 @@ class MakeModel(StatelessNodeProcess):
         warn_left_keys(self.params)
         del self.params
 
+    @staticmethod
+    def after_assign_params_routine(_from, _to):
+        for k, v in list(_to.items()):
+            if v is MISSING:
+                del _to[k]
+        warn_left_keys(_from)
+
     def __call__(self, model_params: Dict[str, Any]):
         if self.method == 'XGBOOST_REGRESSOR':
             try:
@@ -254,11 +261,20 @@ class MakeModel(StatelessNodeProcess):
                 'max_depth': model_params.pop('MAX_DEPTH', MISSING),
                 'n_estimators': model_params.pop('N_ESTIMATORS', MISSING),
             }
-            for k, v in list(_model_params.items()):
-                if v is MISSING:
-                    del _model_params[k]
-            warn_left_keys(model_params)
+            self.after_assign_params_routine(model_params, _model_params)
             return SklearnModel(xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
+        elif self.method == 'SKLEARN_GRADIENT_BOOSTING_CLASSIFIER':
+            try:
+                from sklearn.ensemble import GradientBoostingClassifier
+            except ImportError as e:
+                raise e
+            _model_params = {
+                'learning_rate': model_params.pop('LEARNING_RATE', MISSING),
+                'max_depth': model_params.pop('MAX_DEPTH', MISSING),
+                'n_estimators': model_params.pop('N_ESTIMATORS', MISSING),
+            }
+            self.after_assign_params_routine(model_params, _model_params)
+            return SklearnModel(GradientBoostingClassifier(**_model_params))
         else:
             raise ValueError
 
