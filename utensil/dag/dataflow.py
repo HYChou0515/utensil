@@ -145,6 +145,7 @@ class SamplingRows(StatelessNodeProcess):
     stratified: bool = field(init=False)
     replace: bool = field(init=False)
     random_seed: bool = field(init=False)
+    return_rest: bool = field(init=False)
 
     _rng: np.random.Generator = field(init=False, repr=False)
 
@@ -154,6 +155,7 @@ class SamplingRows(StatelessNodeProcess):
         self.stratified = self.params.pop('STRATIFIED', False)
         self.replace = self.params.pop('REPLACE', False)
         self.random_seed = self.params.pop('RANDOM_SEED', 0)
+        self.return_rest = self.params.pop('RETURN_REST', False)
 
         if self.ratio is MISSING and self.number is MISSING:
             self.ratio = 1.0
@@ -177,7 +179,7 @@ class SamplingRows(StatelessNodeProcess):
             number_each += (residual + pd.Series(0, index=number_each.index)).astype(int)
         return number_each
 
-    def __call__(self, dataset: Dataset) -> Dataset:
+    def __call__(self, dataset: Dataset) -> Union[Dataset, Dict[str, Dataset]]:
         if self.stratified:
             ttl_number = int(self.ratio * dataset.nrows) if self.ratio is not MISSING else self.number
             value_counts = dataset.target.value_counts()
@@ -198,7 +200,16 @@ class SamplingRows(StatelessNodeProcess):
         else:
             new_target = dataset.target.sample(n=self.number, replace=self.replace, random_state=self.random_seed)
         new_features = dataset.features.loc[new_target.index]
-        return Dataset(Target(new_target), Features(new_features))
+        if self.return_rest:
+            rest_index = dataset.target.index.difference(new_target.index)
+            rest_target = dataset.target.loc[rest_index]
+            rest_features = dataset.features.loc[rest_index]
+            return {
+                'SAMPLED': Dataset(Target(new_target), Features(new_features)),
+                'REST': Dataset(Target(rest_target), Features(rest_features)),
+            }
+        else:
+            return Dataset(Target(new_target), Features(new_features))
 
 
 @dataclass
@@ -209,6 +220,30 @@ class MakeDataset(StatelessNodeProcess):
 
     def __call__(self, target: Target, features: Features) -> Dataset:
         return Dataset(target, features)
+
+
+@dataclass
+class GetItem(StatelessNodeProcess):
+    item_name: str = field(init=False)
+
+    def __post_init__(self):
+        if isinstance(self.params, str):
+            self.item_name = self.params
+        else:
+            raise TypeError
+        del self.params
+
+    def __call__(self, structured_object):
+        if isinstance(structured_object, dict):
+            if self.item_name in structured_object:
+                return structured_object[self.item_name]
+        else:
+            d = vars(structured_object)
+            if self.item_name in d:
+                return structured_object.__getattribute__(self.item_name)
+            elif self.item_name.lower() in d:
+                return structured_object.__getattribute__(self.item_name.lower())
+        raise ValueError(f'{self.item_name} not found in the object')
 
 
 @dataclass
@@ -226,8 +261,10 @@ class GetFeature(StatelessNodeProcess):
     feature: str = None
 
     def __post_init__(self):
-        self.feature = self.params.pop('FEATURE')
-        warn_left_keys(self.params)
+        if isinstance(self.params, str):
+            self.feature = self.params
+        else:
+            raise TypeError
         del self.params
 
     def __call__(self, dataset: Dataset) -> Feature:
@@ -437,22 +474,52 @@ class ParameterSearch(StatefulNodeProcess):
 
 @dataclass
 class Score(StatelessNodeProcess):
-    methods: List[str] = None
+    dataset_name: Union[str, Any] = field(init=False)
+    methods: List[str] = field(init=False)
 
     def __post_init__(self):
         if isinstance(self.params, str):
+            self.dataset_name = MISSING
             self.methods = [self.params]
         elif isinstance(self.params, list):
+            self.dataset_name = MISSING
             self.methods = self.params
         else:
-            raise TypeError
+            self.dataset_name = self.params.pop('DATASET', MISSING)
+            self.methods = self.params.pop('METHODS')
+            if isinstance(self.methods, str):
+                self.methods = [self.methods]
+            warn_left_keys(self.params)
         del self.params
 
-    def __call__(self, prediction: Target, ground_truth: Target):
+    def __call__(self, prediction: Union[Target, Features, Dataset], ground_truth: Union[Target, Dataset],
+                 model: Model):
+        if isinstance(prediction, Target):
+            pass
+        elif isinstance(prediction, Features):
+            prediction = model.predict(prediction)
+        elif isinstance(prediction, Dataset):
+            prediction = model.predict(prediction.features)
+        else:
+            raise TypeError
+
+        if isinstance(ground_truth, Target):
+            pass
+        elif isinstance(ground_truth, Dataset):
+            ground_truth = ground_truth.target
+        else:
+            raise TypeError
+
+        def wrap_output(_method, _score):
+            if self.dataset_name is MISSING:
+                return _method, _score
+            else:
+                return _method, self.dataset_name, _score
+
         ret = []
         for method in self.methods:
             if method == 'ACCURACY':
-                ret.append((method, np.sum(prediction.values == ground_truth.values) / prediction.shape[0]))
+                ret.append(wrap_output(method, np.sum(prediction.values == ground_truth.values) / prediction.shape[0]))
         return ret
 
 

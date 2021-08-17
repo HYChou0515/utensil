@@ -11,21 +11,18 @@ NODES:
       - FILTER_ROWS:
           FILTER_BY:
             TARGET: [1, 2]
-      - SAMPLING_ROWS:
-          NUMBER: 1000
-          STRATIFIED: True
 
   P1:
     PARENTS: [P0]
     PROCESSES:
-      - GET_FEATURE: { FEATURE: Elevation }
+      - GET_FEATURE: Elevation
       - LINEAR_NORMALIZE:
           UPPER: { FROM: MAX, TO: 1 }
           LOWER: { FROM: MIN, TO: 0 }
   P2:
     PARENTS: [P0]
     PROCESSES:
-      - GET_FEATURE: { FEATURE: Aspect }
+      - GET_FEATURE: Aspect
       - LINEAR_NORMALIZE:
           UPPER: { FROM: MAX, TO: 1 }
           LOWER: { FROM: MIN, TO: 0 }
@@ -40,39 +37,61 @@ NODES:
       - GET_TARGET
       - CHANGE_TYPE_TO: INTEGER
 
-  P5:
+  DATASET:
     PARENTS: [P4, P3]
     PROCESSES:
       - MAKE_DATASET
+      - SAMPLING_ROWS:
+          NUMBER: 1000
+          STRATIFIED: True
+          RETURN_REST: True
 
-  P5-0:
+  TRAIN_DATA:
+    PARENTS: [DATASET]
+    PROCESSES:
+      - GET_ITEM: SAMPLED
+
+  TEST_DATA:
+    PARENTS: [DATASET]
+    PROCESSES:
+      - GET_ITEM: REST
+
+  MODEL_PARAM:
     PROCESSES:
       - PARAMETER_SEARCH:
           SEARCH_MAP:
             LEARNING_RATE:
               EXPONENTIAL_BETWEEN: { LEFT: 0.001, RIGHT: 0.2 }
-            MAX_DEPTH: 3
+            MAX_DEPTH:
+              UNIFORM_BETWEEN: { LEFT: 1, RIGHT: 10, TYPE: INTEGER }
+            N_ESTIMATORS:
+              UNIFORM_BETWEEN: { LEFT: 5, RIGHT: 201, TYPE: INTEGER }
 
-  P5-1:
-    PARENTS: [P5-0]
+  RAW_MODEL:
+    PARENTS: [MODEL_PARAM]
     PROCESSES:
       - MAKE_MODEL:
           METHOD: XGBOOST_CLASSIFIER
 
-
-  P6:
-    PARENTS: [P5-1, P5]
+  TRAINED_MODEL:
+    PARENTS: [RAW_MODEL, TRAIN_DATA]
     PROCESSES:
       - TRAIN
 
-  P7:
-    PARENTS: [P6, P3]
-    PROCESSES:
-      - PREDICT
-
-  P8:
-    PARENTS: [P7, P4]
+  TEST_SCORE:
+    PARENTS: [TEST_DATA, TEST_DATA, TRAINED_MODEL]
     REQUIRED: True
     EXPORT: PRINT
     PROCESSES:
-      - SCORE: ACCURACY
+      - SCORE:
+          DATASET: TEST_DATA
+          METHODS: ACCURACY
+
+  TRAIN_SCORE:
+    PARENTS: [TRAIN_DATA, TRAIN_DATA, TRAINED_MODEL]
+    REQUIRED: True
+    EXPORT: PRINT
+    PROCESSES:
+      - SCORE:
+          DATASET: TRAIN_DATA
+          METHODS: ACCURACY

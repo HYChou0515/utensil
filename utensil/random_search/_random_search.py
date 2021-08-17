@@ -31,7 +31,22 @@ class RandomizedParam(abc.ABC):
                 'right': options.pop('RIGHT'),
                 'otype': options.pop('TYPE', float),
             }
+            if _option['otype'] == 'INTEGER':
+                _option['otype'] = int
+            elif _option['otype'] == 'FLOAT':
+                _option['otype'] = float
             return ExponentialBetweenParam(**_option)
+        elif param_type == 'UNIFORM_BETWEEN':
+            _option = {
+                'left': options.pop('LEFT'),
+                'right': options.pop('RIGHT'),
+                'otype': options.pop('TYPE', float),
+            }
+            if _option['otype'] == 'INTEGER':
+                _option['otype'] = int
+            elif _option['otype'] == 'FLOAT':
+                _option['otype'] = float
+            return UniformBetweenParam(**_option)
         raise ValueError
 
 

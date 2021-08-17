@@ -16,6 +16,7 @@ process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'LOAD_DATA': dataflow.LoadData,
     'FILTER_ROWS': dataflow.FilterRows,
     'GET_FEATURE': dataflow.GetFeature,
+    'GET_ITEM': dataflow.GetItem,
     'LINEAR_NORMALIZE': dataflow.LinearNormalize,
     'MERGE_FEATURES': dataflow.MergeFeatures,
     'MAKE_DATASET': dataflow.MakeDataset,
@@ -106,6 +107,9 @@ class DagNode:
             else:
                 raise ValueError
 
+    def _print(self, s):
+        pass
+
     def run(self):
         if self.result is MISSING or self.is_dynamic:
             node_inputs = [self.graph[parent].run() for parent in self.parent_names]
@@ -119,9 +123,9 @@ class DagNode:
             else:
                 node_output = None
             self._result = node_output
-            print(f'{self.name}: {datetime.datetime.now() - start_time}')
+            self._print(f'{self.name}: {datetime.datetime.now() - start_time}')
         else:
-            print(f'{self.name}: cache read')
+            self._print(f'{self.name}: cache read')
         for export in self.export:
             export(self.result)
         return self.result
