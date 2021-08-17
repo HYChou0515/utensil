@@ -56,7 +56,7 @@ class SklearnModel(Model):
 
 
 @dataclass
-class NodeProcess:
+class BaseNodeProcess:
     params: Dict[str, Any] = field(repr=False)
 
     def __call__(self, *args, **kwargs):
@@ -64,7 +64,7 @@ class NodeProcess:
 
 
 @dataclass
-class StatefulNodeProcess(NodeProcess):
+class StatefulNodeProcess(BaseNodeProcess):
     state: Any = None
 
     def __call__(self, *args, **kwargs):
@@ -72,7 +72,7 @@ class StatefulNodeProcess(NodeProcess):
 
 
 @dataclass
-class StatelessNodeProcess(NodeProcess):
+class StatelessNodeProcess(BaseNodeProcess):
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -200,6 +200,14 @@ class LinearNormalize(StatelessNodeProcess):
     upper: Dict[str, Any] = None
     lower: Dict[str, Any] = None
 
+    def __post_init__(self):
+        self.upper = {'FROM': 'MAX', 'TO': 'MAX'}
+        self.upper.update(**self.params.pop('UPPER', {}))
+        self.lower = {'FROM': 'MIN', 'TO': 'MIN'}
+        self.lower.update(**self.params.pop('LOWER', {}))
+        warn_left_keys(self.params)
+        del self.params
+
     @staticmethod
     def _compile_limit(cmd, arr1d):
         if isinstance(cmd, str):
@@ -210,14 +218,6 @@ class LinearNormalize(StatelessNodeProcess):
         elif is_number(cmd):
             return cmd
         raise ValueError(cmd)
-
-    def __post_init__(self):
-        self.upper = {'FROM': 'MAX', 'TO': 'MAX'}
-        self.upper.update(**self.params.pop('UPPER', {}))
-        self.lower = {'FROM': 'MIN', 'TO': 'MIN'}
-        self.lower.update(**self.params.pop('LOWER', {}))
-        warn_left_keys(self.params)
-        del self.params
 
     def __call__(self, arr1d: np.ndarray) -> np.ndarray:
         hifrom = self._compile_limit(self.upper.pop('FROM'), arr1d)
@@ -286,38 +286,37 @@ class Predict(StatelessNodeProcess):
 
 @dataclass
 class ParameterSearch(StatefulNodeProcess):
-    search_map: Dict[str, Any] = None
-    nr_randomized_params: int = field(init=False)
-    rng: np.random.Generator = field(init=False)
-
-    seed_gen: Generator[Tuple[int, Tuple]] = field(init=False)
+    _search_map: Dict[str, Any] = field(init=False)
+    _nr_randomized_params: int = field(init=False)
+    _rng: np.random.Generator = field(init=False)
+    _seed_gen: Generator[Tuple[int, Tuple]] = field(init=False)
 
     def __post_init__(self):
         self.state = self.params.pop('INIT_STATE', 0)
-        self.nr_randomized_params = 0
-        self.rng = np.random.default_rng(self.params.pop('SEED', 0))
-        self.seed_gen = self._generate_seed()
-        self.search_map = {}
+        self._nr_randomized_params = 0
+        self._rng = np.random.default_rng(self.params.pop('SEED', 0))
+        self._seed_gen = self._generate_seed()
+        self._search_map = {}
         for param_name, search_method in self.params.pop('SEARCH_MAP', {}).items():
             if isinstance(search_method, dict):
                 if len(search_method) != 1:
                     raise ValueError
                 search_type, search_option = search_method.popitem()
-                self.search_map[param_name] = RandomizedParam.create_randomized_param(search_type, search_option)
-                self.nr_randomized_params += 1
+                self._search_map[param_name] = RandomizedParam.create_randomized_param(search_type, search_option)
+                self._nr_randomized_params += 1
             else:
-                self.search_map[param_name] = search_method
+                self._search_map[param_name] = search_method
 
         warn_left_keys(self.params)
         del self.params
 
     def __call__(self):
-        state, r_list = next(self.seed_gen)
-        if len(r_list) != self.nr_randomized_params:
+        state, r_list = next(self._seed_gen)
+        if len(r_list) != self._nr_randomized_params:
             raise ValueError
         r = iter(r_list)
         params = {}
-        for k, v in self.search_map.items():
+        for k, v in self._search_map.items():
             if isinstance(v, RandomizedParam):
                 params[k] = v.from_random(next(r))
             else:
@@ -325,7 +324,7 @@ class ParameterSearch(StatefulNodeProcess):
         return params
 
     def _random_between(self, a, b, **kwargs):
-        return self.rng.random(**kwargs) * (b - a) + a
+        return self._rng.random(**kwargs) * (b - a) + a
 
     def _generate_seed(self):
         rand_space = []
@@ -335,11 +334,11 @@ class ParameterSearch(StatefulNodeProcess):
             if offset == 0 or len(rand_space) == 0:
                 linspace = np.linspace(0, 1, base+1)
                 rand_space = np.array([self._random_between(
-                    linspace[i], linspace[i+1], size=self.nr_randomized_params
+                    linspace[i], linspace[i+1], size=self._nr_randomized_params
                 ) for i in range(base)])
 
-                for i in range(self.nr_randomized_params):
-                    self.rng.shuffle(rand_space[:, i])
+                for i in range(self._nr_randomized_params):
+                    self._rng.shuffle(rand_space[:, i])
 
             model_r = tuple(rand_space[offset])
 

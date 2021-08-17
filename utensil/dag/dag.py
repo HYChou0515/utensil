@@ -12,7 +12,7 @@ except ImportError as e:
     raise e
 
 
-process_map: Dict[str, Type[dataflow.NodeProcess]] = {
+process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'LOAD_DATA': dataflow.LoadData,
     'FILTER_ROWS': dataflow.FilterRows,
     'GET_FEATURE': dataflow.GetFeature,
@@ -37,18 +37,18 @@ class MISSING:
 class DagNode:
     name: InitVar[str]
     parent_names: InitVar[List[str]]
-    processes: InitVar[List[dataflow.NodeProcess]]
+    processes: InitVar[List[dataflow.BaseNodeProcess]]
     required: InitVar[bool]
     export: InitVar[Union[str, List[str]]]
 
     graph: Dag = None
 
     _name: str = None
-    _processes: List[dataflow.NodeProcess] = field(default_factory=list)
+    _processes: List[dataflow.BaseNodeProcess] = field(default_factory=list)
     _required: bool = None
     _export: List[Callable] = None
 
-    _parent_nodes: Dict[str, dataflow.NodeProcess] = field(default_factory=dict, init=False)
+    _parent_nodes: Dict[str, dataflow.BaseNodeProcess] = field(default_factory=dict, init=False)
     _parent_results: Dict[str, Any] = field(default_factory=dict, init=False)
     _result: Any = field(default=MISSING, init=False)
     _is_dynamic: bool = field(default=MISSING, init=False)
@@ -92,7 +92,7 @@ class DagNode:
         self._is_dynamic = False
         return False
 
-    def __post_init__(self, name: str, parent_names: List[str], processes: List[dataflow.NodeProcess],
+    def __post_init__(self, name: str, parent_names: List[str], processes: List[dataflow.BaseNodeProcess],
                       required: bool, export: Union[str, List[str]]):
         self._name = name
         self._processes = processes
