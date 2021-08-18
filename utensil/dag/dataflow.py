@@ -541,3 +541,9 @@ class ChangeTypeTo(StatelessNodeProcess):
 
     def __call__(self, arr: Union[Feature, Target]):
         return arr.astype(self.to_type)
+
+
+@dataclass
+class StateUpdate(StatelessNodeProcess):
+    def __call__(self, *args, **kwargs):
+        return NotImplemented

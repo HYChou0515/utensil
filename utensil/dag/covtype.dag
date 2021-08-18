@@ -1,97 +1,118 @@
-NODES:
-  P0:
-    PROCESSES:
-      - LOAD_DATA:
-          URL: /home/hychou/Disk/K/data/covtype.bz2
-          FORMAT: SVMLIGHT
-          TARGET: Cover_Type
-          FEATURES:
-            0: Elevation
-            1: Aspect
-      - FILTER_ROWS:
-          FILTER_BY:
-            TARGET: [1, 2]
+DAGS:
+  BAYES_OPTIMIZATION:
+    SUPPLIES:
+      - MODEL_PARAM
+      - STATE
 
-  P1:
-    PARENTS: [P0]
-    PROCESSES:
-      - GET_FEATURE: Elevation
-      - LINEAR_NORMALIZE:
-          UPPER: { FROM: MAX, TO: 1 }
-          LOWER: { FROM: MIN, TO: 0 }
-  P2:
-    PARENTS: [P0]
-    PROCESSES:
-      - GET_FEATURE: Aspect
-      - LINEAR_NORMALIZE:
-          UPPER: { FROM: MAX, TO: 1 }
-          LOWER: { FROM: MIN, TO: 0 }
-  P3:
-    PARENTS: [P1, P2]
-    PROCESSES:
-      - MERGE_FEATURES
+    DEMANDS:
+      LAST_STATE: { BAYES_OPTIMIZATION: STATE }
+      NEW_SCORE: { MODEL_SCORE: TEST_SCORE }
 
-  P4:
-    PARENTS: [P0]
-    PROCESSES:
-      - GET_TARGET
-      - CHANGE_TYPE_TO: INTEGER
+    NODES:
+      STATE:
+        PARENTS: [LAST_STATE]
+        TRIGGERED_BY: [SWITCHON, LAST_STATE]
+        PROCESSES: STATE_UPDATE
 
-  DATASET:
-    PARENTS: [P4, P3]
-    PROCESSES:
-      - MAKE_DATASET
-      - SAMPLING_ROWS:
-          NUMBER: 1000
-          STRATIFIED: True
-          RETURN_REST: True
+      MODEL_PARAM:
+        PARENTS: [NEW_SCORE, STATE]
+        TRIGGERED_BY: [NEW_SCORE]
+        PROCESSES:
+          - PARAMETER_SEARCH:
+              SEARCH_MAP:
+                LEARNING_RATE:
+                  EXPONENTIAL_BETWEEN: { LEFT: 0.001, RIGHT: 0.2 }
+                MAX_DEPTH:
+                  UNIFORM_BETWEEN: { LEFT: 1, RIGHT: 10, TYPE: INTEGER }
+                N_ESTIMATORS:
+                  UNIFORM_BETWEEN: { LEFT: 5, RIGHT: 201, TYPE: INTEGER }
 
-  TRAIN_DATA:
-    PARENTS: [DATASET]
-    PROCESSES:
-      - GET_ITEM: SAMPLED
+  MODEL_SCORE:
+    SUPPLIES:
+      - TEST_SCORE
+    DEMANDS:
+        NEW_PARAM: { BAYES_OPTIMIZATION: MODEL_PARAM }
+    NODES:
+      TEST_SCORE:
+        PARENTS: [TEST_DATA, TEST_DATA, TRAINED_MODEL]
+        TRIGGERED_BY: [NEW_PARAM]
+        EXPORT: PRINT
+        PROCESSES:
+          - SCORE:
+              DATASET: TEST_DATA
+              METHODS: ACCURACY
 
-  TEST_DATA:
-    PARENTS: [DATASET]
-    PROCESSES:
-      - GET_ITEM: REST
+      TRAIN_SCORE:
+        PARENTS: [TRAIN_DATA, TRAIN_DATA, TRAINED_MODEL]
+        TRIGGERED_BY: [NEW_PARAM]
+        EXPORT: PRINT
+        PROCESSES:
+          - SCORE:
+              DATASET: TRAIN_DATA
+              METHODS: ACCURACY
 
-  MODEL_PARAM:
-    PROCESSES:
-      - PARAMETER_SEARCH:
-          SEARCH_MAP:
-            LEARNING_RATE:
-              EXPONENTIAL_BETWEEN: { LEFT: 0.001, RIGHT: 0.2 }
-            MAX_DEPTH:
-              UNIFORM_BETWEEN: { LEFT: 1, RIGHT: 10, TYPE: INTEGER }
-            N_ESTIMATORS:
-              UNIFORM_BETWEEN: { LEFT: 5, RIGHT: 201, TYPE: INTEGER }
+      RAW_MODEL:
+        PARENTS: [NEW_PARAM]
+        PROCESSES:
+          - MAKE_MODEL:
+              METHOD: XGBOOST_CLASSIFIER
+      P0:
+        PROCESSES:
+          - LOAD_DATA:
+              URL: /home/hychou/Disk/K/data/covtype.bz2
+              FORMAT: SVMLIGHT
+              TARGET: Cover_Type
+              FEATURES:
+                0: Elevation
+                1: Aspect
+          - FILTER_ROWS:
+              FILTER_BY:
+                TARGET: [1, 2]
 
-  RAW_MODEL:
-    PARENTS: [MODEL_PARAM]
-    PROCESSES:
-      - MAKE_MODEL:
-          METHOD: XGBOOST_CLASSIFIER
+      P1:
+        PARENTS: [P0]
+        PROCESSES:
+          - GET_FEATURE: Elevation
+          - LINEAR_NORMALIZE:
+              UPPER: { FROM: MAX, TO: 1 }
+              LOWER: { FROM: MIN, TO: 0 }
+      P2:
+        PARENTS: [P0]
+        PROCESSES:
+          - GET_FEATURE: Aspect
+          - LINEAR_NORMALIZE:
+              UPPER: { FROM: MAX, TO: 1 }
+              LOWER: { FROM: MIN, TO: 0 }
+      P3:
+        PARENTS: [P1, P2]
+        PROCESSES:
+          - MERGE_FEATURES
 
-  TRAINED_MODEL:
-    PARENTS: [RAW_MODEL, TRAIN_DATA]
-    PROCESSES:
-      - TRAIN
+      P4:
+        PARENTS: [P0]
+        PROCESSES:
+          - GET_TARGET
+          - CHANGE_TYPE_TO: INTEGER
 
-  TEST_SCORE:
-    PARENTS: [TEST_DATA, TEST_DATA, TRAINED_MODEL]
-    REQUIRED: True
-    EXPORT: PRINT
-    PROCESSES:
-      - SCORE:
-          DATASET: TEST_DATA
-          METHODS: ACCURACY
+      DATASET:
+        PARENTS: [P4, P3]
+        PROCESSES:
+          - MAKE_DATASET
+          - SAMPLING_ROWS:
+              NUMBER: 1000
+              STRATIFIED: True
+              RETURN_REST: True
 
-  TRAIN_SCORE:
-    PARENTS: [TRAIN_DATA, TRAIN_DATA, TRAINED_MODEL]
-    REQUIRED: True
-    EXPORT: PRINT
-    PROCESSES:
-      - SCORE:
-          DATASET: TRAIN_DATA
-          METHODS: ACCURACY
+      TRAIN_DATA:
+        PARENTS: [DATASET]
+        PROCESSES:
+          - GET_ITEM: SAMPLED
+
+      TEST_DATA:
+        PARENTS: [DATASET]
+        PROCESSES:
+          - GET_ITEM: REST
+
+      TRAINED_MODEL:
+        PARENTS: [RAW_MODEL, TRAIN_DATA]
+        PROCESSES: TRAIN
