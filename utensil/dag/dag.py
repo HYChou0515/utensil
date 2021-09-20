@@ -13,7 +13,7 @@ try:
 except ImportError as e:
     raise e
 
-SWITCHON = 'SWITCHON'
+SWITCHON = 'SWITCH_ON'
 
 process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'LOAD_DATA': dataflow.LoadData,
@@ -32,6 +32,8 @@ process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
     'SCORE': dataflow.Score,
     'SAMPLING_ROWS': dataflow.SamplingRows,
     'STATE_UPDATE': dataflow.StateUpdate,
+    'TIME_2': dataflow.Time2,
+    'ADD_1': dataflow.Add1,
 }
 
 
@@ -47,11 +49,20 @@ class DemandPort:
     _demand_node_name: str = field(init=False, repr=False)
 
     @classmethod
-    def from_dscp(cls, name: str, dscp: Dict):
-        if len(dscp) != 1:
-            raise SyntaxError(f'should be exactly one demand node for a demand port')
-        demand_port = cls(name)
-        demand_port._demand_dag_name, demand_port._demand_node_name = dscp.popitem()
+    def from_dscp(cls, name: str, dscp: Union[Dict, List]):
+        if isinstance(dscp, dict):
+            if len(dscp) != 1:
+                raise SyntaxError(f'should be exactly one demand node for a demand port')
+            demand_port = cls(name)
+            demand_port._demand_dag_name, demand_port._demand_node_name = dscp.popitem()
+        elif isinstance(dscp, list):
+            if len(dscp) != 2:
+                raise SyntaxError(f'should be exactly one demand node for a demand port '
+                                  f'(list representation should contains exactly two elements, dag name and node name)')
+            demand_port = cls(name)
+            demand_port._demand_dag_name, demand_port._demand_node_name = dscp
+        else:
+            raise NotImplementedError('dscp should be either dict or list')
         return demand_port
 
     def compile_demand_node(self, dag_map: Dict[str, Dag]):
@@ -163,15 +174,24 @@ class ProcessNode:
 
     @classmethod
     def from_dscp(cls, name: str, dscp: Dict[str, Any]):
-        parents = dscp.pop('PARENTS', [])  # empty parents means it is a starting point
+        parents = dscp.pop('PARENTS', [])
         processes = dscp.pop('PROCESSES', [])
-        triggered_by = dscp.pop('TRIGGERED_BY', [])
+        triggered_by = dscp.pop('TRIGGERS', [])
         export = dscp.pop('EXPORT', [])
 
         warn_left_keys(dscp)
 
+        if isinstance(parents, str):
+            parents = [parents]
+
+        if isinstance(processes, str):
+            processes = [processes]
+
+        if isinstance(triggered_by, str):
+            triggered_by = [triggered_by]
+
         node_processes = []
-        for proc_dscp in [processes] if isinstance(processes, str) else processes:
+        for proc_dscp in processes:
             if isinstance(proc_dscp, dict):
                 if len(proc_dscp) != 1:
                     raise ValueError
@@ -186,6 +206,7 @@ class ProcessNode:
         return cls(name, parents=parents, processes=node_processes,
                    triggered_by=triggered_by, export=export)
 
+starting_nodes =  []
 
 @dataclass
 class Dag:
@@ -240,6 +261,7 @@ class Dag:
             else:
                 raise KeyError(f'supply name \'{supply.node}\' not found in nodes')
         # compile nodes
+        is_starting_node = False
         for node in nodes.values():
             for i, parent_name in enumerate(node.parents):
                 if parent_name in nodes:
@@ -252,15 +274,20 @@ class Dag:
                 if trigger_name in demands:
                     node.triggered_by[i] = demands[trigger_name]
                 elif trigger_name == SWITCHON:
-                    pass
+                    is_starting_node = True
                 else:
                     raise KeyError(f'trigger \'{trigger_name}\' is not \'{SWITCHON}\' and not found in demands')
 
-        return cls(name, supplies, demands, nodes)
+        node = cls(name, supplies, demands, nodes)
+        if is_starting_node:
+            starting_nodes.append(node)
+        return node
 
 
 dag_path = 'utensil/dag/covtype.dag'
 dag_path = 'covtype.dag'
+dag_path = 'utensil/dag/simple.dag'
+dag_path = 'simple.dag'
 with open(dag_path, 'r') as f:
     main_dscp = yaml.safe_load(f)
 
@@ -271,3 +298,6 @@ for dag_name, dag_dscp in main_dscp.pop('DAGS', {}).items():
     dags[dag_name] = Dag.from_dscp(dag_name, dag_dscp)
 for dag in dags.values():
     dag.compile_demand_port(dags)
+
+
+node_info = {}

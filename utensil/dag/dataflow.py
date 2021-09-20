@@ -547,3 +547,23 @@ class ChangeTypeTo(StatelessNodeProcess):
 class StateUpdate(StatelessNodeProcess):
     def __call__(self, *args, **kwargs):
         return NotImplemented
+
+
+@dataclass
+class Add1(StatelessNodeProcess):
+    init: int = None
+
+    def __post_init__(self):
+        self.init = self.params.pop('INIT', 0)
+        warn_left_keys(self.params)
+
+    def __call__(self, x):
+        if x is None:
+            return self.init
+        return x+1
+
+
+@dataclass
+class Time2(StatelessNodeProcess):
+    def __call__(self, x):
+        return 2*x
