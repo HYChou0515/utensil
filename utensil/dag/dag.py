@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import datetime
 import re
+import time
 from abc import abstractmethod
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass, field, InitVar
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, SimpleQueue
+from queue import Empty
 from threading import Thread
 from typing import List, Dict, Type, Any, Union, Callable, Tuple, Optional
 
@@ -183,15 +185,18 @@ class Parents:
 
 
 class Node(BaseNode):
-    def __init__(self, name: str, init: bool,
+    def __init__(self, name: str, init: bool, end: bool,
                  proc_func: NodeProcessFunction,
+                 end_q: SimpleQueue,
                  parents: Union[None, Parents] = None):
         super(self.__class__, self).__init__()
         self.name = name
         self.proc_func = proc_func
         self.init = init
+        self.end = end
         self.parents = Parents() if parents is None else parents
         self.children = []
+        self.end_q = end_q
 
         self._qs: Dict[str, Queue] = {name: Queue() for name in self.parents.node_names}
 
@@ -208,21 +213,40 @@ class Node(BaseNode):
             proc.start()
         if len(self._qs) == 0:
             return
-        while True:
-            inputs = {}
+
+        def build_inputs(_inputs):
+            _ok = True
             for node_name, q in self._qs.items():
-                inputs[node_name] = q.get()
+                if node_name in _inputs:
+                    # got this param already
+                    continue
+                try:
+                    _inputs[node_name] = q.get(block=False)
+                except Empty:
+                    _ok = False
+            return _ok, _inputs
+
+        inputs = {}
+        while self.end_q.empty():
+            ok, inputs = build_inputs(inputs)
+            if not ok:
+                time.sleep(0.1)
+                continue
             args = [inputs.pop(name) for name in self.parents.args]
             kwargs = {k: inputs.pop(name) for k, name in self.parents.kwargs.items()}
             proc = process_builder.build(*args, **kwargs)
             proc.start()
 
+            if self.end:
+                self.end_q.put(object)
+
     @classmethod
-    def parse(cls, name, o):
+    def parse(cls, name, o, end_q: SimpleQueue):
         if not isinstance(o, dict):
             raise RuntimeError('E5')
         proc_func = None
         init = False
+        end = False
         parents = None
         for k, v in o.items():
             if k == 'PROCESS':
@@ -232,13 +256,19 @@ class Node(BaseNode):
                     init = True
             elif k == 'PARENTS':
                 parents = Parents.parse(v)
-        return cls(name, init, proc_func, parents)
+            elif k == 'END':
+                if v:
+                    end = True
+            else:
+                raise RuntimeError('E13')
+        return cls(name=name, init=init, end=end, proc_func=proc_func, end_q=end_q, parents=parents)
 
 
 class Dag:
     def __init__(self, nodes: List[Node]):
         self.nodes = {}
         self.init_nodes = []
+        self.processes: List[Process] = []
         for node in nodes:
             if node.name in self.nodes:
                 raise RuntimeError('E6')
@@ -254,12 +284,16 @@ class Dag:
     def parse(cls, o):
         if not isinstance(o, dict):
             raise RuntimeError('E7')
-        nodes = [Node.parse(k, v) for k, v in o.items()]
+        end_q = SimpleQueue()
+        nodes = [Node.parse(k, v, end_q) for k, v in o.items()]
         return cls(nodes)
 
     def start(self):
         for node in self.nodes.values():
+            self.processes.append(node)
             node.start()
+        for proc in self.processes:
+            proc.join()
 
 
 dag_path = 'utensil/dag/simple.dag'
