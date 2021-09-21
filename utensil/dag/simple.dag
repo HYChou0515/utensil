@@ -1,0 +1,38 @@
+DAG:
+  CONSTANT_1:
+    PROCESS:
+      CONSTANT:
+        VALUE: 3
+    INIT: true
+  CONSTANT_2:
+    PROCESS:
+      CONSTANT:
+        VALUE: 2
+    INIT: true
+  ADD_1:
+    PROCESS:
+      ADD_VALUE:
+        VALUE: 5
+    PARENTS:
+      A: CONSTANT_1
+  ADD:
+    PROCESS:
+      ADD
+    PARENTS:
+      A: ADD_1
+      B: CONSTANT_2
+  TIMES_1:
+    PROCESS:
+      TIME_VALUE:
+        VALUE: 3
+    PARENTS:
+      A: CONSTANT_1
+  SUM:
+    PROCESS:
+      LIST_ADD_SUM
+    PARENTS:
+      - CONSTANT_1
+      - CONSTANT_2
+      - ADD_1
+      - ADD
+      - ADD: TIMES_1

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import datetime
-from collections import namedtuple
+import re
+from abc import abstractmethod
+from collections import namedtuple, defaultdict
 from dataclasses import dataclass, field, InitVar
-from typing import List, Dict, Type, Any, Union, Callable, Tuple
+from multiprocessing import Process, Queue
+from threading import Thread
+from typing import List, Dict, Type, Any, Union, Callable, Tuple, Optional
 
 from utensil.dag import dataflow
 from utensil.general import warn_left_keys
@@ -13,291 +17,256 @@ try:
 except ImportError as e:
     raise e
 
-SWITCHON = 'SWITCH_ON'
 
-process_map: Dict[str, Type[dataflow.BaseNodeProcess]] = {
-    'LOAD_DATA': dataflow.LoadData,
-    'FILTER_ROWS': dataflow.FilterRows,
-    'GET_FEATURE': dataflow.GetFeature,
-    'GET_ITEM': dataflow.GetItem,
-    'LINEAR_NORMALIZE': dataflow.LinearNormalize,
-    'MERGE_FEATURES': dataflow.MergeFeatures,
-    'MAKE_DATASET': dataflow.MakeDataset,
-    'MAKE_MODEL': dataflow.MakeModel,
-    'GET_TARGET': dataflow.GetTarget,
-    'CHANGE_TYPE_TO': dataflow.ChangeTypeTo,
-    'TRAIN': dataflow.Train,
-    'PREDICT': dataflow.Predict,
-    'PARAMETER_SEARCH': dataflow.ParameterSearch,
-    'SCORE': dataflow.Score,
-    'SAMPLING_ROWS': dataflow.SamplingRows,
-    'STATE_UPDATE': dataflow.StateUpdate,
-    'TIME_2': dataflow.Time2,
-    'ADD_1': dataflow.Add1,
-}
-
-
-class MISSING:
+class BaseNode(Process):
     pass
 
 
+class BaseNodeProcess(Process):
+    pass
+
+
+def camel_to_snake(s):
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', s)
+
+
+class NodeProcessFunction:
+    @classmethod
+    def parse(cls, o):
+        proc_map = {}
+        for subc in cls.__subclasses__():
+            proc_map[camel_to_snake(subc.__name__).upper()] = subc
+        if isinstance(o, str):
+            return proc_map[o]()
+        elif isinstance(o, dict):
+            if len(o) != 1:
+                raise RuntimeError('E3')
+            name, params = o.popitem()
+            params = {k.lower(): v for k, v in params.items()}
+            return proc_map[name](**params)
+        else:
+            raise RuntimeError('E4')
+
+    @abstractmethod
+    def main(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def __call__(self, *args, **kwargs):
+        print(self.main.__code__.co_varnames)
+        params = [kwargs.pop(k) for k in self.main.__code__.co_varnames if k in kwargs]
+        return self.main(*params, *args, **kwargs)
+
+
 @dataclass
-class DemandPort:
-    name: str
-    demand_node: ProcessNode = MISSING
-    _demand_dag_name: str = field(init=False, repr=False)
-    _demand_node_name: str = field(init=False, repr=False)
+class NodeProcessMeta:
+    node_name: str
+    children: List[Node]
+    process_func: NodeProcessFunction
+
+
+class NodeProcessBuilder:
+    def __init__(self):
+        self.meta: Optional[NodeProcessMeta] = None
+
+    def build(self, *args, **kwargs):
+        if self.meta is None:
+            raise RuntimeError('E12')
+        kwargs = {k.lower(): v for k, v in kwargs.items()}
+        proc = NodeProcess(self.meta, *args, **kwargs)
+        return proc
+
+
+class NodeProcess(BaseNodeProcess):
+    def __init__(self, meta, *args, **kwargs):
+        super(self.__class__, self).__init__()
+        self.meta = meta
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self) -> None:
+        print(self.meta.node_name, self.args, self.kwargs)
+        ret = self.meta.process_func(*self.args, **self.kwargs)
+        print(f'{self.meta.node_name}: {ret}')
+        for child in self.meta.children:
+            child.push(ret, self.meta.node_name)
+
+
+# region NodeProcessFunction Impl
+
+
+class Constant(NodeProcessFunction):
+    def __init__(self, value):
+        super(self.__class__, self).__init__()
+        self.value = value
+
+    def main(self):
+        return self.value
+
+
+class AddValue(NodeProcessFunction):
+    def __init__(self, value):
+        super(self.__class__, self).__init__()
+        self.value = value
+
+    def main(self, a):
+        return a + self.value
+
+
+class Add(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
+
+    def main(self, a, b):
+        return a + b
+
+
+class TimeValue(NodeProcessFunction):
+    def __init__(self, value):
+        super(self.__class__, self).__init__()
+        self.value = value
+
+    def main(self, a):
+        return a * self.value
+
+
+class ListAddSum(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
+
+    def main(self, add, *args):
+        return sum([a + add for a in args])
+
+
+class Sum(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
+
+    def main(self, l):
+        return sum(l)
+
+
+# endregion
+
+
+class Parents:
+    def __init__(self, args=None, kwargs=None):
+        self.args = [] if args is None else args
+        self.kwargs = {} if kwargs is None else kwargs
+        self.node_names = set()
+        for n in self.args:
+            if n in self.node_names:
+                raise RuntimeError('E8')
+            self.node_names.add(n)
+        for v in self.kwargs.values():
+            if v in self.node_names:
+                raise RuntimeError('E9')
+            self.node_names.add(v)
 
     @classmethod
-    def from_dscp(cls, name: str, dscp: Union[Dict, List]):
-        if isinstance(dscp, dict):
-            if len(dscp) != 1:
-                raise SyntaxError(f'should be exactly one demand node for a demand port')
-            demand_port = cls(name)
-            demand_port._demand_dag_name, demand_port._demand_node_name = dscp.popitem()
-        elif isinstance(dscp, list):
-            if len(dscp) != 2:
-                raise SyntaxError(f'should be exactly one demand node for a demand port '
-                                  f'(list representation should contains exactly two elements, dag name and node name)')
-            demand_port = cls(name)
-            demand_port._demand_dag_name, demand_port._demand_node_name = dscp
+    def parse(cls, o):
+        if isinstance(o, dict):
+            return cls([], o)
+        elif isinstance(o, list):
+            args = []
+            kwargs = {}
+            for item in o:
+                if isinstance(item, str):
+                    args.append(item)
+                elif isinstance(item, dict):
+                    kwargs = {**item, **kwargs}
+                else:
+                    raise RuntimeError('E1')
+            print(args, kwargs)
+            return cls(args, kwargs)
         else:
-            raise NotImplementedError('dscp should be either dict or list')
-        return demand_port
-
-    def compile_demand_node(self, dag_map: Dict[str, Dag]):
-        self.demand_node = dag_map[self._demand_dag_name].supplies[self._demand_node_name].node
-        del self._demand_dag_name
-        del self._demand_node_name
+            raise RuntimeError('E2')
 
 
-@dataclass
-class SupplyPort:
-    node: Union[str, ProcessNode]
+class Node(BaseNode):
+    def __init__(self, name: str, init: bool,
+                 proc_func: NodeProcessFunction,
+                 parents: Union[None, Parents] = None):
+        super(self.__class__, self).__init__()
+        self.name = name
+        self.proc_func = proc_func
+        self.init = init
+        self.parents = Parents() if parents is None else parents
+        self.children = []
 
+        self._qs: Dict[str, Queue] = {name: Queue() for name in self.parents.node_names}
 
-@dataclass
-class ProcessNode:
-    name: InitVar[str]
-    parents: InitVar[List[Union[str, ProcessNode, DemandPort]]]
-    processes: InitVar[List[dataflow.BaseNodeProcess]]
-    triggered_by: InitVar[Union[str, List[DemandPort]]]
-    export: InitVar[Union[str, List[str]]]
+    def push(self, param, caller_name):
+        self._qs[caller_name].put(param)
 
-    _name: str = field(init=False)
-    _processes: List[dataflow.BaseNodeProcess] = field(default_factory=list, init=False, repr=False)
-    _triggered_by: Union[str, List[DemandPort]] = field(default_factory=list, init=False, repr=False)
-    _export: List[Callable] = field(default_factory=list, init=False, repr=False)
+    def run(self) -> None:
+        meta = NodeProcessMeta(self.name, self.children, self.proc_func)
+        process_builder = NodeProcessBuilder()
+        process_builder.meta = meta
 
-    _parents: List[Union[str, ProcessNode]] = field(default_factory=list, init=False, repr=False)
-    _parent_results: Dict[str, Any] = field(default_factory=dict, init=False, repr=False)
-    _result: Any = field(default=MISSING, init=False, repr=False)
-    _is_dynamic: bool = field(default=MISSING, init=False, repr=False)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def processes(self):
-        return self._processes
-
-    @property
-    def parents(self):
-        return self._parents
-
-    @property
-    def parent_names(self):
-        return [p.name for p in self.parents]
-
-    @property
-    def triggered_by(self):
-        return self._triggered_by
-
-    @property
-    def result(self):
-        return self._result
-
-    @property
-    def export(self):
-        return self._export
-
-    @property
-    def is_dynamic(self):
-        if self._is_dynamic is not MISSING:
-            return self._is_dynamic
-        if len(self.triggered_by) > 0:
-            self._is_dynamic = True
-            return self._is_dynamic
-        for parent in self.parents:
-            if parent.is_dynamic:
-                self._is_dynamic = True
-                return self._is_dynamic
-        self._is_dynamic = False
-        return False
-
-    def __post_init__(self, name: str, parents: List[Union[str, ProcessNode]],
-                      processes: List[dataflow.BaseNodeProcess],
-                      triggered_by: Union[str, List[DemandPort]], export: Union[str, List[str]]):
-        self._name = name
-        self._parents = parents
-        self._processes = processes
-        self._triggered_by = triggered_by
-        for exp in export if isinstance(export, list) else [export]:
-            if exp == 'PRINT':
-                self._export.append(print)
-            else:
-                raise ValueError
-
-    def _print(self, s):
-        pass
-
-    def run(self):
-        if self.result is MISSING or self.is_dynamic:
-            node_inputs = [parent.run() for parent in self.parents]
-            start_time = datetime.datetime.now()
-            if len(self._processes) > 0:
-                # first process
-                node_output = self._processes[0](*node_inputs)
-                # second and after process
-                for process in self._processes[1:]:
-                    node_output = process(node_output)
-            else:
-                node_output = None
-            self._result = node_output
-            self._print(f'{self.name}: {datetime.datetime.now() - start_time}')
-        else:
-            self._print(f'{self.name}: cache read')
-        for export in self.export:
-            export(self.result)
-        return self.result
+        if self.init:
+            proc = process_builder.build()
+            proc.start()
+        if len(self._qs) == 0:
+            return
+        while True:
+            inputs = {}
+            for node_name, q in self._qs.items():
+                inputs[node_name] = q.get()
+            args = [inputs.pop(name) for name in self.parents.args]
+            kwargs = {k: inputs.pop(name) for k, name in self.parents.kwargs.items()}
+            proc = process_builder.build(*args, **kwargs)
+            proc.start()
 
     @classmethod
-    def from_dscp(cls, name: str, dscp: Dict[str, Any]):
-        parents = dscp.pop('PARENTS', [])
-        processes = dscp.pop('PROCESSES', [])
-        triggered_by = dscp.pop('TRIGGERS', [])
-        export = dscp.pop('EXPORT', [])
+    def parse(cls, name, o):
+        if not isinstance(o, dict):
+            raise RuntimeError('E5')
+        proc_func = None
+        init = False
+        parents = None
+        for k, v in o.items():
+            if k == 'PROCESS':
+                proc_func = NodeProcessFunction.parse(v)
+            elif k == 'INIT':
+                if v:
+                    init = True
+            elif k == 'PARENTS':
+                parents = Parents.parse(v)
+        return cls(name, init, proc_func, parents)
 
-        warn_left_keys(dscp)
 
-        if isinstance(parents, str):
-            parents = [parents]
-
-        if isinstance(processes, str):
-            processes = [processes]
-
-        if isinstance(triggered_by, str):
-            triggered_by = [triggered_by]
-
-        node_processes = []
-        for proc_dscp in processes:
-            if isinstance(proc_dscp, dict):
-                if len(proc_dscp) != 1:
-                    raise ValueError
-                pname, params = proc_dscp.popitem()
-                process_class = process_map[pname]
-                params = {} if params is None else params
-            elif isinstance(proc_dscp, str):
-                process_class = process_map[proc_dscp]
-                params = {}
-            process = process_class(params)  # noqa: process_class is a dataclasses
-            node_processes.append(process)
-        return cls(name, parents=parents, processes=node_processes,
-                   triggered_by=triggered_by, export=export)
-
-starting_nodes =  []
-
-@dataclass
 class Dag:
-    name: str
-    supplies: Dict[str, Union[str, SupplyPort]]
-    demands: Dict[str, Union[str, DemandPort]]
-    nodes: Dict[str, Union[str, ProcessNode]]
+    def __init__(self, nodes: List[Node]):
+        self.nodes = {}
+        self.init_nodes = []
+        for node in nodes:
+            if node.name in self.nodes:
+                raise RuntimeError('E6')
+            self.nodes[node.name] = node
+            if node.init:
+                self.init_nodes.append(node.name)
 
-    def __getitem__(self, item):
-        return self.nodes[item]
-
-    def _required_nodes(self):
-        for node in self.nodes.values():
-            if node.required:
-                yield node
-
-    def add_node(self, node):
-        if node.name in self.nodes:
-            raise ValueError
-        if node.graph is not None:
-            raise ValueError
-        node.graph = self
-        self.nodes[node.name] = node
-
-    def run(self):
-        for node in self._required_nodes():
-            node.run()
-
-    def compile_demand_port(self, dag_map: Dict[str, Dag]):
-        for demand in self.demands.values():
-            demand.compile_demand_node(dag_map)
+        for node in nodes:
+            for name in node.parents.node_names:
+                self.nodes[name].children.append(node)
 
     @classmethod
-    def from_dscp(cls, name: str, dscp: Dict):
-        supplies = {name: SupplyPort(name) for name in dscp.pop('SUPPLIES', [])}
-        demands = {name: DemandPort.from_dscp(name, dscp) for name, dscp in dscp.pop('DEMANDS', {}).items()}
-        nodes = {name: ProcessNode.from_dscp(name, dscp) for name, dscp in dscp.pop('NODES', {}).items()}
-        warn_left_keys(dscp)
+    def parse(cls, o):
+        if not isinstance(o, dict):
+            raise RuntimeError('E7')
+        nodes = [Node.parse(k, v) for k, v in o.items()]
+        return cls(nodes)
 
-        # syntax check
-        # node names and demand names should be disjoint
-        if not nodes.keys().isdisjoint(demands.keys()):
-            raise SyntaxError('node names and demand names are not disjoint')
-        # SWITCHON should be reserved
-        if SWITCHON in nodes or SWITCHON in demands:
-            raise SyntaxError(f'\'{SWITCHON}\' is a reserved for triggers')
-
-        # compile supplies
-        for supply in supplies.values():
-            if supply.node in nodes:
-                supply.node = nodes[supply.node]
-            else:
-                raise KeyError(f'supply name \'{supply.node}\' not found in nodes')
-        # compile nodes
-        is_starting_node = False
-        for node in nodes.values():
-            for i, parent_name in enumerate(node.parents):
-                if parent_name in nodes:
-                    node.parents[i] = nodes[parent_name]
-                elif parent_name in demands:
-                    node.parents[i] = demands[parent_name]
-                else:
-                    raise KeyError(f'node parent \'{parent_name}\' not found in nodes and demands')
-            for i, trigger_name in enumerate(node.triggered_by):
-                if trigger_name in demands:
-                    node.triggered_by[i] = demands[trigger_name]
-                elif trigger_name == SWITCHON:
-                    is_starting_node = True
-                else:
-                    raise KeyError(f'trigger \'{trigger_name}\' is not \'{SWITCHON}\' and not found in demands')
-
-        node = cls(name, supplies, demands, nodes)
-        if is_starting_node:
-            starting_nodes.append(node)
-        return node
+    def start(self):
+        for node in self.nodes.values():
+            node.start()
 
 
-dag_path = 'utensil/dag/covtype.dag'
-dag_path = 'covtype.dag'
 dag_path = 'utensil/dag/simple.dag'
 dag_path = 'simple.dag'
 with open(dag_path, 'r') as f:
     main_dscp = yaml.safe_load(f)
 
-dags: Dict[str, Dag] = {}
-for dag_name, dag_dscp in main_dscp.pop('DAGS', {}).items():
-    if dag_name in dags:
-        raise SyntaxError(f'duplicate dag name {dag_name} in DAG definition')
-    dags[dag_name] = Dag.from_dscp(dag_name, dag_dscp)
-for dag in dags.values():
-    dag.compile_demand_port(dags)
-
-
+dag = Dag.parse(main_dscp['DAG'])
+dag.start()
 node_info = {}
