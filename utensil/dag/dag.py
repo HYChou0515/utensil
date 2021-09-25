@@ -63,6 +63,7 @@ class NodeProcessFunction:
 @dataclass
 class NodeProcessMeta:
     node_name: str
+    triggerings: List[Node]
     children: List[Node]
     process_func: NodeProcessFunction
 
@@ -80,9 +81,9 @@ class NodeProcessBuilder:
 
 
 class NodeProcess(BaseNodeProcess):
-    def __init__(self, meta, *args, **kwargs):
+    def __init__(self, meta: NodeProcessMeta, *args, **kwargs):
         super(self.__class__, self).__init__()
-        self.meta = meta
+        self.meta: NodeProcessMeta = meta
         self.args = args
         self.kwargs = kwargs
 
@@ -90,6 +91,9 @@ class NodeProcess(BaseNodeProcess):
         print(self.meta.node_name, self.args, self.kwargs)
         ret = self.meta.process_func(*self.args, **self.kwargs)
         print(f'{self.meta.node_name}: {ret}')
+
+        for triggering in self.meta.triggerings:
+            triggering.trigger(ret, self.meta.node_name)
         for child in self.meta.children:
             child.push(ret, self.meta.node_name)
 
@@ -236,43 +240,65 @@ class Parents:
                     kwargs = {**item, **kwargs}
                 else:
                     raise RuntimeError('E1')
-            print(args, kwargs)
             return cls(args, kwargs)
         else:
             raise RuntimeError('E2')
 
 
+class Triggers(Parents):
+    @classmethod
+    def parse(cls, o):
+        if isinstance(o, str):
+            return cls([o], {})
+        elif isinstance(o, list):
+            return cls(o, {})
+        else:
+            raise RuntimeError('E20')
+
+
+SWITCHON = 'SWITCHON'
+
+
+@dataclass
+class TriggerToken:
+    pass
+
+
 class Node(BaseNode):
-    def __init__(self, name: str, init: bool, end: bool,
+    def __init__(self, name: str, end: bool,
                  proc_func: NodeProcessFunction,
                  end_q: SimpleQueue,
+                 triggers: Union[None, Triggers] = None,
                  parents: Union[None, Parents] = None):
         super(self.__class__, self).__init__()
         self.name = name
         self.proc_func = proc_func
-        self.init = init
         self.end = end
+        self.triggers = Triggers() if triggers is None else triggers
         self.parents = Parents() if parents is None else parents
         self.children = []
+        self.triggerings = []
         self.end_q = end_q
 
+        self._tqs: Dict[str, Queue] = {k: Queue() for k in self.triggers.parent_keys}
         self._qs: Dict[str, Queue] = {k: Queue() for k in self.parents.parent_keys}
 
-    def push(self, param, caller_name):
-        def getitem(_p, _attr):
-            _attr = _attr.lower()
-            if isinstance(_p, dict):
-                return _p[_attr]
-            else:
-                return _p.__getattribute__(_attr)
+    @staticmethod
+    def _getitem(_p, _attr):
+        _attr = _attr.lower()
+        if isinstance(_p, dict):
+            return _p[_attr]
+        else:
+            return _p.__getattribute__(_attr)
 
+    def push(self, param, caller_name):
         for parent_key, parent_spec in self.parents.node_map[caller_name]:
             c = param
             for attr in parent_spec.flow_condition:
-                c = getitem(c, attr)
+                c = self._getitem(c, attr)
             v = param
             for attr in parent_spec.flow_use:
-                v = getitem(v, attr)
+                v = self._getitem(v, attr)
 
             if len(parent_spec.flows) == 0:
                 self._qs[parent_key].put(v)
@@ -281,37 +307,59 @@ class Node(BaseNode):
                     self._qs[parent_key].put(v)
                     break  # only need to put one
 
+    def trigger(self, param, caller_name):
+        # triggered by unexpected caller is currently considered fine, e.g. SWITCHON
+        if caller_name not in self.triggers.node_map:
+            return
+        for parent_key, parent_spec in self.triggers.node_map[caller_name]:
+            c = param
+            for attr in parent_spec.flow_condition:
+                c = self._getitem(c, attr)
+            if len(parent_spec.flows) == 0:
+                self._tqs[parent_key].put(TriggerToken())
+            for flow in parent_spec.flows:
+                if str(c) == flow:
+                    self._tqs[parent_key].put(TriggerToken())
+                    break  # only need to put one
+
     def run(self) -> None:
-        meta = NodeProcessMeta(self.name, self.children, self.proc_func)
+        meta = NodeProcessMeta(self.name, self.triggerings, self.children, self.proc_func)
         process_builder = NodeProcessBuilder()
         process_builder.meta = meta
 
-        if self.init:
-            proc = process_builder.build()
-            proc.start()
-        if len(self._qs) == 0:
-            return
-
-        def build_inputs(_inputs):
+        def check_queues(_q_vals, qs: Dict[str, Queue]):
             _ok = True
-            for parent_key, q in self._qs.items():
-                if parent_key in _inputs:
-                    # got this param already
+            for key, q in qs.items():
+                if key in _q_vals:
+                    # got this key already
                     continue
                 try:
-                    _inputs[parent_key] = q.get(block=False)
+                    _q_vals[key] = q.get(block=False)
                 except Empty:
                     _ok = False
-            return _ok, _inputs
+            return _ok, _q_vals
 
         inputs = {}
+        triggered = {}
         while self.end_q.empty():
-            ok, inputs = build_inputs(inputs)
-            if not ok:
+            triggers_ok, triggered = check_queues(triggered, self._tqs)
+            parents_ok, inputs = check_queues(inputs, self._qs)
+
+            # if there's no triggers defined, use parents as triggers
+            if len(self._tqs) == 0:
+                triggers_ok = parents_ok
+
+            # if not getting triggered, sleep and try again
+            if not triggers_ok:
                 time.sleep(0.1)
                 continue
-            args = [inputs.pop(i) for i in range(len(self.parents.args))]
-            kwargs = {k: inputs.pop(k) for k in self.parents.kwargs.keys()}
+
+            # if getting triggered, reset triggers but not inputs
+            triggered = {}
+
+            # if triggers ok but parents not ok, use whatever it have
+            args = [inputs.pop(i) for i in range(len(self.parents.args)) if i in inputs]
+            kwargs = {k: inputs.pop(k) for k in self.parents.kwargs.keys() if k in inputs}
             proc = process_builder.build(*args, **kwargs)
             proc.start()
 
@@ -320,18 +368,19 @@ class Node(BaseNode):
 
     @classmethod
     def parse(cls, name, o, end_q: SimpleQueue):
+        if name == SWITCHON:
+            raise RuntimeError('E21')
         if not isinstance(o, dict):
             raise RuntimeError('E5')
         proc_func = None
-        init = False
+        triggers = None
         end = False
         parents = None
         for k, v in o.items():
             if k == 'PROCESS':
                 proc_func = NodeProcessFunction.parse(v)
-            elif k == 'INIT':
-                if v:
-                    init = True
+            elif k == 'TRIGGERS':
+                triggers = Triggers.parse(v)
             elif k == 'PARENTS':
                 parents = Parents.parse(v)
             elif k == 'END':
@@ -339,22 +388,23 @@ class Node(BaseNode):
                     end = True
             else:
                 raise RuntimeError('E13')
-        return cls(name=name, init=init, end=end, proc_func=proc_func, end_q=end_q, parents=parents)
+        return cls(name=name, triggers=triggers, end=end, proc_func=proc_func, end_q=end_q, parents=parents)
 
 
 class Dag:
     def __init__(self, nodes: List[Node]):
         self.nodes = {}
-        self.init_nodes = []
         self.processes: List[Process] = []
         for node in nodes:
             if node.name in self.nodes:
                 raise RuntimeError('E6')
             self.nodes[node.name] = node
-            if node.init:
-                self.init_nodes.append(node.name)
 
         for node in nodes:
+            for name in node.triggers.node_map.keys():
+                if name == SWITCHON:
+                    continue
+                self.nodes[name].triggerings.append(node)
             for name in node.parents.node_map.keys():
                 self.nodes[name].children.append(node)
 
@@ -370,6 +420,8 @@ class Dag:
         for node in self.nodes.values():
             self.processes.append(node)
             node.start()
+        for node in self.nodes.values():
+            node.trigger(TriggerToken(), SWITCHON)
         for proc in self.processes:
             proc.join()
 

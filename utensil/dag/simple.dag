@@ -3,12 +3,12 @@ DAG:
     PROCESS:
       CONSTANT:
         VALUE: 3
-    INIT: true
+    TRIGGERS: SWITCHON | IF_1.C/False=V
   CONSTANT_2:
     PROCESS:
       CONSTANT:
         VALUE: 2
-    INIT: true
+    TRIGGERS: SWITCHON | IF_1.C/False=V
   ADD_1:
     PROCESS:
       ADD_VALUE:
