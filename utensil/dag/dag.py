@@ -1,25 +1,15 @@
 from __future__ import annotations
 
-import datetime
 import itertools
 import re
 import time
 from abc import abstractmethod
-from collections import namedtuple, defaultdict
-from dataclasses import dataclass, field, InitVar
+from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Process, Queue, SimpleQueue
 from queue import Empty
-from threading import Thread
-from typing import List, Dict, Type, Any, Union, Callable, Tuple, Optional
-
-from utensil.dag import dataflow
-from utensil.general import warn_left_keys
-
-try:
-    import yaml
-except ImportError as e:
-    raise e
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class BaseNode(Process):
@@ -31,7 +21,7 @@ class BaseNodeProcess(Process):
 
 
 def camel_to_snake(s):
-    return re.sub(r'(?<!^)(?=[A-Z])', '_', s)
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", s)
 
 
 class NodeProcessFunction:
@@ -44,12 +34,12 @@ class NodeProcessFunction:
             return proc_map[o]()
         elif isinstance(o, dict):
             if len(o) != 1:
-                raise RuntimeError('E3')
+                raise RuntimeError("E3")
             name, params = o.popitem()
             params = {k.lower(): v for k, v in params.items()}
-            return proc_map[name](**params)
+            return proc_map[name](**params)  # noqa
         else:
-            raise RuntimeError('E4')
+            raise RuntimeError("E4")
 
     @abstractmethod
     def main(self, *args, **kwargs):
@@ -74,7 +64,7 @@ class NodeProcessBuilder:
 
     def build(self, *args, **kwargs):
         if self.meta is None:
-            raise RuntimeError('E12')
+            raise RuntimeError("E12")
         kwargs = {k.lower(): v for k, v in kwargs.items()}
         proc = NodeProcess(self.meta, *args, **kwargs)
         return proc
@@ -90,7 +80,7 @@ class NodeProcess(BaseNodeProcess):
     def run(self) -> None:
         print(self.meta.node_name, self.args, self.kwargs)
         ret = self.meta.process_func(*self.args, **self.kwargs)
-        print(f'{self.meta.node_name}: {ret}')
+        print(f"{self.meta.node_name}: {ret}")
 
         for triggering in self.meta.triggerings:
             triggering.trigger(ret, self.meta.node_name)
@@ -98,94 +88,15 @@ class NodeProcess(BaseNodeProcess):
             child.push(ret, self.meta.node_name)
 
 
-# region NodeProcessFunction Impl
-
-
-class Constant(NodeProcessFunction):
-    def __init__(self, value):
-        super(self.__class__, self).__init__()
-        self.value = value
-
-    def main(self):
-        return self.value
-
-
-class AddValue(NodeProcessFunction):
-    def __init__(self, value):
-        super(self.__class__, self).__init__()
-        self.value = value
-
-    def main(self, a):
-        return a + self.value
-
-
-class Add(NodeProcessFunction):
-    def __init__(self):
-        super(self.__class__, self).__init__()
-
-    def main(self, a, b):
-        return a + b
-
-
-class TimeValue(NodeProcessFunction):
-    def __init__(self, value):
-        super(self.__class__, self).__init__()
-        self.value = value
-
-    def main(self, a):
-        return a * self.value
-
-
-class ListAddSum(NodeProcessFunction):
-    def __init__(self):
-        super(self.__class__, self).__init__()
-
-    def main(self, add, *args):
-        return sum([a + add for a in args])
-
-
-class Sum(NodeProcessFunction):
-    def __init__(self):
-        super(self.__class__, self).__init__()
-
-    def main(self, l):
-        return sum(l)
-
-
-@dataclass
-class SimpleCondition:
-    c: Any
-    v: Any
-
-
-class LargerThan(NodeProcessFunction):
-    def __init__(self, value):
-        super(self.__class__, self).__init__()
-        self.value = value
-
-    def main(self, a):
-        return SimpleCondition(c=a > self.value, v=a)
-
-
-class Divide(NodeProcessFunction):
-    def __init__(self):
-        super(self.__class__, self).__init__()
-
-    def main(self, a, b):
-        return a / b
-
-
-# endregion
-
 DEFAULT_FLOW = object()
 
 
 class _Operator(str, Enum):
-    OR = '|'
-    FLOW = '/'
-    FLOW_OR = ','
-    SUB = '.'
-    FLOW_USE = '='
+    OR = "|"
+    FLOW = "/"
+    FLOW_OR = ","
+    SUB = "."
+    FLOW_USE = "="
 
 
 @dataclass(frozen=True)
@@ -198,8 +109,13 @@ class ParentSpecifier:
     @classmethod
     def parse(cls, s):
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
-        if not re.fullmatch(rf'(\w+{_Operator.SUB})*\w+({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?({_Operator.FLOW_USE}\w+(.\w+)*)?', s):
-            raise RuntimeError('E18')
+        if not re.fullmatch(
+            rf"(\w+{_Operator.SUB})*\w+"
+            rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"
+            rf"({_Operator.FLOW_USE}\w+(.\w+)*)?",
+            s,
+        ):
+            raise RuntimeError("E18")
         s, *flow_use = s.split(_Operator.FLOW_USE)
         flow_condition, *flows = s.split(_Operator.FLOW)
         flows = [] if len(flows) == 0 else flows[0].split(_Operator.FLOW_OR)
@@ -210,18 +126,28 @@ class ParentSpecifier:
 class ParentSpecifiers(tuple):
     @classmethod
     def parse(cls, s):
-        return cls(ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR))
+        return cls(
+            ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR)
+        )
 
 
 class Parents:
     def __init__(self, args=None, kwargs=None):
-        self.args: List[ParentSpecifiers] = [] if args is None else [ParentSpecifiers.parse(name) for name in args]
-        self.kwargs: Dict[str, ParentSpecifiers] = {} if kwargs is None else {k: ParentSpecifiers.parse(name) for k, name in kwargs.items()}
+        self.args: List[ParentSpecifiers] = (
+            [] if args is None else [ParentSpecifiers.parse(name) for name in args]
+        )
+        self.kwargs: Dict[str, ParentSpecifiers] = (
+            {}
+            if kwargs is None
+            else {k: ParentSpecifiers.parse(name) for k, name in kwargs.items()}
+        )
         self.node_map = defaultdict(list)
         self.parent_keys = set()
-        for k, parent_specs in itertools.chain(enumerate(self.args), self.kwargs.items()):
+        for k, parent_specs in itertools.chain(
+            enumerate(self.args), self.kwargs.items()
+        ):
             if k in self.parent_keys:
-                raise RuntimeError('E19')
+                raise RuntimeError("E19")
             self.parent_keys.add(k)
             for spec in parent_specs:
                 self.node_map[spec.node_name].append((k, spec))
@@ -239,10 +165,10 @@ class Parents:
                 elif isinstance(item, dict):
                     kwargs = {**item, **kwargs}
                 else:
-                    raise RuntimeError('E1')
+                    raise RuntimeError("E1")
             return cls(args, kwargs)
         else:
-            raise RuntimeError('E2')
+            raise RuntimeError("E2")
 
 
 class Triggers(Parents):
@@ -253,10 +179,10 @@ class Triggers(Parents):
         elif isinstance(o, list):
             return cls(o, {})
         else:
-            raise RuntimeError('E20')
+            raise RuntimeError("E20")
 
 
-SWITCHON = 'SWITCHON'
+SWITCHON = "SWITCHON"
 
 
 @dataclass
@@ -265,11 +191,15 @@ class TriggerToken:
 
 
 class Node(BaseNode):
-    def __init__(self, name: str, end: bool,
-                 proc_func: NodeProcessFunction,
-                 end_q: SimpleQueue,
-                 triggers: Union[None, Triggers] = None,
-                 parents: Union[None, Parents] = None):
+    def __init__(
+        self,
+        name: str,
+        end: bool,
+        proc_func: NodeProcessFunction,
+        end_q: SimpleQueue,
+        triggers: Union[None, Triggers] = None,
+        parents: Union[None, Parents] = None,
+    ):
         super(self.__class__, self).__init__()
         self.name = name
         self.proc_func = proc_func
@@ -323,7 +253,9 @@ class Node(BaseNode):
                     break  # only need to put one
 
     def run(self) -> None:
-        meta = NodeProcessMeta(self.name, self.triggerings, self.children, self.proc_func)
+        meta = NodeProcessMeta(
+            self.name, self.triggerings, self.children, self.proc_func
+        )
         process_builder = NodeProcessBuilder()
         process_builder.meta = meta
 
@@ -359,7 +291,9 @@ class Node(BaseNode):
 
             # if triggers ok but parents not ok, use whatever it have
             args = [inputs.pop(i) for i in range(len(self.parents.args)) if i in inputs]
-            kwargs = {k: inputs.pop(k) for k in self.parents.kwargs.keys() if k in inputs}
+            kwargs = {
+                k: inputs.pop(k) for k in self.parents.kwargs.keys() if k in inputs
+            }
             proc = process_builder.build(*args, **kwargs)
             proc.start()
 
@@ -369,26 +303,33 @@ class Node(BaseNode):
     @classmethod
     def parse(cls, name, o, end_q: SimpleQueue):
         if name == SWITCHON:
-            raise RuntimeError('E21')
+            raise RuntimeError("E21")
         if not isinstance(o, dict):
-            raise RuntimeError('E5')
+            raise RuntimeError("E5")
         proc_func = None
         triggers = None
         end = False
         parents = None
         for k, v in o.items():
-            if k == 'PROCESS':
+            if k == "PROCESS":
                 proc_func = NodeProcessFunction.parse(v)
-            elif k == 'TRIGGERS':
+            elif k == "TRIGGERS":
                 triggers = Triggers.parse(v)
-            elif k == 'PARENTS':
+            elif k == "PARENTS":
                 parents = Parents.parse(v)
-            elif k == 'END':
+            elif k == "END":
                 if v:
                     end = True
             else:
-                raise RuntimeError('E13')
-        return cls(name=name, triggers=triggers, end=end, proc_func=proc_func, end_q=end_q, parents=parents)
+                raise RuntimeError("E13")
+        return cls(
+            name=name,
+            triggers=triggers,
+            end=end,
+            proc_func=proc_func,
+            end_q=end_q,
+            parents=parents,
+        )
 
 
 class Dag:
@@ -397,7 +338,7 @@ class Dag:
         self.processes: List[Process] = []
         for node in nodes:
             if node.name in self.nodes:
-                raise RuntimeError('E6')
+                raise RuntimeError("E6")
             self.nodes[node.name] = node
 
         for node in nodes:
@@ -411,10 +352,22 @@ class Dag:
     @classmethod
     def parse(cls, o):
         if not isinstance(o, dict):
-            raise RuntimeError('E7')
+            raise RuntimeError("E7")
         end_q = SimpleQueue()
         nodes = [Node.parse(k, v, end_q) for k, v in o.items()]
         return cls(nodes)
+
+    @classmethod
+    def parse_yaml(cls, dag_path):
+        try:
+            import yaml
+        except ImportError as e:
+            raise e
+
+        with open(dag_path, "r") as f:
+            main_dscp = yaml.safe_load(f)
+
+        return cls.parse(main_dscp["DAG"])
 
     def start(self):
         for node in self.nodes.values():
@@ -424,13 +377,3 @@ class Dag:
             node.trigger(TriggerToken(), SWITCHON)
         for proc in self.processes:
             proc.join()
-
-
-dag_path = 'utensil/dag/simple.dag'
-dag_path = 'simple.dag'
-with open(dag_path, 'r') as f:
-    main_dscp = yaml.safe_load(f)
-
-dag = Dag.parse(main_dscp['DAG'])
-dag.start()
-node_info = {}

@@ -7,7 +7,7 @@ from collections import namedtuple
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Tuple, Dict, Union, TypeVar
+from typing import Any, Dict, Tuple, TypeVar, Union
 
 from utensil.general.logger import DUMMY_LOGGER
 
@@ -25,27 +25,27 @@ class RandomizedParam(abc.ABC):
 
     @classmethod
     def create_randomized_param(cls, param_type, options) -> RandomizedParam:
-        if param_type == 'EXPONENTIAL_BETWEEN':
+        if param_type == "EXPONENTIAL_BETWEEN":
             _option = {
-                'left': options.pop('LEFT'),
-                'right': options.pop('RIGHT'),
-                'otype': options.pop('TYPE', float),
+                "left": options.pop("LEFT"),
+                "right": options.pop("RIGHT"),
+                "otype": options.pop("TYPE", float),
             }
-            if _option['otype'] == 'INTEGER':
-                _option['otype'] = int
-            elif _option['otype'] == 'FLOAT':
-                _option['otype'] = float
+            if _option["otype"] == "INTEGER":
+                _option["otype"] = int
+            elif _option["otype"] == "FLOAT":
+                _option["otype"] = float
             return ExponentialBetweenParam(**_option)
-        elif param_type == 'UNIFORM_BETWEEN':
+        elif param_type == "UNIFORM_BETWEEN":
             _option = {
-                'left': options.pop('LEFT'),
-                'right': options.pop('RIGHT'),
-                'otype': options.pop('TYPE', float),
+                "left": options.pop("LEFT"),
+                "right": options.pop("RIGHT"),
+                "otype": options.pop("TYPE", float),
             }
-            if _option['otype'] == 'INTEGER':
-                _option['otype'] = int
-            elif _option['otype'] == 'FLOAT':
-                _option['otype'] = float
+            if _option["otype"] == "INTEGER":
+                _option["otype"] = int
+            elif _option["otype"] == "FLOAT":
+                _option["otype"] = float
             return UniformBetweenParam(**_option)
         raise ValueError
 
@@ -114,10 +114,14 @@ class RandomizedConfig(abc.ABC):
 
         base = 2 ** int(np.log2(model_id + 1))
         offset = model_id + 1 - base
-        sd = int.from_bytes(hashlib.sha256(str(seed + base).encode()).digest()[:4], 'big')
+        sd = int.from_bytes(
+            hashlib.sha256(str(seed + base).encode()).digest()[:4], "big"
+        )
         rng = np.random.default_rng(sd)
         linspace = np.linspace(0, 1, base + 1)
-        rand_space = rng.random(size=(base, len(params))) * (linspace[1] - linspace[0]) + linspace[:-1].reshape(-1, 1)
+        rand_space = rng.random(size=(base, len(params))) * (
+            linspace[1] - linspace[0]
+        ) + linspace[:-1].reshape(-1, 1)
 
         for i in range(len(params)):
             rng.shuffle(rand_space[:, i])
@@ -132,7 +136,9 @@ class RandomizedConfig(abc.ABC):
                 key = vars(model_c)[dispatcher.key_names]
             else:
                 key = tuple(vars(model_c)[kn] for kn in dispatcher.key_names)
-            r, vars(model_c)[var_name] = dispatcher.dispatch[key].get_config(model_id, seed=seed)
+            r, vars(model_c)[var_name] = dispatcher.dispatch[key].get_config(
+                model_id, seed=seed
+            )
             model_r[var_name] = r
         return model_r, model_c
 
@@ -145,12 +151,12 @@ class RandomizedConfig(abc.ABC):
                 d[k] = v
         return d
 
-    def to_plain_dict(self, sep=':') -> Dict[str, Any]:
+    def to_plain_dict(self, sep=":") -> Dict[str, Any]:
         d = {}
         for k, v in vars(self).items():
             if isinstance(v, RandomizedConfig):
                 for vk, vv in v.to_plain_dict().items():
-                    d[f'{k}{sep}{vk}'] = vv
+                    d[f"{k}{sep}{vk}"] = vv
             else:
                 d[k] = v
         return d
@@ -165,12 +171,20 @@ class SeededConfig:
     config_temp: RandomizedConfig
 
     @classmethod
-    def from_config_template(cls, config_temp: RandomizedConfig, model_id: int, seed: int):
+    def from_config_template(
+        cls, config_temp: RandomizedConfig, model_id: int, seed: int
+    ):
         seed_r, config = config_temp.get_config(model_id=model_id, seed=seed)
-        return cls(cid=model_id, base_seed=seed, seed_r=seed_r, config=config, config_temp=config_temp)
+        return cls(
+            cid=model_id,
+            base_seed=seed,
+            seed_r=seed_r,
+            config=config,
+            config_temp=config_temp,
+        )
 
 
-ModelScore = namedtuple('ModelScore', ['model', 'score'])
+ModelScore = namedtuple("ModelScore", ["model", "score"])
 
 
 class RandomSearch(abc.ABC):
@@ -203,28 +217,32 @@ class RandomSearch(abc.ABC):
         idx = np.arange(train_x.shape[0])
         rng.shuffle(idx)
 
-        if not os.path.exists('submit'):
-            os.mkdir('submit')
+        if not os.path.exists("submit"):
+            os.mkdir("submit")
         model_scores = {}
         best_model = None
 
         for mid in model_id_range:
-            self.logger.info(f'model_id={mid}: initialize')
+            self.logger.info(f"model_id={mid}: initialize")
 
-            sd_config = SeededConfig.from_config_template(config_temp=config_temp, model_id=mid, seed=seed)
+            sd_config = SeededConfig.from_config_template(
+                config_temp=config_temp, model_id=mid, seed=seed
+            )
             model, score = None, None
             try:
                 model, score = self.do_training(sd_config, train_x, train_y, idx)
             except Exception:
-                self.logger.warning(f'model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, seed={seed}',
-                               stack_info=True)
+                self.logger.warning(
+                    f"model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, seed={seed}",
+                    stack_info=True,
+                )
 
-            self.logger.info(f'model_id={sd_config.cid}: score={score}')
+            self.logger.info(f"model_id={sd_config.cid}: score={score}")
 
             # record model_id, model_config and score
             model_scores[sd_config.cid] = sd_config.config.to_plain_dict()
-            assert 'score' not in model_scores[sd_config.cid]
-            model_scores[sd_config.cid]['score'] = score
+            assert "score" not in model_scores[sd_config.cid]
+            model_scores[sd_config.cid]["score"] = score
             self.model_scores_to_csv(model_scores)
 
             # keep the best model
@@ -235,11 +253,17 @@ class RandomSearch(abc.ABC):
                 te_xpy = np.empty(shape=(te_x.shape[0], 2), dtype=int)
                 te_xpy[:, 0] = np.arange(te_x.shape[0]) + 1
                 te_xpy[:, 1] = best_model[1].predict(te_x)
-                submit_path = os.path.join('submit', f'{__name__}_{int(np.round(score * 1e5))}_{sd_config.cid:04d}.csv')
-                pd.DataFrame(te_xpy, columns=['ImageId', 'Label']).to_csv(submit_path, index=False)
+                submit_path = os.path.join(
+                    "submit",
+                    f"{__name__}_{int(np.round(score * 1e5))}_{sd_config.cid:04d}.csv",
+                )
+                pd.DataFrame(te_xpy, columns=["ImageId", "Label"]).to_csv(
+                    submit_path, index=False
+                )
             if best_model is not None:
                 self.logger.info(
-                    f'model_id={sd_config.cid}: current best model_id={best_model[2].cid}, score={best_model[0]}, '
-                    f'config={best_model[2].config.to_plain_dict()}')
+                    f"model_id={sd_config.cid}: current best model_id={best_model[2].cid}, score={best_model[0]}, "
+                    f"config={best_model[2].config.to_plain_dict()}"
+                )
 
         return best_model, model_scores

@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 from _warnings import warn
-from typing import Dict, Any
 
 
 def chunks(iterable, n):
@@ -10,7 +11,7 @@ def chunks(iterable, n):
         yield from []
     elif isinstance(iterable, (list, str, tuple)):
         for i in range(0, len(iterable), n):
-            yield iterable[i:i + n]
+            yield iterable[i : i + n]
     else:
         ret = []
         for it in iterable:
@@ -24,4 +25,4 @@ def chunks(iterable, n):
 
 def warn_left_keys(params: Dict[str, Any]):
     for key in params.keys():
-        warn(f'{key} is not used', category=SyntaxWarning)
+        warn(f"{key} is not used", category=SyntaxWarning)

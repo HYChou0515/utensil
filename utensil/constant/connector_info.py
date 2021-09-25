@@ -17,7 +17,9 @@ class ConnectorInformation:
     ip: str
     port: int
     user: str
-    pds: str = dataclasses.field(repr=False)  # to protect password accidentally shown in log
+    pds: str = dataclasses.field(
+        repr=False
+    )  # to protect password accidentally shown in log
     database: str
 
 
@@ -29,7 +31,7 @@ class ConnectorPoolInformation:
 
 
 def get_connector_pool_info(tag_name: str):
-    TAG_PREFIX = 'CONNECTION_INFO_OF_'
+    TAG_PREFIX = "CONNECTION_INFO_OF_"
     trial_tags = []
     if tag_name.startswith(TAG_PREFIX):
         trial_tags.append(tag_name)
@@ -40,14 +42,16 @@ def get_connector_pool_info(tag_name: str):
             connection_info_config = constant.config[trial]
             return ConnectorPoolInformation(
                 connector_info=ConnectorInformation(
-                    ip=connection_info_config.get('Ip'),
-                    port=int(connection_info_config.get('Port')),
-                    user=connection_info_config.get('User'),
-                    pds=connection_info_config.get('Password'),
-                    database=connection_info_config.get('ServiceName')
+                    ip=connection_info_config.get("Ip"),
+                    port=int(connection_info_config.get("Port")),
+                    user=connection_info_config.get("User"),
+                    pds=connection_info_config.get("Password"),
+                    database=connection_info_config.get("ServiceName"),
                 ),
-                pool_size=int(connection_info_config.get('PoolSize', 1)),
-                verbose=parse_log_level(connection_info_config.get('Verbose', DEFAULT_CONNECTOR_VERBOSE))
+                pool_size=int(connection_info_config.get("PoolSize", 1)),
+                verbose=parse_log_level(
+                    connection_info_config.get("Verbose", DEFAULT_CONNECTOR_VERBOSE)
+                ),
             )
     err_str = '" and "'.join(trial_tags)
     raise ValueError(f'Cannot find connection info match "{err_str}".')

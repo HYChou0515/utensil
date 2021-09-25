@@ -49,4 +49,11 @@ DAG:
     PARENTS:
       A: IF_1.C/True=V
       B: CONSTANT_2
+
+  OUTPUT:
+    PROCESS:
+      PICKLE:
+        PATH: ./simple.output
+    PARENTS:
+      OBJ: DIVIDE
     END: true

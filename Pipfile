@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-dformat = "*"
 
 [dev-packages]
+dformat = "*"
 kaggle = "*"
 bayesian-optimization = "*"
 ipython = "*"
@@ -16,6 +16,9 @@ twine = "*"
 matplotlib = "*"
 pyyaml = "*"
 pandas = "*"
+black = "*"
+pytest-timeout = "*"
+isort = "*"
 
 [requires]
 python_version = "3.7"

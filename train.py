@@ -2,10 +2,10 @@ import abc
 import datetime
 import os
 import pickle
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, EnumMeta
-from typing import Any, Union, List
+from typing import Any, List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +18,6 @@ from tensorflow.python.data import AUTOTUNE
 
 
 class RandomizedParam(abc.ABC):
-
     @abc.abstractmethod
     def from_random(self, r):
         return NotImplemented
@@ -27,7 +26,6 @@ class RandomizedParam(abc.ABC):
 @dataclass_json
 @dataclass
 class BooleanParam(RandomizedParam):
-
     def from_random(self, r):
         return r > 0.5
 
@@ -67,20 +65,20 @@ class RandomizedChoices(RandomizedParam):
 
 
 class BatchNormChoice(Enum):
-    OFF = 'off'
-    AFTER_CONV2D = 'after_conv2d'
-    AFTER_ACT = 'after_act'
-    AFTER_POOLING = 'after_pooling'
+    OFF = "off"
+    AFTER_CONV2D = "after_conv2d"
+    AFTER_ACT = "after_act"
+    AFTER_POOLING = "after_pooling"
 
 
 class Conv2dPaddingChoice(Enum):
-    VALID = 'valid'
-    SAME = 'same'
+    VALID = "valid"
+    SAME = "same"
 
 
 class PoolingTypeChoice(Enum):
-    MAX_POOLING = 'max'
-    AVG_POOLING = 'avg'
+    MAX_POOLING = "max"
+    AVG_POOLING = "avg"
 
     def get_pooling(self, **kwargs):
         if self is self.MAX_POOLING:
@@ -92,17 +90,17 @@ class PoolingTypeChoice(Enum):
 
 
 class ActivationChoice(Enum):
-    RELU = 'relu'
+    RELU = "relu"
 
     def get_activation(self):
         if self is self.RELU:
-            return layers.Activation('relu')
+            return layers.Activation("relu")
         else:
             return NotImplemented
 
 
 class ModelTypeChoice(Enum):
-    VGG = 'vgg'
+    VGG = "vgg"
 
 
 @dataclass_json
@@ -185,24 +183,26 @@ class Dataset:
         train_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config.train_dir,
             validation_split=config.val_ratio,
-            subset='training',
+            subset="training",
             seed=config.train_val_seed,
             image_size=(config.img_height, config.img_width),
-            batch_size=config.batch_size
+            batch_size=config.batch_size,
         )
 
         labels = train_ds.class_names
-        return cls(train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE), labels)
+        return cls(
+            train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE), labels
+        )
 
     @classmethod
     def get_val_ds(cls, config: TrainConfig):
         val_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config.train_dir,
             validation_split=config.val_ratio,
-            subset='validation',
+            subset="validation",
             seed=config.train_val_seed,
             image_size=(config.img_height, config.img_width),
-            batch_size=config.batch_size
+            batch_size=config.batch_size,
         )
 
         labels = val_ds.class_names
@@ -213,7 +213,7 @@ class Dataset:
         test_ds = tf.keras.preprocessing.image_dataset_from_directory(
             config.test_dir,
             image_size=(config.img_height, config.img_width),
-            batch_size=config.batch_size
+            batch_size=config.batch_size,
         )
 
         labels = test_ds.class_names
@@ -290,9 +290,9 @@ class Dataset:
                 pass
             else:
                 plt.subplot(nr_row, nr_col, plot_i + 1)
-                plt.imshow(image.numpy().astype('uint8'))
+                plt.imshow(image.numpy().astype("uint8"))
                 plt.title(self.labels[label])
-                plt.axis('off')
+                plt.axis("off")
                 plot_i += 1
         plt.tight_layout()
         plt.show()
@@ -301,22 +301,22 @@ class Dataset:
 class TrainParameters:
     def __init__(self, config: TrainConfig, train_ds: Dataset, val_ds: Dataset):
         self.config = config
-        self.nr_pos = train_ds.label_numbers['1']
-        self.nr_neg = train_ds.label_numbers['0']
+        self.nr_pos = train_ds.label_numbers["1"]
+        self.nr_neg = train_ds.label_numbers["0"]
 
 
-ValScore = namedtuple('ValScore', ['precision', 'recall', 'neg_loss'])
-TrainScore = namedtuple('TrainScore', ['neg_loss'])
-TestScore = namedtuple('TestScore', ['neg_fp', 'tp', 'neg_loss'])
-SavedModel = namedtuple('SavedModel', ['weights', 'config'])
+ValScore = namedtuple("ValScore", ["precision", "recall", "neg_loss"])
+TrainScore = namedtuple("TrainScore", ["neg_loss"])
+TestScore = namedtuple("TestScore", ["neg_fp", "tp", "neg_loss"])
+SavedModel = namedtuple("SavedModel", ["weights", "config"])
 
 
 def dump_model(model: SavedModel, model_name: str):
-    pickle.dump(model, open(model_name, 'wb'))
+    pickle.dump(model, open(model_name, "wb"))
 
 
 def load_model(model_name: str) -> SavedModel:
-    return pickle.load(open(model_name, 'rb'))
+    return pickle.load(open(model_name, "rb"))
 
 
 class LearningRateScheduler2(keras.callbacks.Callback):
@@ -329,19 +329,25 @@ class LearningRateScheduler2(keras.callbacks.Callback):
         self.st_time = None
 
     def on_train_begin(self, logs=None):
-        keras.backend.set_value(self.model.optimizer.learning_rate, self.config.learn_rate)
-        print(f'training with lr={self.model.optimizer.learning_rate}')
+        keras.backend.set_value(
+            self.model.optimizer.learning_rate, self.config.learn_rate
+        )
+        print(f"training with lr={self.model.optimizer.learning_rate}")
         self.st_time = datetime.datetime.now()
 
     def on_epoch_end(self, epoch, logs=None):
-        val_score = ValScore(logs[val_metric_str(MetricEnum.PRECISION)],
-                             logs[val_metric_str(MetricEnum.RECALL)],
-                             -logs['loss'])
-        train_score = TrainScore(-logs['loss'])
+        val_score = ValScore(
+            logs[val_metric_str(MetricEnum.PRECISION)],
+            logs[val_metric_str(MetricEnum.RECALL)],
+            -logs["loss"],
+        )
+        train_score = TrainScore(-logs["loss"])
         if self.max_val_score is None or self.max_val_score < val_score:
             # save the model with the best validation performance
-            print(f'save weights of model with score={val_score}')
-            dump_model(SavedModel(self.model.get_weights(), self.config), self.config.name)
+            print(f"save weights of model with score={val_score}")
+            dump_model(
+                SavedModel(self.model.get_weights(), self.config), self.config.name
+            )
             self.max_val_score = val_score
         if self.max_train_score is None or self.max_train_score < train_score:
             # use train performance to decide whether or not keep training
@@ -352,38 +358,51 @@ class LearningRateScheduler2(keras.callbacks.Callback):
             elapsed_sec = (datetime.datetime.now() - self.st_time).total_seconds()
             to_stop = False
             if self.wait >= self.config.patience:
-                print(f'waited={self.wait} timeout')
+                print(f"waited={self.wait} timeout")
                 to_stop = True
             if elapsed_sec > self.config.timeout:
-                print(f'training time={(datetime.datetime.now() - self.st_time)} timeout')
+                print(
+                    f"training time={(datetime.datetime.now() - self.st_time)} timeout"
+                )
                 to_stop = True
 
             if to_stop:
-                print('stop training')
+                print("stop training")
                 self.model.stop_training = True
 
 
 class MetricEnum(Enum):
-    LOSS = 'loss'
-    TRUE_POSITIVES = 'tp'
-    FALSE_POSITIVES = 'fp'
-    TRUE_NEGATIVES = 'tn'
-    FALSE_NEGATIVES = 'fn'
-    PRECISION = 'pr'
-    RECALL = 're'
+    LOSS = "loss"
+    TRUE_POSITIVES = "tp"
+    FALSE_POSITIVES = "fp"
+    TRUE_NEGATIVES = "tn"
+    FALSE_NEGATIVES = "fn"
+    PRECISION = "pr"
+    RECALL = "re"
 
 
 def val_metric_str(metric_enum: MetricEnum):
-    return f'val_{metric_enum.value}'
+    return f"val_{metric_enum.value}"
 
 
 class ModelManager(abc.ABC):
-    METRICS = OrderedDict((
-        (MetricEnum.TRUE_POSITIVES, keras.metrics.TruePositives(name=MetricEnum.TRUE_POSITIVES.value)),
-        (MetricEnum.FALSE_POSITIVES, keras.metrics.FalsePositives(name=MetricEnum.FALSE_POSITIVES.value)),
-        (MetricEnum.PRECISION, keras.metrics.Precision(name=MetricEnum.PRECISION.value)),
-        (MetricEnum.RECALL, keras.metrics.Recall(name=MetricEnum.RECALL.value)),
-    ))
+    METRICS = OrderedDict(
+        (
+            (
+                MetricEnum.TRUE_POSITIVES,
+                keras.metrics.TruePositives(name=MetricEnum.TRUE_POSITIVES.value),
+            ),
+            (
+                MetricEnum.FALSE_POSITIVES,
+                keras.metrics.FalsePositives(name=MetricEnum.FALSE_POSITIVES.value),
+            ),
+            (
+                MetricEnum.PRECISION,
+                keras.metrics.Precision(name=MetricEnum.PRECISION.value),
+            ),
+            (MetricEnum.RECALL, keras.metrics.Recall(name=MetricEnum.RECALL.value)),
+        )
+    )
 
     @classmethod
     def build_model(cls, param: TrainParameters):
@@ -405,21 +424,33 @@ class ModelManager(abc.ABC):
 
     @property
     def class_weights(self):
-        neg_mul = self.param.config.neg_weight_mul / (1 + self.param.config.neg_weight_mul)
+        neg_mul = self.param.config.neg_weight_mul / (
+            1 + self.param.config.neg_weight_mul
+        )
         pos_mul = 1.0 / (1 + self.param.config.neg_weight_mul)
-        neg_weight = neg_mul * (self.param.nr_pos + self.param.nr_neg) / self.param.nr_neg
-        pos_weight = pos_mul * (self.param.nr_pos + self.param.nr_neg) / self.param.nr_pos
+        neg_weight = (
+            neg_mul * (self.param.nr_pos + self.param.nr_neg) / self.param.nr_neg
+        )
+        pos_weight = (
+            pos_mul * (self.param.nr_pos + self.param.nr_neg) / self.param.nr_pos
+        )
         return {0: neg_weight, 1: pos_weight}
 
     def visualize(self):
         model = self.get_model()
         tf.keras.utils.plot_model(
-            model, to_file='model.png', show_shapes=True, show_dtype=False,
-            show_layer_names=True, rankdir='TB', expand_nested=False, dpi=96
+            model,
+            to_file="model.png",
+            show_shapes=True,
+            show_dtype=False,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=False,
+            dpi=96,
         )
         plt.figure(figsize=(10, 10))
-        plt.imshow(plt.imread('model.png'))
-        plt.axis('off')
+        plt.imshow(plt.imread("model.png"))
+        plt.axis("off")
         plt.tight_layout()
         plt.show()
 
@@ -437,12 +468,16 @@ class ModelManager(abc.ABC):
         #     epochs=10000,
         # )
         # model.set_weights(load_model(self.param.config.name).weights)
-        model.evaluate(test_ds.data)  # tensorflow bug, metric of 1st evaluate may be wrong
-        metrics = dict(zip((MetricEnum.LOSS, *self.METRICS.keys()), model.evaluate(test_ds.data)))
+        model.evaluate(
+            test_ds.data
+        )  # tensorflow bug, metric of 1st evaluate may be wrong
+        metrics = dict(
+            zip((MetricEnum.LOSS, *self.METRICS.keys()), model.evaluate(test_ds.data))
+        )
         return TestScore(
             neg_fp=-metrics[MetricEnum.FALSE_POSITIVES],
             tp=metrics[MetricEnum.TRUE_POSITIVES],
-            neg_loss=-metrics[MetricEnum.LOSS]
+            neg_loss=-metrics[MetricEnum.LOSS],
         )
 
 
@@ -452,15 +487,34 @@ class Vgg(ModelManager):
         return ModelTypeChoice.VGG
 
     def get_model(self):
-        seq_layers = [layers.InputLayer(input_shape=(self.param.config.img_height, self.param.config.img_width, 3))]
+        seq_layers = [
+            layers.InputLayer(
+                input_shape=(
+                    self.param.config.img_height,
+                    self.param.config.img_width,
+                    3,
+                )
+            )
+        ]
         if self.param.config.rescaling:
-            seq_layers.append(layers.experimental.preprocessing.Rescaling(1. / 255, ))
+            seq_layers.append(
+                layers.experimental.preprocessing.Rescaling(
+                    1.0 / 255,
+                )
+            )
 
         for block_i in range(self.param.config.conv2d_nr_blocks):
-            filters = self.param.config.conv2d_first_filters * self.param.config.pooling_size ** block_i
-            seq_layers.append(layers.Conv2D(filters,
-                                            self.param.config.conv2d_kernel_size,
-                                            padding=self.param.config.conv2d_padding.value))
+            filters = (
+                self.param.config.conv2d_first_filters
+                * self.param.config.pooling_size ** block_i
+            )
+            seq_layers.append(
+                layers.Conv2D(
+                    filters,
+                    self.param.config.conv2d_kernel_size,
+                    padding=self.param.config.conv2d_padding.value,
+                )
+            )
 
             if self.param.config.batch_norm_choice is BatchNormChoice.AFTER_CONV2D:
                 seq_layers.append(layers.BatchNormalization())
@@ -470,9 +524,14 @@ class Vgg(ModelManager):
             if self.param.config.batch_norm_choice is BatchNormChoice.AFTER_ACT:
                 seq_layers.append(layers.BatchNormalization())
 
-            seq_layers.append(self.param.config.pooling_type.get_pooling(
-                pool_size=(self.param.config.pooling_size, self.param.config.pooling_size)
-            ))
+            seq_layers.append(
+                self.param.config.pooling_type.get_pooling(
+                    pool_size=(
+                        self.param.config.pooling_size,
+                        self.param.config.pooling_size,
+                    )
+                )
+            )
 
             if self.param.config.batch_norm_choice is BatchNormChoice.AFTER_POOLING:
                 seq_layers.append(layers.BatchNormalization())
@@ -484,26 +543,37 @@ class Vgg(ModelManager):
             seq_layers.append(self.param.config.conv2d_activation.get_activation())
 
         seq_layers.append(
-            layers.Dense(1, activation='sigmoid', bias_initializer=tf.keras.initializers.Constant(self.initial_bias))
+            layers.Dense(
+                1,
+                activation="sigmoid",
+                bias_initializer=tf.keras.initializers.Constant(self.initial_bias),
+            )
         )
 
         model = Sequential(seq_layers)
-        model.compile(optimizer='adam',
-                      loss='binary_crossentropy',
-                      metrics=list(self.METRICS.values()))
+        model.compile(
+            optimizer="adam",
+            loss="binary_crossentropy",
+            metrics=list(self.METRICS.values()),
+        )
         return model
 
 
 def random_between(a, b, **kwargs):
-    return np.random.random(**kwargs) * (b-a) + a
+    return np.random.random(**kwargs) * (b - a) + a
     # return (np.zeros(**kwargs) + 0.5) * (b-a) + a
+
 
 def main(data_home):
 
     train_config_template = TrainConfig(
-        train_dir=os.path.join(data_home, 'LocalDataBase', 'cooked', 'OcularDiseaseRecognition', 'train'),
-        test_dir=os.path.join(data_home, 'LocalDataBase', 'cooked', 'OcularDiseaseRecognition', 'test'),
-        name='0',
+        train_dir=os.path.join(
+            data_home, "LocalDataBase", "cooked", "OcularDiseaseRecognition", "train"
+        ),
+        test_dir=os.path.join(
+            data_home, "LocalDataBase", "cooked", "OcularDiseaseRecognition", "test"
+        ),
+        name="0",
         timeout=300,
         val_ratio=0.3,
         batch_size=64,
@@ -531,14 +601,20 @@ def main(data_home):
         model_id = start
         rand_space = []
         while True:
-            base = 2 ** int(np.log2(model_id+1))
-            offset = model_id+1-base
+            base = 2 ** int(np.log2(model_id + 1))
+            offset = model_id + 1 - base
             if offset == 0 or len(rand_space) == 0:
-                linspace = np.linspace(0, 1, base+1)
-                rand_space = np.array([random_between(
-                    linspace[i], linspace[i+1],
-                    size=train_config_template.nr_randomized_params
-                ) for i in range(base)])
+                linspace = np.linspace(0, 1, base + 1)
+                rand_space = np.array(
+                    [
+                        random_between(
+                            linspace[i],
+                            linspace[i + 1],
+                            size=train_config_template.nr_randomized_params,
+                        )
+                        for i in range(base)
+                    ]
+                )
 
                 for i in range(train_config_template.nr_randomized_params):
                     np.random.shuffle(rand_space[:, i])
@@ -548,12 +624,18 @@ def main(data_home):
             yield model_id, model_r
             model_id += 1
 
-    scores_file_name = 'scores.pkl'
+    scores_file_name = "scores.pkl"
     try:
-        scores = pickle.load(open(scores_file_name, 'rb'))
-        model_seed = model_seed_gen(max(
-            [int(os.path.basename(k[0])[:-6]) for k, v in sorted(scores.items(), key=lambda s: s[1])]
-        )+1)
+        scores = pickle.load(open(scores_file_name, "rb"))
+        model_seed = model_seed_gen(
+            max(
+                [
+                    int(os.path.basename(k[0])[:-6])
+                    for k, v in sorted(scores.items(), key=lambda s: s[1])
+                ]
+            )
+            + 1
+        )
     except:
         scores = {}
         model_seed = model_seed_gen(0)
@@ -569,7 +651,7 @@ def main(data_home):
             try:
                 msd = next(model_seed)
                 train_config = train_config_template.randomize(msd[1])
-                train_config.name = f'{msd[0]}.model'
+                train_config.name = f"{msd[0]}.model"
                 print(train_config)
 
                 train_params = TrainParameters(train_config, train_ds, val_ds)
@@ -579,10 +661,12 @@ def main(data_home):
                 print(score)
                 if score > minimum_score:
                     scores[msd] = score
-                    pickle.dump(scores, open(scores_file_name, 'wb'))
+                    pickle.dump(scores, open(scores_file_name, "wb"))
             except:
                 pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import sys
+
     main(sys.argv[1])
