@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import re
 import time
 from abc import abstractmethod
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass, field, InitVar
+from enum import Enum
 from multiprocessing import Process, Queue, SimpleQueue
 from queue import Empty
 from threading import Thread
@@ -54,7 +56,6 @@ class NodeProcessFunction:
         raise NotImplementedError
 
     def __call__(self, *args, **kwargs):
-        print(self.main.__code__.co_varnames)
         params = [kwargs.pop(k) for k in self.main.__code__.co_varnames if k in kwargs]
         return self.main(*params, *args, **kwargs)
 
@@ -147,22 +148,79 @@ class Sum(NodeProcessFunction):
         return sum(l)
 
 
+@dataclass
+class SimpleCondition:
+    c: Any
+    v: Any
+
+
+class LargerThan(NodeProcessFunction):
+    def __init__(self, value):
+        super(self.__class__, self).__init__()
+        self.value = value
+
+    def main(self, a):
+        return SimpleCondition(c=a > self.value, v=a)
+
+
+class Divide(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
+
+    def main(self, a, b):
+        return a / b
+
+
 # endregion
+
+DEFAULT_FLOW = object()
+
+
+class _Operator(str, Enum):
+    OR = '|'
+    FLOW = '/'
+    FLOW_OR = ','
+    SUB = '.'
+    FLOW_USE = '='
+
+
+@dataclass(frozen=True)
+class ParentSpecifier:
+    node_name: str
+    flow_condition: Tuple[str]
+    flows: Tuple[Any]
+    flow_use: Tuple[str]
+
+    @classmethod
+    def parse(cls, s):
+        # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
+        if not re.fullmatch(rf'(\w+{_Operator.SUB})*\w+({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?({_Operator.FLOW_USE}\w+(.\w+)*)?', s):
+            raise RuntimeError('E18')
+        s, *flow_use = s.split(_Operator.FLOW_USE)
+        flow_condition, *flows = s.split(_Operator.FLOW)
+        flows = [] if len(flows) == 0 else flows[0].split(_Operator.FLOW_OR)
+        node_name, *flow_condition = flow_condition.split(_Operator.SUB)
+        return cls(node_name, tuple(flow_condition), tuple(flows), tuple(flow_use))
+
+
+class ParentSpecifiers(tuple):
+    @classmethod
+    def parse(cls, s):
+        return cls(ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR))
 
 
 class Parents:
     def __init__(self, args=None, kwargs=None):
-        self.args = [] if args is None else args
-        self.kwargs = {} if kwargs is None else kwargs
-        self.node_names = set()
-        for n in self.args:
-            if n in self.node_names:
-                raise RuntimeError('E8')
-            self.node_names.add(n)
-        for v in self.kwargs.values():
-            if v in self.node_names:
-                raise RuntimeError('E9')
-            self.node_names.add(v)
+        self.args: List[ParentSpecifiers] = [] if args is None else [ParentSpecifiers.parse(name) for name in args]
+        self.kwargs: Dict[str, ParentSpecifiers] = {} if kwargs is None else {k: ParentSpecifiers.parse(name) for k, name in kwargs.items()}
+        self.node_map = defaultdict(list)
+        self.parent_keys = set()
+        for k, parent_specs in itertools.chain(enumerate(self.args), self.kwargs.items()):
+            if k in self.parent_keys:
+                raise RuntimeError('E19')
+            self.parent_keys.add(k)
+            for spec in parent_specs:
+                self.node_map[spec.node_name].append((k, spec))
 
     @classmethod
     def parse(cls, o):
@@ -198,10 +256,30 @@ class Node(BaseNode):
         self.children = []
         self.end_q = end_q
 
-        self._qs: Dict[str, Queue] = {name: Queue() for name in self.parents.node_names}
+        self._qs: Dict[str, Queue] = {k: Queue() for k in self.parents.parent_keys}
 
     def push(self, param, caller_name):
-        self._qs[caller_name].put(param)
+        def getitem(_p, _attr):
+            _attr = _attr.lower()
+            if isinstance(_p, dict):
+                return _p[_attr]
+            else:
+                return _p.__getattribute__(_attr)
+
+        for parent_key, parent_spec in self.parents.node_map[caller_name]:
+            c = param
+            for attr in parent_spec.flow_condition:
+                c = getitem(c, attr)
+            v = param
+            for attr in parent_spec.flow_use:
+                v = getitem(v, attr)
+
+            if len(parent_spec.flows) == 0:
+                self._qs[parent_key].put(v)
+            for flow in parent_spec.flows:
+                if str(c) == flow:
+                    self._qs[parent_key].put(v)
+                    break  # only need to put one
 
     def run(self) -> None:
         meta = NodeProcessMeta(self.name, self.children, self.proc_func)
@@ -216,12 +294,12 @@ class Node(BaseNode):
 
         def build_inputs(_inputs):
             _ok = True
-            for node_name, q in self._qs.items():
-                if node_name in _inputs:
+            for parent_key, q in self._qs.items():
+                if parent_key in _inputs:
                     # got this param already
                     continue
                 try:
-                    _inputs[node_name] = q.get(block=False)
+                    _inputs[parent_key] = q.get(block=False)
                 except Empty:
                     _ok = False
             return _ok, _inputs
@@ -232,8 +310,8 @@ class Node(BaseNode):
             if not ok:
                 time.sleep(0.1)
                 continue
-            args = [inputs.pop(name) for name in self.parents.args]
-            kwargs = {k: inputs.pop(name) for k, name in self.parents.kwargs.items()}
+            args = [inputs.pop(i) for i in range(len(self.parents.args))]
+            kwargs = {k: inputs.pop(k) for k in self.parents.kwargs.keys()}
             proc = process_builder.build(*args, **kwargs)
             proc.start()
 
@@ -277,7 +355,7 @@ class Dag:
                 self.init_nodes.append(node.name)
 
         for node in nodes:
-            for name in node.parents.node_names:
+            for name in node.parents.node_map.keys():
                 self.nodes[name].children.append(node)
 
     @classmethod

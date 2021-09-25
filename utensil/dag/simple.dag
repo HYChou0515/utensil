@@ -20,7 +20,7 @@ DAG:
       ADD
     PARENTS:
       A: ADD_1
-      B: CONSTANT_2
+      B: CONSTANT_2 | IF_1.C/False=V
   TIMES_1:
     PROCESS:
       TIME_VALUE:
@@ -36,4 +36,17 @@ DAG:
       - ADD_1
       - ADD
       - ADD: TIMES_1
+  IF_1:
+    PROCESS:
+      LARGER_THAN:
+        VALUE: 200
+    PARENTS:
+      A: SUM
+
+  DIVIDE:
+    PROCESS:
+      DIVIDE
+    PARENTS:
+      A: IF_1.C/True=V
+      B: CONSTANT_2
     END: true
