@@ -1,0 +1,112 @@
+DAG:
+
+  MODEL_PARAM:
+    TRIGGERS: SWITCHON
+    PROCESS:
+      PARAMETER_SEARCH:
+        SEARCH_MAP:
+          LEARNING_RATE:
+            EXPONENTIAL_BETWEEN: { LEFT: 0.001, RIGHT: 0.2 }
+          MAX_DEPTH:
+            UNIFORM_BETWEEN: { LEFT: 1, RIGHT: 10, TYPE: INTEGER }
+          N_ESTIMATORS:
+            UNIFORM_BETWEEN: { LEFT: 5, RIGHT: 201, TYPE: INTEGER }
+
+  RAW_MODEL:
+    PARENTS: MODEL_PARAM
+    PROCESS:
+      - MAKE_MODEL:
+          METHOD: XGBOOST_CLASSIFIER
+
+  RAW_DATA:
+    TRIGGERS: SWITCHON
+    PROCESS:
+      - LOAD_DATA:
+          URL: /home/hychou/Disk/K/data/covtype.bz2
+          DFORMAT: SVMLIGHT
+          TARGET: Cover_Type
+          FEATURES:
+            0: Elevation
+            1: Aspect
+      - FILTER_ROWS:
+          FILTER_BY:
+            TARGET: [1, 2]
+
+  FEATURE_ELEVATION:
+    PARENTS:
+      DATASET: RAW_DATA
+    PROCESS:
+      - GET_FEATURE: Elevation
+      - LINEAR_NORMALIZE:
+          UPPER: { FROM: MAX, TO: 1 }
+          LOWER: { FROM: MIN, TO: 0 }
+
+  FEATURE_ASPECT:
+    PARENTS:
+      DATASET: RAW_DATA
+    PROCESS:
+      - GET_FEATURE: Aspect
+      - LINEAR_NORMALIZE:
+          UPPER: { FROM: MAX, TO: 1 }
+          LOWER: { FROM: MIN, TO: 0 }
+
+  FEATURES:
+    PARENTS:
+      FEATURES:
+        - FEATURE_ELEVATION
+        - FEATURE_ASPECT
+    PROCESS: MERGE_FEATURES
+
+  TARGET:
+    PARENTS:
+      DATASET: RAW_DATA
+    PROCESS:
+      - GET_TARGET
+      - CHANGE_TYPE_TO: INTEGER
+
+  DATASET:
+    PARENTS:
+      TARGET: TARGET
+      FEATURES: FEATURES
+    PROCESS:
+      - MAKE_DATASET
+      - SAMPLING_ROWS:
+          NUMBER: 1000
+          STRATIFIED: True
+          RETURN_REST: True
+
+  TRAIN_DATA:
+    PARENTS: DATASET.SAMPLED
+    PROCESS: DUMMY
+
+  TEST_DATA:
+    PARENTS: DATASET.REST
+    PROCESS: DUMMY
+
+  TRAINED_MODEL:
+    PARENTS:
+      MODEL: RAW_MODEL
+      DATASET: TRAIN_DATA
+    PROCESS: TRAIN
+
+  TRAIN_SCORE:
+    PARENTS:
+      PREDICTION: TRAIN_DATA
+      GROUND_TRUTH: TRAIN_DATA
+      MODEL: TRAINED_MODEL
+    EXPORT: PRINT
+    PROCESS:
+      - SCORE:
+          DATASET: TRAIN_DATA
+          METHODS: ACCURACY
+
+  TEST_SCORE:
+    PARENTS:
+      PREDICTION: TEST_DATA
+      GROUND_TRUTH: TEST_DATA
+      MODEL: TRAINED_MODEL
+    EXPORT: PRINT
+    PROCESS:
+      - SCORE:
+          DATASET: TEST_DATA
+          METHODS: ACCURACY

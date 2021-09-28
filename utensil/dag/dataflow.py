@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, Generator, List, Tuple, Type, Union
+from dataclasses import dataclass
+from typing import Any, Dict, List, Union
 
+from utensil.dag.dag import NodeProcessFunction
 from utensil.general import warn_left_keys
 from utensil.random_search import RandomizedParam
 
@@ -13,8 +14,11 @@ except ImportError as e:
     raise e
 
 
-class MISSING:
+class _MISSING:
     pass
+
+
+MISSING = _MISSING()
 
 
 class Feature(pd.Series):
@@ -47,10 +51,10 @@ class Dataset:
 
 class Model:
     def train(self, dataset: Dataset) -> Model:
-        return NotImplemented
+        raise NotImplementedError
 
     def predict(self, features: Features) -> Target:
-        return NotImplemented
+        raise NotImplementedError
 
 
 class SklearnModel(Model):
@@ -65,44 +69,15 @@ class SklearnModel(Model):
         return Target(self._model.predict(features))
 
 
-@dataclass
-class BaseNodeProcess:
-    params: Dict[str, Any] = field(repr=False)
+class LoadData(NodeProcessFunction):
+    def __init__(self, dformat: str, url: str, target: str, features: Dict[int, str]):
+        super(self.__class__, self).__init__()
+        self.dformat = dformat
+        self.url = url
+        self.target = target
+        self.features = features
 
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError
-
-
-@dataclass
-class StatefulNodeProcess(BaseNodeProcess):
-    state: Any = None
-
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError
-
-
-@dataclass
-class StatelessNodeProcess(BaseNodeProcess):
-    def __call__(self, *args, **kwargs):
-        raise NotImplementedError
-
-
-@dataclass
-class LoadData(StatelessNodeProcess):
-    dformat: str = None
-    url: str = None
-    target: str = None
-    features: Dict[int, str] = None
-
-    def __post_init__(self):
-        self.dformat = self.params.pop("FORMAT", None)
-        self.url = self.params.pop("URL", None)
-        self.target = self.params.pop("TARGET", None)
-        self.features = self.params.pop("FEATURES", None)
-        warn_left_keys(self.params)
-        del self.params
-
-    def __call__(self) -> Dataset:
+    def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
             try:
                 import sklearn.datasets
@@ -120,16 +95,12 @@ class LoadData(StatelessNodeProcess):
         return Dataset(Target(target), Features(features))
 
 
-@dataclass
-class FilterRows(StatelessNodeProcess):
-    filter_by: Dict[str, Any] = None
+class FilterRows(NodeProcessFunction):
+    def __init__(self, filter_by: Dict[str, Any]):
+        super(self.__class__, self).__init__()
+        self.filter_by = filter_by
 
-    def __post_init__(self):
-        self.filter_by = self.params.pop("FILTER_BY", None)
-        warn_left_keys(self.params)
-        del self.params
-
-    def __call__(self, dataset: Dataset) -> Dataset:
+    def main(self, dataset: Dataset) -> Dataset:
         idx = dataset.target.index
         for filter_key, filter_val in self.filter_by.items():
             if filter_key == "TARGET":
@@ -143,30 +114,26 @@ class FilterRows(StatelessNodeProcess):
         return dataset
 
 
-@dataclass
-class SamplingRows(StatelessNodeProcess):
-    number: int = field(init=False)
-    ratio: float = field(init=False)
-    stratified: bool = field(init=False)
-    replace: bool = field(init=False)
-    random_seed: bool = field(init=False)
-    return_rest: bool = field(init=False)
-
-    _rng: np.random.Generator = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self.number = self.params.pop("NUMBER", MISSING)
-        self.ratio = self.params.pop("RATIO", MISSING)
-        self.stratified = self.params.pop("STRATIFIED", False)
-        self.replace = self.params.pop("REPLACE", False)
-        self.random_seed = self.params.pop("RANDOM_SEED", 0)
-        self.return_rest = self.params.pop("RETURN_REST", False)
+class SamplingRows(NodeProcessFunction):
+    def __init__(
+        self,
+        number: int = MISSING,
+        ratio: float = MISSING,
+        stratified: bool = False,
+        replace: bool = False,
+        random_seed: Union[bool, int] = 0,
+        return_rest: bool = False,
+    ):
+        super(self.__class__, self).__init__()
+        self.number = number
+        self.ratio = ratio
+        self.stratified = stratified
+        self.replace = replace
+        self.random_seed = random_seed
+        self.return_rest = return_rest
 
         if self.ratio is MISSING and self.number is MISSING:
             self.ratio = 1.0
-
-        warn_left_keys(self.params)
-        del self.params
 
     def _get_number_each(self, value_counts: pd.Series, ttl_number: int):
         if self.replace or ttl_number // value_counts.shape[0] <= value_counts.min():
@@ -191,7 +158,7 @@ class SamplingRows(StatelessNodeProcess):
             )
         return number_each
 
-    def __call__(self, dataset: Dataset) -> Union[Dataset, Dict[str, Dataset]]:
+    def main(self, dataset: Dataset) -> Union[Dataset, Dict[str, Dataset]]:
         if self.stratified:
             ttl_number = (
                 int(self.ratio * dataset.nrows)
@@ -229,79 +196,43 @@ class SamplingRows(StatelessNodeProcess):
             rest_target = dataset.target.loc[rest_index]
             rest_features = dataset.features.loc[rest_index]
             return {
-                "SAMPLED": Dataset(Target(new_target), Features(new_features)),
-                "REST": Dataset(Target(rest_target), Features(rest_features)),
+                "sampled": Dataset(Target(new_target), Features(new_features)),
+                "rest": Dataset(Target(rest_target), Features(rest_features)),
             }
         else:
             return Dataset(Target(new_target), Features(new_features))
 
 
-@dataclass
-class MakeDataset(StatelessNodeProcess):
-    def __post_init__(self):
-        warn_left_keys(self.params)
-        del self.params
+class MakeDataset(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
 
-    def __call__(self, target: Target, features: Features) -> Dataset:
+    def main(self, target: Target, features: Features) -> Dataset:
         return Dataset(target, features)
 
 
-@dataclass
-class GetItem(StatelessNodeProcess):
-    item_name: str = field(init=False)
+class GetTarget(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
 
-    def __post_init__(self):
-        if isinstance(self.params, str):
-            self.item_name = self.params
-        else:
-            raise TypeError
-        del self.params
-
-    def __call__(self, structured_object):
-        if isinstance(structured_object, dict):
-            if self.item_name in structured_object:
-                return structured_object[self.item_name]
-        else:
-            d = vars(structured_object)
-            if self.item_name in d:
-                return structured_object.__getattribute__(self.item_name)
-            elif self.item_name.lower() in d:
-                return structured_object.__getattribute__(self.item_name.lower())
-        raise ValueError(f"{self.item_name} not found in the object")
-
-
-@dataclass
-class GetTarget(StatelessNodeProcess):
-    def __post_init__(self):
-        warn_left_keys(self.params)
-        del self.params
-
-    def __call__(self, dataset: Dataset) -> Target:
+    def main(self, dataset: Dataset) -> Target:
         return dataset.target
 
 
-@dataclass
-class GetFeature(StatelessNodeProcess):
-    feature: str = None
+class GetFeature(NodeProcessFunction):
+    def __init__(self, feature: str):
+        super(self.__class__, self).__init__()
+        self.feature = feature
 
-    def __post_init__(self):
-        if isinstance(self.params, str):
-            self.feature = self.params
-        else:
-            raise TypeError
-        del self.params
-
-    def __call__(self, dataset: Dataset) -> Feature:
+    def main(self, dataset: Dataset) -> Feature:
         return Feature(dataset.features.loc[:, self.feature])
 
 
-@dataclass
-class MergeFeatures(StatelessNodeProcess):
-    def __post_init__(self):
-        warn_left_keys(self.params)
-        del self.params
+class MergeFeatures(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
 
-    def __call__(self, *features: Feature) -> Features:
+    def main(self, *features: Feature) -> Features:
         return Features(pd.concat([pd.Series(f) for f in features], axis=1))
 
 
@@ -329,18 +260,13 @@ def get_min(arr):
         return np.min(arr)
 
 
-@dataclass
-class LinearNormalize(StatelessNodeProcess):
-    upper: Dict[str, Any] = None
-    lower: Dict[str, Any] = None
-
-    def __post_init__(self):
+class LinearNormalize(NodeProcessFunction):
+    def __init__(self, upper: Dict[str, Any] = None, lower: Dict[str, Any] = None):
+        super(self.__class__, self).__init__()
         self.upper = {"FROM": "MAX", "TO": "MAX"}
-        self.upper.update(**self.params.pop("UPPER", {}))
+        self.upper.update({} if upper is None else upper)
         self.lower = {"FROM": "MIN", "TO": "MIN"}
-        self.lower.update(**self.params.pop("LOWER", {}))
-        warn_left_keys(self.params)
-        del self.params
+        self.lower.update({} if lower is None else lower)
 
     @staticmethod
     def _compile_limit(cmd, arr1d):
@@ -353,7 +279,7 @@ class LinearNormalize(StatelessNodeProcess):
             return cmd
         raise ValueError(cmd)
 
-    def __call__(self, arr1d: np.ndarray) -> np.ndarray:
+    def main(self, arr1d: np.ndarray) -> np.ndarray:
         hifrom = self._compile_limit(self.upper.pop("FROM"), arr1d)
         hito = self._compile_limit(self.upper.pop("TO"), arr1d)
         lofrom = self._compile_limit(self.lower.pop("FROM"), arr1d)
@@ -364,14 +290,10 @@ class LinearNormalize(StatelessNodeProcess):
         ) / (hifrom - lofrom)
 
 
-@dataclass
-class MakeModel(StatelessNodeProcess):
-    method: str = None
-
-    def __post_init__(self):
-        self.method = self.params.pop("METHOD")
-        warn_left_keys(self.params)
-        del self.params
+class MakeModel(NodeProcessFunction):
+    def __init__(self, method):
+        super(self.__class__, self).__init__()
+        self.method = method
 
     @staticmethod
     def after_assign_params_routine(_from, _to):
@@ -380,7 +302,7 @@ class MakeModel(StatelessNodeProcess):
                 del _to[k]
         warn_left_keys(_from)
 
-    def __call__(self, model_params: Dict[str, Any]):
+    def main(self, model_params: Dict[str, Any]):
         if self.method == "XGBOOST_REGRESSOR":
             try:
                 import xgboost
@@ -417,41 +339,33 @@ class MakeModel(StatelessNodeProcess):
             raise ValueError
 
 
-@dataclass
-class Train(StatelessNodeProcess):
-    def __post_init__(self):
-        warn_left_keys(self.params)
-        del self.params
+class Train(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
 
-    def __call__(self, model: Model, dataset: Dataset) -> Model:
+    def main(self, model: Model, dataset: Dataset) -> Model:
         model = model.train(dataset)
         return model
 
 
-@dataclass
-class Predict(StatelessNodeProcess):
-    def __post_init__(self):
-        warn_left_keys(self.params)
-        del self.params
+class Predict(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
 
-    def __call__(self, model: Model, features: Features) -> Target:
+    def main(self, model: Model, features: Features) -> Target:
         return model.predict(features)
 
 
-@dataclass
-class ParameterSearch(StatefulNodeProcess):
-    _search_map: Dict[str, Any] = field(init=False)
-    _nr_randomized_params: int = field(init=False)
-    _rng: np.random.Generator = field(init=False)
-    _seed_gen: Generator[Tuple[int, Tuple]] = field(init=False)
-
-    def __post_init__(self):
-        self.state = self.params.pop("INIT_STATE", 0)
+class ParameterSearch(NodeProcessFunction):
+    def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
+        super(self.__class__, self).__init__()
+        self.state = init_state
         self._nr_randomized_params = 0
-        self._rng = np.random.default_rng(self.params.pop("SEED", 0))
+        self._rng = np.random.default_rng(seed)
         self._seed_gen = self._generate_seed()
         self._search_map = {}
-        for param_name, search_method in self.params.pop("SEARCH_MAP", {}).items():
+        search_map = {} if search_map is None else search_map
+        for param_name, search_method in search_map.items():
             if isinstance(search_method, dict):
                 if len(search_method) != 1:
                     raise ValueError
@@ -462,22 +376,6 @@ class ParameterSearch(StatefulNodeProcess):
                 self._nr_randomized_params += 1
             else:
                 self._search_map[param_name] = search_method
-
-        warn_left_keys(self.params)
-        del self.params
-
-    def __call__(self):
-        state, r_list = next(self._seed_gen)
-        if len(r_list) != self._nr_randomized_params:
-            raise ValueError
-        r = iter(r_list)
-        params = {}
-        for k, v in self._search_map.items():
-            if isinstance(v, RandomizedParam):
-                params[k] = v.from_random(next(r))
-            else:
-                params[k] = v
-        return params
 
     def _random_between(self, a, b, **kwargs):
         return self._rng.random(**kwargs) * (b - a) + a
@@ -508,28 +406,29 @@ class ParameterSearch(StatefulNodeProcess):
             yield self.state, model_r
             self.state += 1
 
+    def main(self):
+        state, r_list = next(self._seed_gen)
+        if len(r_list) != self._nr_randomized_params:
+            raise ValueError
+        r = iter(r_list)
+        params = {}
+        for k, v in self._search_map.items():
+            if isinstance(v, RandomizedParam):
+                params[k] = v.from_random(next(r))
+            else:
+                params[k] = v
+        return params
 
-@dataclass
-class Score(StatelessNodeProcess):
-    dataset_name: Union[str, Any] = field(init=False)
-    methods: List[str] = field(init=False)
 
-    def __post_init__(self):
-        if isinstance(self.params, str):
-            self.dataset_name = MISSING
-            self.methods = [self.params]
-        elif isinstance(self.params, list):
-            self.dataset_name = MISSING
-            self.methods = self.params
-        else:
-            self.dataset_name = self.params.pop("DATASET", MISSING)
-            self.methods = self.params.pop("METHODS")
-            if isinstance(self.methods, str):
-                self.methods = [self.methods]
-            warn_left_keys(self.params)
-        del self.params
+class Score(NodeProcessFunction):
+    def __init__(self, dataset: str = MISSING, methods: Union[str, List[str]] = None):
+        super(self.__class__, self).__init__()
+        self.dataset_name = dataset
+        self.methods = [] if methods is None else methods
+        if isinstance(self.methods, str):
+            self.methods = [self.methods]
 
-    def __call__(
+    def main(
         self,
         prediction: Union[Target, Features, Dataset],
         ground_truth: Union[Target, Dataset],
@@ -570,47 +469,22 @@ class Score(StatelessNodeProcess):
         return ret
 
 
-@dataclass
-class ChangeTypeTo(StatelessNodeProcess):
-    to_type: Type = None
-
-    def __post_init__(self):
-        if isinstance(self.params, str):
-            if self.params == "INTEGER":
-                self.to_type = int
-            elif self.params == "FLOAT":
-                self.to_type = float
-            else:
-                raise ValueError
+class ChangeTypeTo(NodeProcessFunction):
+    def __init__(self, to_type: str):
+        super(self.__class__, self).__init__()
+        if to_type == "INTEGER":
+            self.to_type = int
+        elif to_type == "FLOAT":
+            self.to_type = float
         else:
-            raise TypeError
-        del self.params
+            raise RuntimeError("E22")
 
-    def __call__(self, arr: Union[Feature, Target]):
+    def main(self, arr: Union[Feature, Target]):
         return arr.astype(self.to_type)
 
 
-@dataclass
-class StateUpdate(StatelessNodeProcess):
-    def __call__(self, *args, **kwargs):
-        return NotImplemented
+from utensil.dag.dag import Dag
 
-
-@dataclass
-class Add1(StatelessNodeProcess):
-    init: int = None
-
-    def __post_init__(self):
-        self.init = self.params.pop("INIT", 0)
-        warn_left_keys(self.params)
-
-    def __call__(self, x):
-        if x is None:
-            return self.init
-        return x + 1
-
-
-@dataclass
-class Time2(StatelessNodeProcess):
-    def __call__(self, x):
-        return 2 * x
+dag_path = "../../test/dag/covtype.dag"
+dag = Dag.parse_yaml(dag_path)
+dag.start()

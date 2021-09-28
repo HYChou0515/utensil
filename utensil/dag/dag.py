@@ -26,20 +26,34 @@ def camel_to_snake(s):
 
 class NodeProcessFunction:
     @classmethod
-    def parse(cls, o):
+    def parse(cls, o) -> List[NodeProcessFunction]:
         proc_map = {}
         for subc in cls.__subclasses__():
             proc_map[camel_to_snake(subc.__name__).upper()] = subc
-        if isinstance(o, str):
-            return proc_map[o]()
-        elif isinstance(o, dict):
-            if len(o) != 1:
-                raise RuntimeError("E3")
-            name, params = o.popitem()
-            params = {k.lower(): v for k, v in params.items()}
-            return proc_map[name](**params)  # noqa
-        else:
-            raise RuntimeError("E4")
+
+        def _parse_1(_o):
+            if isinstance(_o, str):
+                return proc_map[_o]()
+            elif isinstance(_o, dict):
+                if len(_o) != 1:
+                    raise RuntimeError("E3")
+                name, params = _o.popitem()
+                if isinstance(params, str):
+                    return proc_map[name](params)  # noqa
+                elif isinstance(params, list):
+                    return proc_map[name](*params)  # noqa
+                elif isinstance(params, dict):
+                    params = {k.lower(): v for k, v in params.items()}
+                    return proc_map[name](**params)  # noqa
+                else:
+                    raise RuntimeError("E23")
+            else:
+                raise RuntimeError("E4")
+
+        if not isinstance(o, list):
+            o = [o]
+
+        return [_parse_1(_) for _ in o]
 
     @abstractmethod
     def main(self, *args, **kwargs):
@@ -55,7 +69,8 @@ class NodeProcessMeta:
     node_name: str
     triggerings: List[Node]
     children: List[Node]
-    process_func: NodeProcessFunction
+    process_funcs: List[NodeProcessFunction]
+    export: Tuple[str]
 
 
 class NodeProcessBuilder:
@@ -78,14 +93,21 @@ class NodeProcess(BaseNodeProcess):
         self.kwargs = kwargs
 
     def run(self) -> None:
-        print(self.meta.node_name, self.args, self.kwargs)
-        ret = self.meta.process_func(*self.args, **self.kwargs)
-        print(f"{self.meta.node_name}: {ret}")
+        print(self.meta.node_name)
+        try:
+            ret = self.meta.process_funcs[0](*self.args, **self.kwargs)
+            for proc_func in self.meta.process_funcs[1:]:
+                ret = proc_func(ret)
+            if "PRINT" in self.meta.export:
+                print(f"{self.meta.node_name}: {ret}")
 
-        for triggering in self.meta.triggerings:
-            triggering.trigger(ret, self.meta.node_name)
-        for child in self.meta.children:
-            child.push(ret, self.meta.node_name)
+            for triggering in self.meta.triggerings:
+                triggering.trigger(ret, self.meta.node_name)
+            for child in self.meta.children:
+                child.push(ret, self.meta.node_name)
+        except Exception as e:
+            print(self.meta.node_name, e)
+            raise e
 
 
 DEFAULT_FLOW = object()
@@ -110,24 +132,36 @@ class ParentSpecifier:
     def parse(cls, s):
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
         if not re.fullmatch(
-            rf"(\w+{_Operator.SUB})*\w+"
-            rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"
-            rf"({_Operator.FLOW_USE}\w+(.\w+)*)?",
+            rf"\w+"  # node_name
+            rf"({_Operator.SUB}\w+)*"  # flow condition
+            rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
+            rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?",  # flow use
             s,
         ):
             raise RuntimeError("E18")
-        s, *flow_use = s.split(_Operator.FLOW_USE)
-        flow_condition, *flows = s.split(_Operator.FLOW)
-        flows = [] if len(flows) == 0 else flows[0].split(_Operator.FLOW_OR)
-        node_name, *flow_condition = flow_condition.split(_Operator.SUB)
+        s, _, flow_use = s.partition(_Operator.FLOW_USE)
+        flow_use = flow_use.split(_Operator.SUB) if flow_use else []
+        s, _, flows = s.partition(_Operator.FLOW)
+        flows = flows.split(_Operator.FLOW_OR) if flows else []
+        node_name, *flow_condition = s.split(_Operator.SUB)
+
+        # A.B.C is alias to A.B.C=B.C
+        # A.B.C/True is not
+        # A.B.C=D is not
+        if len(flow_use) == 0 and len(flows) == 0:
+            flow_use = flow_condition
+
         return cls(node_name, tuple(flow_condition), tuple(flows), tuple(flow_use))
 
 
 class ParentSpecifiers(tuple):
     @classmethod
-    def parse(cls, s):
+    def parse(cls, list_str: Union[str, List[str]]):
+        if isinstance(list_str, str):
+            list_str = [list_str]
         return cls(
-            ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR)
+            tuple(ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR))
+            for s in list_str
         )
 
 
@@ -149,8 +183,9 @@ class Parents:
             if k in self.parent_keys:
                 raise RuntimeError("E19")
             self.parent_keys.add(k)
-            for spec in parent_specs:
-                self.node_map[spec.node_name].append((k, spec))
+            for specs in parent_specs:
+                for spec in specs:
+                    self.node_map[spec.node_name].append((k, spec))
 
     @classmethod
     def parse(cls, o):
@@ -167,6 +202,8 @@ class Parents:
                 else:
                     raise RuntimeError("E1")
             return cls(args, kwargs)
+        elif isinstance(o, str):
+            return cls([o], {})
         else:
             raise RuntimeError("E2")
 
@@ -195,20 +232,29 @@ class Node(BaseNode):
         self,
         name: str,
         end: bool,
-        proc_func: NodeProcessFunction,
+        proc_funcs: List[NodeProcessFunction],
         end_q: SimpleQueue,
         triggers: Union[None, Triggers] = None,
         parents: Union[None, Parents] = None,
+        export: Union[None, str, List[str]] = None,
     ):
         super(self.__class__, self).__init__()
         self.name = name
-        self.proc_func = proc_func
+        self.proc_funcs = proc_funcs
         self.end = end
         self.triggers = Triggers() if triggers is None else triggers
         self.parents = Parents() if parents is None else parents
         self.children = []
         self.triggerings = []
         self.end_q = end_q
+        if export is None:
+            self.export = tuple()
+        elif isinstance(export, str):
+            self.export = (export,)
+        elif isinstance(export, list):
+            self.export = tuple(export)
+        else:
+            raise RuntimeError("E24")
 
         self._tqs: Dict[str, Queue] = {k: Queue() for k in self.triggers.parent_keys}
         self._qs: Dict[str, Queue] = {k: Queue() for k in self.parents.parent_keys}
@@ -254,7 +300,7 @@ class Node(BaseNode):
 
     def run(self) -> None:
         meta = NodeProcessMeta(
-            self.name, self.triggerings, self.children, self.proc_func
+            self.name, self.triggerings, self.children, self.proc_funcs, self.export
         )
         process_builder = NodeProcessBuilder()
         process_builder.meta = meta
@@ -306,13 +352,14 @@ class Node(BaseNode):
             raise RuntimeError("E21")
         if not isinstance(o, dict):
             raise RuntimeError("E5")
-        proc_func = None
+        proc_funcs = None
         triggers = None
         end = False
         parents = None
+        export = None
         for k, v in o.items():
             if k == "PROCESS":
-                proc_func = NodeProcessFunction.parse(v)
+                proc_funcs = NodeProcessFunction.parse(v)
             elif k == "TRIGGERS":
                 triggers = Triggers.parse(v)
             elif k == "PARENTS":
@@ -320,15 +367,18 @@ class Node(BaseNode):
             elif k == "END":
                 if v:
                     end = True
+            elif k == "EXPORT":
+                export = v
             else:
-                raise RuntimeError("E13")
+                raise RuntimeError(f"E13: {k}")
         return cls(
             name=name,
             triggers=triggers,
             end=end,
-            proc_func=proc_func,
+            proc_funcs=proc_funcs,
             end_q=end_q,
             parents=parents,
+            export=export,
         )
 
 
@@ -377,3 +427,11 @@ class Dag:
             node.trigger(TriggerToken(), SWITCHON)
         for proc in self.processes:
             proc.join()
+
+
+class Dummy(NodeProcessFunction):
+    def __init__(self):
+        super(self.__class__, self).__init__()
+
+    def main(self, a):
+        return a

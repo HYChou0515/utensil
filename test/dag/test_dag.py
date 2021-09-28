@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from utensil.dag.dag import Dag, NodeProcessFunction
+import utensil.dag.dataflow
 
 
 class Constant(NodeProcessFunction):
@@ -112,6 +113,13 @@ class TestSimpleDag(ut.TestCase):
         self.assertEqual(115, output)
 
         os.remove("simple.output")
+
+
+class TestCovtypeDag(ut.TestCase):
+    def test_end_to_end(self):
+        dag_path = "covtype.dag"
+        dag = Dag.parse_yaml(dag_path)
+        dag.start()
 
 
 if __name__ == "__main__":
