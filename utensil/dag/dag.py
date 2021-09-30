@@ -9,7 +9,12 @@ from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Process, Queue, SimpleQueue
 from queue import Empty
-from typing import Any, Dict, List, Optional, Tuple, Union
+from types import ModuleType
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+
+from utensil import get_logger
+
+logger = get_logger(__name__)
 
 
 class BaseNode(Process):
@@ -20,16 +25,10 @@ class BaseNodeProcess(Process):
     pass
 
 
-def camel_to_snake(s):
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", s)
-
-
 class NodeProcessFunction:
     @classmethod
     def parse(cls, o) -> List[NodeProcessFunction]:
-        proc_map = {}
-        for subc in cls.__subclasses__():
-            proc_map[camel_to_snake(subc.__name__).upper()] = subc
+        proc_map = _NODE_PROCESS_MAPPING
 
         def _parse_1(_o):
             if isinstance(_o, str):
@@ -38,15 +37,15 @@ class NodeProcessFunction:
                 if len(_o) != 1:
                     raise RuntimeError("E3")
                 name, params = _o.popitem()
-                if isinstance(params, str):
-                    return proc_map[name](params)  # noqa
-                elif isinstance(params, list):
+                logger.debug(name, params)
+                if isinstance(params, list):
                     return proc_map[name](*params)  # noqa
                 elif isinstance(params, dict):
                     params = {k.lower(): v for k, v in params.items()}
                     return proc_map[name](**params)  # noqa
                 else:
-                    raise RuntimeError("E23")
+                    print(proc_map[name])
+                    return proc_map[name](params)  # noqa
             else:
                 raise RuntimeError("E4")
 
@@ -71,6 +70,7 @@ class NodeProcessMeta:
     children: List[Node]
     process_funcs: List[NodeProcessFunction]
     export: Tuple[str]
+    result_q: SimpleQueue
 
 
 class NodeProcessBuilder:
@@ -93,20 +93,21 @@ class NodeProcess(BaseNodeProcess):
         self.kwargs = kwargs
 
     def run(self) -> None:
-        print(self.meta.node_name)
+        logger.debug(f'Node "{self.meta.node_name}" started')
         try:
             ret = self.meta.process_funcs[0](*self.args, **self.kwargs)
             for proc_func in self.meta.process_funcs[1:]:
                 ret = proc_func(ret)
             if "PRINT" in self.meta.export:
                 print(f"{self.meta.node_name}: {ret}")
-
+            if "RETURN" in self.meta.export:
+                self.meta.result_q.put((self.meta.node_name, ret))
             for triggering in self.meta.triggerings:
                 triggering.trigger(ret, self.meta.node_name)
             for child in self.meta.children:
                 child.push(ret, self.meta.node_name)
         except Exception as e:
-            print(self.meta.node_name, e)
+            logger.exception(e)
             raise e
 
 
@@ -205,7 +206,7 @@ class Parents:
         elif isinstance(o, str):
             return cls([o], {})
         else:
-            raise RuntimeError("E2")
+            raise RuntimeError(f"E2")
 
 
 class Triggers(Parents):
@@ -234,6 +235,7 @@ class Node(BaseNode):
         end: bool,
         proc_funcs: List[NodeProcessFunction],
         end_q: SimpleQueue,
+        result_q: SimpleQueue,
         triggers: Union[None, Triggers] = None,
         parents: Union[None, Parents] = None,
         export: Union[None, str, List[str]] = None,
@@ -247,6 +249,7 @@ class Node(BaseNode):
         self.children = []
         self.triggerings = []
         self.end_q = end_q
+        self.result_q = result_q
         if export is None:
             self.export = tuple()
         elif isinstance(export, str):
@@ -300,7 +303,12 @@ class Node(BaseNode):
 
     def run(self) -> None:
         meta = NodeProcessMeta(
-            self.name, self.triggerings, self.children, self.proc_funcs, self.export
+            self.name,
+            self.triggerings,
+            self.children,
+            self.proc_funcs,
+            self.export,
+            self.result_q,
         )
         process_builder = NodeProcessBuilder()
         process_builder.meta = meta
@@ -319,6 +327,7 @@ class Node(BaseNode):
 
         inputs = {}
         triggered = {}
+        procs = []
         while self.end_q.empty():
             triggers_ok, triggered = check_queues(triggered, self._tqs)
             parents_ok, inputs = check_queues(inputs, self._qs)
@@ -340,14 +349,27 @@ class Node(BaseNode):
             kwargs = {
                 k: inputs.pop(k) for k in self.parents.kwargs.keys() if k in inputs
             }
-            proc = process_builder.build(*args, **kwargs)
-            proc.start()
+            procs.append(process_builder.build(*args, **kwargs))
+            procs[-1].start()
 
             if self.end:
+                for proc in procs:
+                    proc.join()
                 self.end_q.put(object)
 
+            procs = [proc for proc in procs if proc.is_alive()]
+
+        while True:
+            for proc in procs:
+                if proc.is_alive():
+                    proc.kill()
+                    logger.debug(f"killing proc {proc.name}")
+                    break
+            else:
+                break
+
     @classmethod
-    def parse(cls, name, o, end_q: SimpleQueue):
+    def parse(cls, name, o, end_q: SimpleQueue, result_q: SimpleQueue):
         if name == SWITCHON:
             raise RuntimeError("E21")
         if not isinstance(o, dict):
@@ -365,8 +387,7 @@ class Node(BaseNode):
             elif k == "PARENTS":
                 parents = Parents.parse(v)
             elif k == "END":
-                if v:
-                    end = True
+                end = True if v else False
             elif k == "EXPORT":
                 export = v
             else:
@@ -377,14 +398,16 @@ class Node(BaseNode):
             end=end,
             proc_funcs=proc_funcs,
             end_q=end_q,
+            result_q=result_q,
             parents=parents,
             export=export,
         )
 
 
 class Dag:
-    def __init__(self, nodes: List[Node]):
+    def __init__(self, nodes: List[Node], result_q: SimpleQueue):
         self.nodes = {}
+        self.result_q = result_q
         self.processes: List[Process] = []
         for node in nodes:
             if node.name in self.nodes:
@@ -404,8 +427,9 @@ class Dag:
         if not isinstance(o, dict):
             raise RuntimeError("E7")
         end_q = SimpleQueue()
-        nodes = [Node.parse(k, v, end_q) for k, v in o.items()]
-        return cls(nodes)
+        result_q = SimpleQueue()
+        nodes = [Node.parse(k, v, end_q, result_q) for k, v in o.items()]
+        return cls(nodes, result_q)
 
     @classmethod
     def parse_yaml(cls, dag_path):
@@ -427,11 +451,55 @@ class Dag:
             node.trigger(TriggerToken(), SWITCHON)
         for proc in self.processes:
             proc.join()
+        results = []
+        while not self.result_q.empty():
+            results.append(self.result_q.get())
+        return results
 
 
-class Dummy(NodeProcessFunction):
-    def __init__(self):
-        super(self.__class__, self).__init__()
+_NODE_PROCESS_MAPPING: Dict[str, Type[NodeProcessFunction]] = {}
 
-    def main(self, a):
-        return a
+
+def camel_to_snake(s):
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", s)
+
+
+def default_node_process_function_name(c: Type[NodeProcessFunction]):
+    return camel_to_snake(c.__name__).upper()
+
+
+def reset_node_process_functions():
+    while len(_NODE_PROCESS_MAPPING) > 0:
+        _NODE_PROCESS_MAPPING.popitem()
+
+
+def register_node_process_functions(
+    proc_funcs: List[Type[NodeProcessFunction]] = None,
+    proc_func_map: Dict[str, Type[NodeProcessFunction]] = None,
+    proc_func_module: ModuleType = None,
+    raise_on_exist: bool = True,
+):
+    proc_funcs = [] if proc_funcs is None else proc_funcs
+    proc_func_map = {} if proc_func_map is None else proc_func_map
+
+    def _check_before_update(_name, _proc_func):
+        if _name in _NODE_PROCESS_MAPPING and raise_on_exist:
+            raise RuntimeError(f"E25 {_name}")
+        _NODE_PROCESS_MAPPING[_name] = _proc_func
+
+    for proc_func in proc_funcs:
+        name = default_node_process_function_name(proc_func)
+        _check_before_update(name, proc_func)
+
+    if proc_func_module is not None:
+        for proc_func in proc_func_module.__dict__.values():
+            if (
+                isinstance(proc_func, type)
+                and proc_func is not NodeProcessFunction
+                and issubclass(proc_func, NodeProcessFunction)
+            ):
+                name = default_node_process_function_name(proc_func)
+                _check_before_update(name, proc_func)
+
+    for name, proc_func in proc_func_map.items():
+        _check_before_update(name, proc_func)

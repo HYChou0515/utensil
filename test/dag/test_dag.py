@@ -1,13 +1,20 @@
 import os
+import sys
 import unittest as ut
 import warnings
-from dataclasses import dataclass
-from typing import Any
 
 import pytest
 
-from utensil.dag.dag import Dag, NodeProcessFunction
-import utensil.dag.dataflow
+from utensil.dag.dag import (
+    Dag,
+    NodeProcessFunction,
+    register_node_process_functions,
+    reset_node_process_functions,
+)
+from utensil.dag.functions import basic, dataflow
+from utensil.general.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Constant(NodeProcessFunction):
@@ -61,21 +68,6 @@ class Sum(NodeProcessFunction):
         return sum(l)
 
 
-@dataclass
-class SimpleCondition:
-    c: Any
-    v: Any
-
-
-class LargerThan(NodeProcessFunction):
-    def __init__(self, value):
-        super(self.__class__, self).__init__()
-        self.value = value
-
-    def main(self, a):
-        return SimpleCondition(c=a > self.value, v=a)
-
-
 class Divide(NodeProcessFunction):
     def __init__(self):
         super(self.__class__, self).__init__()
@@ -98,6 +90,10 @@ class Pickle(NodeProcessFunction):
 class TestSimpleDag(ut.TestCase):
     @pytest.mark.timeout(10)
     def test_end_to_end(self):
+        reset_node_process_functions()
+        register_node_process_functions(proc_func_module=sys.modules[__name__])
+        register_node_process_functions(proc_funcs=[basic.GreaterThan])
+
         if os.path.isfile("simple.output"):
             warnings.warn("simple.output deleted")
             os.remove("simple.output")
@@ -116,10 +112,25 @@ class TestSimpleDag(ut.TestCase):
 
 
 class TestCovtypeDag(ut.TestCase):
+    @pytest.mark.timeout(60)
     def test_end_to_end(self):
+        reset_node_process_functions()
+        register_node_process_functions(proc_func_module=basic)
+        register_node_process_functions(proc_func_module=dataflow)
+
         dag_path = "covtype.dag"
         dag = Dag.parse_yaml(dag_path)
-        dag.start()
+        results = dag.start()
+        logger.debug(results)
+        self.assertEqual(3, len(results))
+        for result in results:
+            self.assertEqual("TEST_SCORE", result[0])
+            self.assertEqual(1, len(result[1]))
+            self.assertEqual(3, len(result[1][0]))
+            self.assertEqual("ACCURACY", result[1][0][0])
+            self.assertEqual("TEST_DATA", result[1][0][1])
+            self.assertGreaterEqual(1, result[1][0][2])
+            self.assertLessEqual(0, result[1][0][2])
 
 
 if __name__ == "__main__":

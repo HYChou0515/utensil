@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
 from utensil.dag.dag import NodeProcessFunction
+from utensil.dag.functions import MISSING
 from utensil.general import warn_left_keys
 from utensil.random_search import RandomizedParam
 
@@ -12,13 +13,6 @@ try:
     import pandas as pd
 except ImportError as e:
     raise e
-
-
-class _MISSING:
-    pass
-
-
-MISSING = _MISSING()
 
 
 class Feature(pd.Series):
@@ -483,8 +477,19 @@ class ChangeTypeTo(NodeProcessFunction):
         return arr.astype(self.to_type)
 
 
-from utensil.dag.dag import Dag
-
-dag_path = "../../test/dag/covtype.dag"
-dag = Dag.parse_yaml(dag_path)
-dag.start()
+PROCESS_MAP = {
+    "LOAD_DATA": LoadData,
+    "FILTER_ROWS": FilterRows,
+    "SAMPLING_ROWS": SamplingRows,
+    "MAKE_DATASET": MakeDataset,
+    "GET_TARGET": GetTarget,
+    "GET_FEATURE": GetFeature,
+    "MERGE_FEATURES": MergeFeatures,
+    "LINEAR_NORMALIZE": LinearNormalize,
+    "MAKE_MODEL": MakeModel,
+    "TRAIN": Train,
+    "PREDICT": Predict,
+    "PARAMETER_SEARCH": ParameterSearch,
+    "SCORE": Score,
+    "CHANGE_TYPE_TO": ChangeTypeTo,
+}

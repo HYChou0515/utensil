@@ -38,10 +38,8 @@ DAG:
       - ADD: TIMES_1
   IF_1:
     PROCESS:
-      LARGER_THAN:
-        VALUE: 200
-    PARENTS:
-      A: SUM
+      GREATER_THAN: 200
+    PARENTS: SUM
 
   DIVIDE:
     PROCESS:

@@ -7,6 +7,11 @@ from typing import Iterable, Union
 
 from utensil import constant
 
+try:
+    import loguru
+except ImportError:
+    loguru = None
+
 
 def parse_log_level(level):
     if isinstance(level, str):
@@ -72,6 +77,10 @@ class LoggerConfig:
 
 
 def get_logger(name, logger_config=None):
+    if loguru:
+        from loguru import logger
+
+        return logger
     if logger_config is None:
         logger_config = LoggerConfig()
     logger = logging.getLogger(name)

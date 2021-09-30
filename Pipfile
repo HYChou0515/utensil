@@ -20,6 +20,8 @@ black = "*"
 pytest-timeout = "*"
 isort = "*"
 pre-commit = "*"
+loguru = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.7"
