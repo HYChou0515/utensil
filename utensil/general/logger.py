@@ -42,13 +42,10 @@ class LoggerConfig:
     level: Union[str, int] = constant.LOG.get("Level")
     handlers: Iterable[logging.Handler] = (None,)
     format: str = (
-        "{asctime:s}.{msecs:06.0f} "
-        + constant.HOST_INFO.get("HostName")
-        + " "
-        + socket.gethostname()
-        + " {processName:s}({process:d}) {threadName:s}({thread:d}) {levelname:s} "
-        "({name:s}.{funcName:s}) {message:s} "
-    )
+        "{asctime:s}.{msecs:06.0f} " + constant.HOST_INFO.get("HostName") +
+        " " + socket.gethostname() +
+        " {processName:s}({process:d}) {threadName:s}({thread:d}) {levelname:s} "
+        "({name:s}.{funcName:s}) {message:s} ")
     style: str = "{"
     datefmt: str = "%Y-%m-%d %I:%M:%S"
 
@@ -57,18 +54,21 @@ class LoggerConfig:
         _logger_handlers = []
         if constant.LOG.get("Stream", "NOTSET") != "NOTSET":
             handler = logging.StreamHandler()
-            handler.setLevel(parse_log_level(constant.LOG.get("Stream", "NOTSET")))
+            handler.setLevel(
+                parse_log_level(constant.LOG.get("Stream", "NOTSET")))
             _logger_handlers.append(handler)
         if constant.LOG.get("Syslog", "NOTSET") != "NOTSET":
             handler = handlers.SysLogHandler()
-            handler.setLevel(parse_log_level(constant.LOG.get("Syslog", "NOTSET")))
+            handler.setLevel(
+                parse_log_level(constant.LOG.get("Syslog", "NOTSET")))
             _logger_handlers.append(handler)
         if constant.LOG.get("File", "NOTSET") != "NOTSET":
             log_file_name = constant.LOG.get("FilePrefix", "log")
             if not os.path.isdir(os.path.dirname(log_file_name)):
                 os.makedirs(os.path.dirname(log_file_name))
             handler = handlers.WatchedFileHandler(log_file_name)
-            handler.setLevel(parse_log_level(constant.LOG.get("File", "NOTSET")))
+            handler.setLevel(parse_log_level(constant.LOG.get("File",
+                                                              "NOTSET")))
             _logger_handlers.append(handler)
 
         self.level = parse_log_level(self.level)
@@ -97,6 +97,7 @@ def get_logger(name, logger_config=None):
 
 
 class _DummyLogger:
+
     def setLevel(self, level):
         pass
 

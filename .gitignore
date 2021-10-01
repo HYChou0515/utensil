@@ -7,3 +7,5 @@ gmon.out
 utensil.egg-info
 dist
 build
+_doc
+.utensil

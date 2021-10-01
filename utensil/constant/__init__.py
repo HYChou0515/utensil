@@ -15,11 +15,9 @@ if "UTENSIL_CONFIG" in os.environ:
 else:
     UTENSIL_CONFIG = "utensil.ini"
 
-
 config = ConfigParser(interpolation=ExtendedInterpolation())
 
-config.read_string(
-    f"""
+config.read_string(f"""
 [PROJECT]
 ProjectRoot = {PROJECT_ROOT}
 ConfigPath = {PROJECT_ROOT}/{UTENSIL_CONFIG}
@@ -38,16 +36,20 @@ File = info
 FilePrefix = ${{Dir}}/${{PROJECT:ProjectAbbr}}.log
 Level = info
 MaxMessageLen = 60000
-"""
-)
+""")
 
 if os.path.isfile(os.path.normpath(config["PROJECT"].get("ConfigPath"))):
-    config.read_file(open(os.path.normpath(config["PROJECT"].get("ConfigPath"))))
+    config.read_file(open(os.path.normpath(
+        config["PROJECT"].get("ConfigPath"))))
 
-config["PROJECT"]["ProjectRoot"] = os.path.normpath(config["PROJECT"]["ProjectRoot"])
-config["PROJECT"]["ProjectName"] = os.path.normpath(config["PROJECT"]["ProjectName"])
-config["PROJECT"]["ProjectAbbr"] = os.path.normpath(config["PROJECT"]["ProjectAbbr"])
-config["PROJECT"]["ConfigPath"] = os.path.normpath(config["PROJECT"]["ConfigPath"])
+config["PROJECT"]["ProjectRoot"] = os.path.normpath(
+    config["PROJECT"]["ProjectRoot"])
+config["PROJECT"]["ProjectName"] = os.path.normpath(
+    config["PROJECT"]["ProjectName"])
+config["PROJECT"]["ProjectAbbr"] = os.path.normpath(
+    config["PROJECT"]["ProjectAbbr"])
+config["PROJECT"]["ConfigPath"] = os.path.normpath(
+    config["PROJECT"]["ConfigPath"])
 
 config["LOG"]["Dir"] = os.path.normpath(config["LOG"]["Dir"])
 config["LOG"]["FilePrefix"] = os.path.normpath(config["LOG"]["FilePrefix"])

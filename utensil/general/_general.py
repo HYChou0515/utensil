@@ -11,7 +11,7 @@ def chunks(iterable, n):
         yield from []
     elif isinstance(iterable, (list, str, tuple)):
         for i in range(0, len(iterable), n):
-            yield iterable[i : i + n]
+            yield iterable[i:i + n]
     else:
         ret = []
         for it in iterable:

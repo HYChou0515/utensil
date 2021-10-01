@@ -26,6 +26,7 @@ class BaseNodeProcess(Process):
 
 
 class NodeProcessFunction:
+
     @classmethod
     def parse(cls, o) -> List[NodeProcessFunction]:
         proc_map = _NODE_PROCESS_MAPPING
@@ -59,7 +60,9 @@ class NodeProcessFunction:
         raise NotImplementedError
 
     def __call__(self, *args, **kwargs):
-        params = [kwargs.pop(k) for k in self.main.__code__.co_varnames if k in kwargs]
+        params = [
+            kwargs.pop(k) for k in self.main.__code__.co_varnames if k in kwargs
+        ]
         return self.main(*params, *args, **kwargs)
 
 
@@ -74,6 +77,7 @@ class NodeProcessMeta:
 
 
 class NodeProcessBuilder:
+
     def __init__(self):
         self.meta: Optional[NodeProcessMeta] = None
 
@@ -86,6 +90,7 @@ class NodeProcessBuilder:
 
 
 class NodeProcess(BaseNodeProcess):
+
     def __init__(self, meta: NodeProcessMeta, *args, **kwargs):
         super(self.__class__, self).__init__()
         self.meta: NodeProcessMeta = meta
@@ -133,11 +138,11 @@ class ParentSpecifier:
     def parse(cls, s):
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
         if not re.fullmatch(
-            rf"\w+"  # node_name
-            rf"({_Operator.SUB}\w+)*"  # flow condition
-            rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
-            rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?",  # flow use
-            s,
+                rf"\w+"  # node_name
+                rf"({_Operator.SUB}\w+)*"  # flow condition
+                rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
+                rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?",  # flow use
+                s,
         ):
             raise RuntimeError("E18")
         s, _, flow_use = s.partition(_Operator.FLOW_USE)
@@ -152,35 +157,36 @@ class ParentSpecifier:
         if len(flow_use) == 0 and len(flows) == 0:
             flow_use = flow_condition
 
-        return cls(node_name, tuple(flow_condition), tuple(flows), tuple(flow_use))
+        return cls(node_name, tuple(flow_condition), tuple(flows),
+                   tuple(flow_use))
 
 
 class ParentSpecifiers(tuple):
+
     @classmethod
     def parse(cls, list_str: Union[str, List[str]]):
         if isinstance(list_str, str):
             list_str = [list_str]
         return cls(
-            tuple(ParentSpecifier.parse(spec.strip()) for spec in s.split(_Operator.OR))
-            for s in list_str
-        )
+            tuple(
+                ParentSpecifier.parse(spec.strip())
+                for spec in s.split(_Operator.OR))
+            for s in list_str)
 
 
 class Parents:
+
     def __init__(self, args=None, kwargs=None):
-        self.args: List[ParentSpecifiers] = (
-            [] if args is None else [ParentSpecifiers.parse(name) for name in args]
-        )
-        self.kwargs: Dict[str, ParentSpecifiers] = (
-            {}
-            if kwargs is None
-            else {k: ParentSpecifiers.parse(name) for k, name in kwargs.items()}
-        )
+        self.args: List[ParentSpecifiers] = ([] if args is None else [
+            ParentSpecifiers.parse(name) for name in args
+        ])
+        self.kwargs: Dict[str, ParentSpecifiers] = ({} if kwargs is None else {
+            k: ParentSpecifiers.parse(name) for k, name in kwargs.items()
+        })
         self.node_map = defaultdict(list)
         self.parent_keys = set()
-        for k, parent_specs in itertools.chain(
-            enumerate(self.args), self.kwargs.items()
-        ):
+        for k, parent_specs in itertools.chain(enumerate(self.args),
+                                               self.kwargs.items()):
             if k in self.parent_keys:
                 raise RuntimeError("E19")
             self.parent_keys.add(k)
@@ -210,6 +216,7 @@ class Parents:
 
 
 class Triggers(Parents):
+
     @classmethod
     def parse(cls, o):
         if isinstance(o, str):
@@ -229,6 +236,7 @@ class TriggerToken:
 
 
 class Node(BaseNode):
+
     def __init__(
         self,
         name: str,
@@ -259,8 +267,11 @@ class Node(BaseNode):
         else:
             raise RuntimeError("E24")
 
-        self._tqs: Dict[str, Queue] = {k: Queue() for k in self.triggers.parent_keys}
-        self._qs: Dict[str, Queue] = {k: Queue() for k in self.parents.parent_keys}
+        self._tqs: Dict[str, Queue] = {
+            k: Queue() for k in self.triggers.parent_keys
+        }
+        self._qs: Dict[str,
+                       Queue] = {k: Queue() for k in self.parents.parent_keys}
 
     @staticmethod
     def _getitem(_p, _attr):
@@ -345,9 +356,15 @@ class Node(BaseNode):
             triggered = {}
 
             # if triggers ok but parents not ok, use whatever it have
-            args = [inputs.pop(i) for i in range(len(self.parents.args)) if i in inputs]
+            args = [
+                inputs.pop(i)
+                for i in range(len(self.parents.args))
+                if i in inputs
+            ]
             kwargs = {
-                k: inputs.pop(k) for k in self.parents.kwargs.keys() if k in inputs
+                k: inputs.pop(k)
+                for k in self.parents.kwargs.keys()
+                if k in inputs
             }
             procs.append(process_builder.build(*args, **kwargs))
             procs[-1].start()
@@ -405,6 +422,7 @@ class Node(BaseNode):
 
 
 class Dag:
+
     def __init__(self, nodes: List[Node], result_q: SimpleQueue):
         self.nodes = {}
         self.result_q = result_q
@@ -493,11 +511,9 @@ def register_node_process_functions(
 
     if proc_func_module is not None:
         for proc_func in proc_func_module.__dict__.values():
-            if (
-                isinstance(proc_func, type)
-                and proc_func is not NodeProcessFunction
-                and issubclass(proc_func, NodeProcessFunction)
-            ):
+            if (isinstance(proc_func, type) and
+                    proc_func is not NodeProcessFunction and
+                    issubclass(proc_func, NodeProcessFunction)):
                 name = default_node_process_function_name(proc_func)
                 _check_before_update(name, proc_func)
 

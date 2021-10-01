@@ -19,6 +19,7 @@ except ImportError as e:
 
 
 class RandomizedParam(abc.ABC):
+
     @abc.abstractmethod
     def from_random(self, r):
         raise NotImplemented
@@ -52,6 +53,7 @@ class RandomizedParam(abc.ABC):
 
 @dataclass
 class BooleanParam(RandomizedParam):
+
     def from_random(self, r):
         return r > 0.5
 
@@ -97,7 +99,10 @@ class RandomizedDispatcher:
 
 
 class RandomizedConfig(abc.ABC):
-    def get_config(self, model_id, seed=0) -> Tuple[Dict[str, Any], RandomizedConfig]:
+
+    def get_config(self,
+                   model_id,
+                   seed=0) -> Tuple[Dict[str, Any], RandomizedConfig]:
         kwargs = {}
         dispatchers = {}
         params = {}
@@ -112,16 +117,14 @@ class RandomizedConfig(abc.ABC):
                 kwargs[k] = v
                 model_r[k] = None
 
-        base = 2 ** int(np.log2(model_id + 1))
+        base = 2**int(np.log2(model_id + 1))
         offset = model_id + 1 - base
         sd = int.from_bytes(
-            hashlib.sha256(str(seed + base).encode()).digest()[:4], "big"
-        )
+            hashlib.sha256(str(seed + base).encode()).digest()[:4], "big")
         rng = np.random.default_rng(sd)
         linspace = np.linspace(0, 1, base + 1)
         rand_space = rng.random(size=(base, len(params))) * (
-            linspace[1] - linspace[0]
-        ) + linspace[:-1].reshape(-1, 1)
+            linspace[1] - linspace[0]) + linspace[:-1].reshape(-1, 1)
 
         for i in range(len(params)):
             rng.shuffle(rand_space[:, i])
@@ -137,8 +140,7 @@ class RandomizedConfig(abc.ABC):
             else:
                 key = tuple(vars(model_c)[kn] for kn in dispatcher.key_names)
             r, vars(model_c)[var_name] = dispatcher.dispatch[key].get_config(
-                model_id, seed=seed
-            )
+                model_id, seed=seed)
             model_r[var_name] = r
         return model_r, model_c
 
@@ -171,9 +173,8 @@ class SeededConfig:
     config_temp: RandomizedConfig
 
     @classmethod
-    def from_config_template(
-        cls, config_temp: RandomizedConfig, model_id: int, seed: int
-    ):
+    def from_config_template(cls, config_temp: RandomizedConfig, model_id: int,
+                             seed: int):
         seed_r, config = config_temp.get_config(model_id=model_id, seed=seed)
         return cls(
             cid=model_id,
@@ -188,6 +189,7 @@ ModelScore = namedtuple("ModelScore", ["model", "score"])
 
 
 class RandomSearch(abc.ABC):
+
     def __init__(self, logger=None):
         self.logger = DUMMY_LOGGER if logger is None else logger
 
@@ -200,7 +202,8 @@ class RandomSearch(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def do_training(self, sd_config: SeededConfig, train_x, train_y, idx) -> ModelScore:
+    def do_training(self, sd_config: SeededConfig, train_x, train_y,
+                    idx) -> ModelScore:
         raise NotImplementedError
 
     def train(self, tr_path, te_path, config_temp, model_id_range=None, seed=0):
@@ -226,11 +229,11 @@ class RandomSearch(abc.ABC):
             self.logger.info(f"model_id={mid}: initialize")
 
             sd_config = SeededConfig.from_config_template(
-                config_temp=config_temp, model_id=mid, seed=seed
-            )
+                config_temp=config_temp, model_id=mid, seed=seed)
             model, score = None, None
             try:
-                model, score = self.do_training(sd_config, train_x, train_y, idx)
+                model, score = self.do_training(sd_config, train_x, train_y,
+                                                idx)
             except Exception:
                 self.logger.warning(
                     f"model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, seed={seed}",
@@ -246,7 +249,8 @@ class RandomSearch(abc.ABC):
             self.model_scores_to_csv(model_scores)
 
             # keep the best model
-            if score is not None and (best_model is None or best_model[0] < score):
+            if score is not None and (best_model is None or
+                                      best_model[0] < score):
                 best_model = (score, deepcopy(model), sd_config)
 
                 # use the current best model to generate csv for submission
@@ -257,13 +261,12 @@ class RandomSearch(abc.ABC):
                     "submit",
                     f"{__name__}_{int(np.round(score * 1e5))}_{sd_config.cid:04d}.csv",
                 )
-                pd.DataFrame(te_xpy, columns=["ImageId", "Label"]).to_csv(
-                    submit_path, index=False
-                )
+                pd.DataFrame(te_xpy, columns=["ImageId",
+                                              "Label"]).to_csv(submit_path,
+                                                               index=False)
             if best_model is not None:
                 self.logger.info(
                     f"model_id={sd_config.cid}: current best model_id={best_model[2].cid}, score={best_model[0]}, "
-                    f"config={best_model[2].config.to_plain_dict()}"
-                )
+                    f"config={best_model[2].config.to_plain_dict()}")
 
         return best_model, model_scores

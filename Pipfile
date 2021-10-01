@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 
 [dev-packages]
-dformat = "*"
 kaggle = "*"
 bayesian-optimization = "*"
 ipython = "*"
@@ -16,12 +15,15 @@ twine = "*"
 matplotlib = "*"
 pyyaml = "*"
 pandas = "*"
-black = "*"
 pytest-timeout = "*"
-isort = "*"
 pre-commit = "*"
 loguru = "*"
-pylint = "*"
+sphinx = "*"
+sphinx-autoapi = "*"
+sphinx-toolbox = "*"
+yapf = "*"
+toml = "*"
+pydata-sphinx-theme = "*"
 
 [requires]
 python_version = "3.7"

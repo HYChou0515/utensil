@@ -8,7 +8,6 @@ from utensil.general.logger import parse_log_level
 
 logger = utensil.get_logger(__name__)
 
-
 DEFAULT_CONNECTOR_VERBOSE = logging.INFO
 
 
@@ -18,8 +17,7 @@ class ConnectorInformation:
     port: int
     user: str
     pds: str = dataclasses.field(
-        repr=False
-    )  # to protect password accidentally shown in log
+        repr=False)  # to protect password accidentally shown in log
     database: str
 
 
@@ -50,8 +48,8 @@ def get_connector_pool_info(tag_name: str):
                 ),
                 pool_size=int(connection_info_config.get("PoolSize", 1)),
                 verbose=parse_log_level(
-                    connection_info_config.get("Verbose", DEFAULT_CONNECTOR_VERBOSE)
-                ),
+                    connection_info_config.get("Verbose",
+                                               DEFAULT_CONNECTOR_VERBOSE)),
             )
     err_str = '" and "'.join(trial_tags)
     raise ValueError(f'Cannot find connection info match "{err_str}".')
