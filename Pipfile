@@ -24,6 +24,7 @@ sphinx-toolbox = "*"
 yapf = "*"
 toml = "*"
 pydata-sphinx-theme = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.7"

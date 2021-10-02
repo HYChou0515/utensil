@@ -8,29 +8,30 @@ from typing import Iterable, Union
 from utensil import constant
 
 try:
-    import loguru
+    from loguru import logger as loguru_logger
 except ImportError:
-    loguru = None
+    loguru_logger = None
 
 
 def parse_log_level(level):
     if isinstance(level, str):
         if level.upper() == "NOTSET":
             return logging.NOTSET
-        elif level.upper() == "DEBUG":
+        if level.upper() == "DEBUG":
             return logging.DEBUG
-        elif level.upper() == "INFO":
+        if level.upper() == "INFO":
             return logging.INFO
-        elif level.upper() == "WARNING":
+        if level.upper() == "WARNING":
             return logging.WARNING
-        elif level.upper() == "WARN":
+        if level.upper() == "WARN":
             return logging.WARN
-        elif level.upper() == "ERROR":
+        if level.upper() == "ERROR":
             return logging.ERROR
-        elif level.upper() == "FATAL":
+        if level.upper() == "FATAL":
             return logging.FATAL
-        elif level.upper() == "CRITICAL":
+        if level.upper() == "CRITICAL":
             return logging.CRITICAL
+        raise ValueError(level)
     try:
         return int(level)
     except ValueError as e:
@@ -42,10 +43,11 @@ class LoggerConfig:
     level: Union[str, int] = constant.LOG.get("Level")
     handlers: Iterable[logging.Handler] = (None,)
     format: str = (
-        "{asctime:s}.{msecs:06.0f} " + constant.HOST_INFO.get("HostName") +
-        " " + socket.gethostname() +
-        " {processName:s}({process:d}) {threadName:s}({thread:d}) {levelname:s} "
-        "({name:s}.{funcName:s}) {message:s} ")
+        "{asctime:s}.{msecs:06.0f} "
+        f'{constant.HOST_INFO.get("HostName")} {socket.gethostname()} '
+        "{processName:s}({process:d}) "
+        "{threadName:s}({thread:d}) {levelname:s} "
+        "({name:s}.{funcName:s}) {message:s}")
     style: str = "{"
     datefmt: str = "%Y-%m-%d %I:%M:%S"
 
@@ -77,10 +79,8 @@ class LoggerConfig:
 
 
 def get_logger(name, logger_config=None):
-    if loguru:
-        from loguru import logger
-
-        return logger
+    if loguru_logger:
+        return loguru_logger
     if logger_config is None:
         logger_config = LoggerConfig()
     logger = logging.getLogger(name)

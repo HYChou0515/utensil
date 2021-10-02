@@ -13,6 +13,12 @@ from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from utensil import get_logger
+from utensil.general import open_utf8
+
+try:
+    import yaml
+except ImportError as e:
+    yaml = e
 
 logger = get_logger(__name__)
 
@@ -34,21 +40,19 @@ class NodeProcessFunction:
         def _parse_1(_o):
             if isinstance(_o, str):
                 return proc_map[_o]()
-            elif isinstance(_o, dict):
+            if isinstance(_o, dict):
                 if len(_o) != 1:
                     raise RuntimeError("E3")
                 name, params = _o.popitem()
                 logger.debug(name, params)
                 if isinstance(params, list):
                     return proc_map[name](*params)  # noqa
-                elif isinstance(params, dict):
+                if isinstance(params, dict):
                     params = {k.lower(): v for k, v in params.items()}
                     return proc_map[name](**params)  # noqa
-                else:
-                    print(proc_map[name])
-                    return proc_map[name](params)  # noqa
-            else:
-                raise RuntimeError("E4")
+                print(proc_map[name])
+                return proc_map[name](params)  # noqa
+            raise RuntimeError("E4")
 
         if not isinstance(o, list):
             o = [o]
@@ -92,13 +96,13 @@ class NodeProcessBuilder:
 class NodeProcess(BaseNodeProcess):
 
     def __init__(self, meta: NodeProcessMeta, *args, **kwargs):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.meta: NodeProcessMeta = meta
         self.args = args
         self.kwargs = kwargs
 
     def run(self) -> None:
-        logger.debug(f'Node "{self.meta.node_name}" started')
+        logger.debug('Node "%s" started', self.meta.node_name)
         try:
             ret = self.meta.process_funcs[0](*self.args, **self.kwargs)
             for proc_func in self.meta.process_funcs[1:]:
@@ -111,9 +115,9 @@ class NodeProcess(BaseNodeProcess):
                 triggering.trigger(ret, self.meta.node_name)
             for child in self.meta.children:
                 child.push(ret, self.meta.node_name)
-        except Exception as e:
-            logger.exception(e)
-            raise e
+        except Exception as err:
+            logger.exception(err)
+            raise err
 
 
 DEFAULT_FLOW = object()
@@ -198,7 +202,7 @@ class Parents:
     def parse(cls, o):
         if isinstance(o, dict):
             return cls([], o)
-        elif isinstance(o, list):
+        if isinstance(o, list):
             args = []
             kwargs = {}
             for item in o:
@@ -209,10 +213,9 @@ class Parents:
                 else:
                     raise RuntimeError("E1")
             return cls(args, kwargs)
-        elif isinstance(o, str):
+        if isinstance(o, str):
             return cls([o], {})
-        else:
-            raise RuntimeError(f"E2")
+        raise RuntimeError("E2")
 
 
 class Triggers(Parents):
@@ -221,10 +224,9 @@ class Triggers(Parents):
     def parse(cls, o):
         if isinstance(o, str):
             return cls([o], {})
-        elif isinstance(o, list):
+        if isinstance(o, list):
             return cls(o, {})
-        else:
-            raise RuntimeError("E20")
+        raise RuntimeError("E20")
 
 
 SWITCHON = "SWITCHON"
@@ -248,7 +250,7 @@ class Node(BaseNode):
         parents: Union[None, Parents] = None,
         export: Union[None, str, List[str]] = None,
     ):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.name = name
         self.proc_funcs = proc_funcs
         self.end = end
@@ -278,8 +280,7 @@ class Node(BaseNode):
         _attr = _attr.lower()
         if isinstance(_p, dict):
             return _p[_attr]
-        else:
-            return _p.__getattribute__(_attr)
+        return _p.__getattribute__(_attr)
 
     def push(self, param, caller_name):
         for parent_key, parent_spec in self.parents.node_map[caller_name]:
@@ -298,7 +299,8 @@ class Node(BaseNode):
                     break  # only need to put one
 
     def trigger(self, param, caller_name):
-        # triggered by unexpected caller is currently considered fine, e.g. SWITCHON
+        # triggered by unexpected caller is
+        # currently considered fine, e.g. SWITCHON
         if caller_name not in self.triggers.node_map:
             return
         for parent_key, parent_spec in self.triggers.node_map[caller_name]:
@@ -380,7 +382,7 @@ class Node(BaseNode):
             for proc in procs:
                 if proc.is_alive():
                     proc.kill()
-                    logger.debug(f"killing proc {proc.name}")
+                    logger.debug("killing proc %s", proc.name)
                     break
             else:
                 break
@@ -404,7 +406,7 @@ class Node(BaseNode):
             elif k == "PARENTS":
                 parents = Parents.parse(v)
             elif k == "END":
-                end = True if v else False
+                end = bool(v)
             elif k == "EXPORT":
                 export = v
             else:
@@ -451,12 +453,10 @@ class Dag:
 
     @classmethod
     def parse_yaml(cls, dag_path):
-        try:
-            import yaml
-        except ImportError as e:
-            raise e
+        if isinstance(yaml, ImportError):
+            raise yaml
 
-        with open(dag_path, "r") as f:
+        with open_utf8(dag_path, "r") as f:
             main_dscp = yaml.safe_load(f)
 
         return cls.parse(main_dscp["DAG"])

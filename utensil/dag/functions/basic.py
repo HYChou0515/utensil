@@ -31,9 +31,6 @@ class Dummy(NodeProcessFunction):
     Returns whatever it get.
     """
 
-    def __init__(self):
-        super(self.__class__, self).__init__()
-
     def main(self, a=MISSING):
         return a
 
@@ -48,7 +45,7 @@ class Default(NodeProcessFunction):
     """
 
     def __init__(self, default):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.default = default
 
     def main(self, o=MISSING):
@@ -65,7 +62,7 @@ class Add(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, n):
@@ -97,7 +94,7 @@ class LessEqual(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, b) -> ConditionValue:
@@ -121,7 +118,7 @@ class Equal(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, b) -> ConditionValue:
@@ -145,7 +142,7 @@ class GreaterEqual(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, b) -> ConditionValue:
@@ -169,7 +166,7 @@ class LessThan(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, b) -> ConditionValue:
@@ -193,7 +190,7 @@ class GreaterThan(NodeProcessFunction):
     """
 
     def __init__(self, a):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.a = a
 
     def main(self, b) -> ConditionValue:

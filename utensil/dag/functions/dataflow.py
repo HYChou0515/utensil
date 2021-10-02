@@ -15,8 +15,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
+from utensil import get_logger
 from utensil.dag.dag import NodeProcessFunction
-from utensil.dag.functions import MISSING
+from utensil.dag.functions.basic import MISSING
 from utensil.general import warn_left_keys
 from utensil.random_search import RandomizedParam
 
@@ -25,6 +26,23 @@ try:
     import pandas as pd
 except ImportError as e:
     raise e
+
+try:
+    import sklearn.datasets as sklearn_datasets
+except ImportError as e:
+    sklearn_datasets = e
+
+try:
+    from sklearn.ensemble import GradientBoostingClassifier
+except ImportError as e:
+    GradientBoostingClassifier = e
+
+try:
+    import xgboost as _xgboost
+except ImportError as e:
+    _xgboost = e
+
+logger = get_logger(__name__)
 
 
 class Feature(pd.Series):
@@ -35,16 +53,14 @@ class Feature(pd.Series):
     missing values. The length of a feature (missing values included) should
     be the number of instance in a dataset.
     """
-    pass
 
 
 class Features(pd.DataFrame):
     """A list of features.
 
-    :class:`.Features` is a list of :class:`.Feature`. It can be represented as a
-    matrix of numbers, strings, missing values, etc.
+    :class:`.Features` is a list of :class:`.Feature`. It can be represented as
+    a matrix of numbers, strings, missing values, etc.
     """
-    pass
 
 
 class Target(pd.Series):
@@ -54,7 +70,6 @@ class Target(pd.Series):
     it is the variables a supervised model trying to learn to predict,
     either numerical or categorical.
     """
-    pass
 
 
 @dataclass
@@ -202,7 +217,7 @@ class LoadData(NodeProcessFunction):
 
     def __init__(self, dformat: str, url: str, target: str,
                  features: Dict[int, str]):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.dformat = dformat
         self.url = url
         self.target = target
@@ -210,11 +225,9 @@ class LoadData(NodeProcessFunction):
 
     def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
-            try:
-                import sklearn.datasets
-            except ImportError as e:
-                raise e
-            features, target = sklearn.datasets.load_svmlight_file(self.url)
+            if isinstance(sklearn_datasets, ImportError):
+                raise sklearn_datasets
+            features, target, *_ = sklearn_datasets.load_svmlight_file(self.url)
         else:
             raise ValueError(self.dformat)
         features = (pd.DataFrame.sparse.from_spmatrix(
@@ -237,7 +250,7 @@ class FilterRows(NodeProcessFunction):
     """
 
     def __init__(self, filter_by: Dict[str, Any]):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.filter_by = filter_by
 
     def main(self, dataset: Dataset) -> Dataset:
@@ -322,7 +335,7 @@ class SamplingRows(NodeProcessFunction):
         random_seed: Union[None, int] = None,
         return_rest: bool = False,
     ):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.number = number
         self.ratio = ratio
         self.stratified = stratified
@@ -408,15 +421,11 @@ class SamplingRows(NodeProcessFunction):
                 "sampled": Dataset(Target(new_target), Features(new_features)),
                 "rest": Dataset(Target(rest_target), Features(rest_features)),
             }
-        else:
-            return Dataset(Target(new_target), Features(new_features))
+        return Dataset(Target(new_target), Features(new_features))
 
 
 class MakeDataset(NodeProcessFunction):
     """Make a dataset using `target` and `features`."""
-
-    def __init__(self):
-        super(self.__class__, self).__init__()
 
     def main(self, target: Target, features: Features) -> Dataset:
         """
@@ -433,9 +442,6 @@ class MakeDataset(NodeProcessFunction):
 
 class GetTarget(NodeProcessFunction):
     """Get `target` from a `dataset`."""
-
-    def __init__(self):
-        super(self.__class__, self).__init__()
 
     def main(self, dataset: Dataset) -> Target:
         """
@@ -458,7 +464,7 @@ class GetFeature(NodeProcessFunction):
     """
 
     def __init__(self, feature: str):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.feature = feature
 
     def main(self, dataset: Dataset) -> Feature:
@@ -475,9 +481,6 @@ class GetFeature(NodeProcessFunction):
 
 class MergeFeatures(NodeProcessFunction):
     """Merge a list of `feature` to `features`."""
-
-    def __init__(self):
-        super(self.__class__, self).__init__()
 
     def main(self, *features: Feature) -> Features:
         """
@@ -499,20 +502,16 @@ def _get_max(arr):
     if pd.api.types.is_sparse(arr):
         if arr.sparse.sp_values.shape[0] < arr.shape[0]:
             return max(arr.sparse.fill_value, np.max(arr.sparse.sp_values))
-        else:
-            return np.max(arr.sparse.sp_values)
-    else:
-        return np.max(arr)
+        return np.max(arr.sparse.sp_values)
+    return np.max(arr)
 
 
 def _get_min(arr):
     if pd.api.types.is_sparse(arr):
         if arr.sparse.sp_values.shape[0] < arr.shape[0]:
             return min(arr.sparse.fill_value, np.min(arr.sparse.sp_values))
-        else:
-            return np.min(arr.sparse.sp_values)
-    else:
-        return np.min(arr)
+        return np.min(arr.sparse.sp_values)
+    return np.min(arr)
 
 
 class LinearNormalize(NodeProcessFunction):
@@ -536,7 +535,7 @@ class LinearNormalize(NodeProcessFunction):
     def __init__(self,
                  upper: Dict[str, Any] = None,
                  lower: Dict[str, Any] = None):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.upper = {"FROM": "MAX", "TO": "MAX"}
         self.upper.update({} if upper is None else upper)
         self.lower = {"FROM": "MIN", "TO": "MIN"}
@@ -547,9 +546,10 @@ class LinearNormalize(NodeProcessFunction):
         if isinstance(cmd, str):
             if cmd == "MAX":
                 return _get_max(arr1d)
-            elif cmd == "MIN":
+            if cmd == "MIN":
                 return _get_min(arr1d)
-        elif _is_number(cmd):
+            raise RuntimeError(f"E27 {cmd}")
+        if _is_number(cmd):
             return cmd
         raise ValueError(cmd)
 
@@ -572,7 +572,7 @@ class MakeModel(NodeProcessFunction):
     """
 
     def __init__(self, method):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.method = method
 
     @staticmethod
@@ -612,16 +612,12 @@ class MakeModel(NodeProcessFunction):
             An untrained :class:`.Model`.
         """
         if self.method == "XGBOOST_REGRESSOR":
-            try:
-                import xgboost
-            except ImportError as e:
-                raise e
-            return SklearnModel(xgboost.XGBRegressor())
-        elif self.method == "XGBOOST_CLASSIFIER":
-            try:
-                import xgboost
-            except ImportError as e:
-                raise e
+            if isinstance(_xgboost, ImportError):
+                raise _xgboost
+            return SklearnModel(_xgboost.XGBRegressor())
+        if self.method == "XGBOOST_CLASSIFIER":
+            if isinstance(_xgboost, ImportError):
+                raise _xgboost
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
@@ -629,12 +625,10 @@ class MakeModel(NodeProcessFunction):
             }
             self._after_assign_params_routine(model_params, _model_params)
             return SklearnModel(
-                xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
-        elif self.method == "SKLEARN_GRADIENT_BOOSTING_CLASSIFIER":
-            try:
-                from sklearn.ensemble import GradientBoostingClassifier
-            except ImportError as e:
-                raise e
+                _xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
+        if self.method == "SKLEARN_GRADIENT_BOOSTING_CLASSIFIER":
+            if isinstance(GradientBoostingClassifier, ImportError):
+                raise GradientBoostingClassifier
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
@@ -642,15 +636,11 @@ class MakeModel(NodeProcessFunction):
             }
             self._after_assign_params_routine(model_params, _model_params)
             return SklearnModel(GradientBoostingClassifier(**_model_params))
-        else:
-            raise ValueError
+        raise ValueError
 
 
 class Train(NodeProcessFunction):
     """Train a model."""
-
-    def __init__(self):
-        super(self.__class__, self).__init__()
 
     def main(self, model: Model, dataset: Dataset) -> Model:
         """
@@ -669,9 +659,6 @@ class Train(NodeProcessFunction):
 
 class Predict(NodeProcessFunction):
     """Predict a target."""
-
-    def __init__(self):
-        super(self.__class__, self).__init__()
 
     def main(self, model: Model, features: Features) -> Target:
         """
@@ -702,7 +689,7 @@ class ParameterSearch(NodeProcessFunction):
     """
 
     def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.state = init_state
         self._nr_randomized_params = 0
         self._rng = np.random.default_rng(seed)
@@ -781,7 +768,7 @@ class Score(NodeProcessFunction):
     def __init__(self,
                  dataset: str = MISSING,
                  methods: Union[str, List[str]] = None):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.dataset_name = dataset
         self.methods = [] if methods is None else methods
         if isinstance(self.methods, str):
@@ -797,7 +784,7 @@ class Score(NodeProcessFunction):
 
         Args:
 
-            prediction (:class:`.Target`, :class:`.Features` or :class:`.Dataset`):
+            prediction (`target`, `features` or `dataset`):
                 If `prediction` is :class:`.Target`, it will be directly used
                 to calculate the score without using the `model`.
 
@@ -807,7 +794,7 @@ class Score(NodeProcessFunction):
                 If it is :class:`.Dataset`, `model` will make a prediction
                 based on its `features`.
 
-            ground_truth (:class:`.Target` or :class:`.Dataset`):
+            ground_truth (`target` or `dataset`):
                 If `ground_truth` is a :class:`.Target`, it is directly
                 compared to `prediction`.
 
@@ -864,8 +851,7 @@ class Score(NodeProcessFunction):
         def wrap_output(_method, _score):
             if self.dataset_name is MISSING:
                 return _method, _score
-            else:
-                return _method, self.dataset_name, _score
+            return _method, self.dataset_name, _score
 
         ret = []
         for method in self.methods:
@@ -888,7 +874,7 @@ class ChangeTypeTo(NodeProcessFunction):
     """
 
     def __init__(self, to_type: str):
-        super(self.__class__, self).__init__()
+        super().__init__()
         if to_type == "INTEGER":
             self.to_type = int
         elif to_type == "FLOAT":

@@ -18,8 +18,9 @@ logger = get_logger(__name__)
 
 
 class Constant(NodeProcessFunction):
+
     def __init__(self, value):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.value = value
 
     def main(self):
@@ -27,8 +28,9 @@ class Constant(NodeProcessFunction):
 
 
 class AddValue(NodeProcessFunction):
+
     def __init__(self, value):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.value = value
 
     def main(self, a):
@@ -36,16 +38,18 @@ class AddValue(NodeProcessFunction):
 
 
 class Add(NodeProcessFunction):
+
     def __init__(self):
-        super(self.__class__, self).__init__()
+        super().__init__()
 
     def main(self, a, b):
         return a + b
 
 
 class TimeValue(NodeProcessFunction):
+
     def __init__(self, value):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.value = value
 
     def main(self, a):
@@ -53,32 +57,36 @@ class TimeValue(NodeProcessFunction):
 
 
 class ListAddSum(NodeProcessFunction):
+
     def __init__(self):
-        super(self.__class__, self).__init__()
+        super().__init__()
 
     def main(self, add, *args):
         return sum([a + add for a in args])
 
 
 class Sum(NodeProcessFunction):
+
     def __init__(self):
-        super(self.__class__, self).__init__()
+        super().__init__()
 
     def main(self, l):
         return sum(l)
 
 
 class Divide(NodeProcessFunction):
+
     def __init__(self):
-        super(self.__class__, self).__init__()
+        super().__init__()
 
     def main(self, a, b):
         return a / b
 
 
 class Pickle(NodeProcessFunction):
+
     def __init__(self, path):
-        super(self.__class__, self).__init__()
+        super().__init__()
         self.path = path
 
     def main(self, obj):
@@ -88,6 +96,7 @@ class Pickle(NodeProcessFunction):
 
 
 class TestSimpleDag(ut.TestCase):
+
     @pytest.mark.timeout(10)
     def test_end_to_end(self):
         reset_node_process_functions()
@@ -112,6 +121,7 @@ class TestSimpleDag(ut.TestCase):
 
 
 class TestCovtypeDag(ut.TestCase):
+
     @pytest.mark.timeout(60)
     def test_end_to_end(self):
         reset_node_process_functions()

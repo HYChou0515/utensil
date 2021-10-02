@@ -7,7 +7,7 @@ from collections import namedtuple
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Tuple, TypeVar, Union
+from typing import Any, Dict, Tuple, Union
 
 from utensil.general.logger import DUMMY_LOGGER
 
@@ -22,7 +22,7 @@ class RandomizedParam(abc.ABC):
 
     @abc.abstractmethod
     def from_random(self, r):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def create_randomized_param(cls, param_type, options) -> RandomizedParam:
@@ -37,7 +37,7 @@ class RandomizedParam(abc.ABC):
             elif _option["otype"] == "FLOAT":
                 _option["otype"] = float
             return ExponentialBetweenParam(**_option)
-        elif param_type == "UNIFORM_BETWEEN":
+        if param_type == "UNIFORM_BETWEEN":
             _option = {
                 "left": options.pop("LEFT"),
                 "right": options.pop("RIGHT"),
@@ -89,7 +89,7 @@ class RandomizedChoices(RandomizedParam):
 
     def from_random(self, r):
         nr_choices = len(self.choice)
-        return [c for c in self.choice][-1 if r == 1 else int(r * nr_choices)]
+        return list(self.choice)[-1 if r == 1 else int(r * nr_choices)]
 
 
 @dataclass
@@ -234,9 +234,11 @@ class RandomSearch(abc.ABC):
             try:
                 model, score = self.do_training(sd_config, train_x, train_y,
                                                 idx)
-            except Exception:
+            except ValueError as train_error:
                 self.logger.warning(
-                    f"model_id={sd_config.cid}: invalid config for model_id={sd_config.cid}, seed={seed}",
+                    f"model_id={sd_config.cid}: "
+                    f"invalid config for model_id={sd_config.cid}, seed={seed}"
+                    f"({train_error})",
                     stack_info=True,
                 )
 
@@ -259,14 +261,17 @@ class RandomSearch(abc.ABC):
                 te_xpy[:, 1] = best_model[1].predict(te_x)
                 submit_path = os.path.join(
                     "submit",
-                    f"{__name__}_{int(np.round(score * 1e5))}_{sd_config.cid:04d}.csv",
+                    f"{__name__}_{int(np.round(score * 1e5))}_"
+                    f"{sd_config.cid:04d}.csv",
                 )
                 pd.DataFrame(te_xpy, columns=["ImageId",
                                               "Label"]).to_csv(submit_path,
                                                                index=False)
             if best_model is not None:
                 self.logger.info(
-                    f"model_id={sd_config.cid}: current best model_id={best_model[2].cid}, score={best_model[0]}, "
+                    f"model_id={sd_config.cid}: "
+                    f"current best model_id={best_model[2].cid}, "
+                    f"score={best_model[0]}, "
                     f"config={best_model[2].config.to_plain_dict()}")
 
         return best_model, model_scores

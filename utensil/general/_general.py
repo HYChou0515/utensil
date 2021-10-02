@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from functools import partial
 
 from _warnings import warn
 
@@ -26,3 +27,6 @@ def chunks(iterable, n):
 def warn_left_keys(params: Dict[str, Any]):
     for key in params.keys():
         warn(f"{key} is not used", category=SyntaxWarning)
+
+
+open_utf8 = partial(open, encoding='UTF-8')

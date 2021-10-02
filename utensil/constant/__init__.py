@@ -1,9 +1,10 @@
+__all__ = ["PROJECT", "HOST_INFO", "LOG", 'TZ_TAIPEI', 'TZ_UTC']
+
 import os
 from configparser import ConfigParser, ExtendedInterpolation
 
 from utensil.constant._constant import *
-
-__all__ = ["PROJECT", "HOST_INFO", "LOG"]
+from utensil.general import open_utf8
 
 if "UTENSIL_PROJECT_ROOT" in os.environ:
     PROJECT_ROOT = os.environ["UTENSIL_PROJECT_ROOT"]
@@ -39,8 +40,9 @@ MaxMessageLen = 60000
 """)
 
 if os.path.isfile(os.path.normpath(config["PROJECT"].get("ConfigPath"))):
-    config.read_file(open(os.path.normpath(
-        config["PROJECT"].get("ConfigPath"))))
+    with open_utf8(os.path.normpath(config["PROJECT"].get("ConfigPath")),
+                   'r') as f:
+        config.read_file(f)
 
 config["PROJECT"]["ProjectRoot"] = os.path.normpath(
     config["PROJECT"]["ProjectRoot"])
