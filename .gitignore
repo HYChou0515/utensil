@@ -9,3 +9,4 @@ dist
 build
 _doc
 .utensil
+.python-version

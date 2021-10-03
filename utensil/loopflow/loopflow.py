@@ -102,7 +102,7 @@ class NodeProcess(BaseNodeProcess):
         self.kwargs = kwargs
 
     def run(self) -> None:
-        logger.debug('Node "%s" started', self.meta.node_name)
+        logger.debug('Node {} started', self.meta.node_name)
         try:
             ret = self.meta.process_funcs[0](*self.args, **self.kwargs)
             for proc_func in self.meta.process_funcs[1:]:
@@ -382,7 +382,7 @@ class Node(BaseNode):
             for proc in procs:
                 if proc.is_alive():
                     proc.kill()
-                    logger.debug("killing proc %s", proc.name)
+                    logger.debug("killing proc {}", proc.name)
                     break
             else:
                 break
@@ -423,7 +423,7 @@ class Node(BaseNode):
         )
 
 
-class Dag:
+class Flow:
 
     def __init__(self, nodes: List[Node], result_q: SimpleQueue):
         self.nodes = {}
@@ -452,14 +452,14 @@ class Dag:
         return cls(nodes, result_q)
 
     @classmethod
-    def parse_yaml(cls, dag_path):
+    def parse_yaml(cls, flow_path):
         if isinstance(yaml, ImportError):
             raise yaml
 
-        with open_utf8(dag_path, "r") as f:
+        with open_utf8(flow_path, "r") as f:
             main_dscp = yaml.safe_load(f)
 
-        return cls.parse(main_dscp["DAG"])
+        return cls.parse(main_dscp["FLOW"])
 
     def start(self):
         for node in self.nodes.values():

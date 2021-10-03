@@ -80,6 +80,7 @@ class LoggerConfig:
 
 def get_logger(name, logger_config=None):
     if loguru_logger:
+        loguru_logger.opt(lazy=True)
         return loguru_logger
     if logger_config is None:
         logger_config = LoggerConfig()

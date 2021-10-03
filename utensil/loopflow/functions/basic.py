@@ -5,13 +5,13 @@ Example:
 .. highlight:: python
 .. code-block:: python
 
-    from utensil.dag.functions import basic
-    from utensil.dag.dag import register_node_process_functions
+    from utensil.loopflow.functions import basic
+    from utensil.loopflow.loopflow import register_node_process_functions
     register_node_process_functions(basic)
 """
 from collections import namedtuple
 
-from utensil.dag.dag import NodeProcessFunction
+from utensil.loopflow.loopflow import NodeProcessFunction
 
 
 class _MISSING:

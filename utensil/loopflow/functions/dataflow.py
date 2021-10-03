@@ -5,8 +5,8 @@ Example:
 .. highlight:: python
 .. code-block:: python
 
-    from utensil.dag.functions import dataflow
-    from utensil.dag.dag import register_node_process_functions
+    from utensil.loopflow.functions import dataflow
+    from utensil.loopflow.loopflow import register_node_process_functions
     register_node_process_functions(dataflow)
 """
 
@@ -16,8 +16,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
 from utensil import get_logger
-from utensil.dag.dag import NodeProcessFunction
-from utensil.dag.functions.basic import MISSING
+from utensil.loopflow.loopflow import NodeProcessFunction
+from utensil.loopflow.functions.basic import MISSING
 from utensil.general import warn_left_keys
 from utensil.random_search import RandomizedParam
 
@@ -340,13 +340,11 @@ class SamplingRows(NodeProcessFunction):
         self.ratio = ratio
         self.stratified = stratified
         self.replace = replace
-        self.random_seed = np.random.BitGenerator(random_seed)
+        self._rng = np.random.default_rng(random_seed)
         self.return_rest = return_rest
 
         if self.ratio is MISSING and self.number is MISSING:
             self.ratio = 1.0
-
-        self._rng = None
 
     def _get_number_each(self, value_counts: pd.Series, ttl_number: int):
         if self.replace or ttl_number // value_counts.shape[
@@ -386,7 +384,6 @@ class SamplingRows(NodeProcessFunction):
             ttl_number = (int(self.ratio * dataset.nrows)
                           if self.ratio is not MISSING else self.number)
             value_counts = dataset.target.value_counts()
-            self._rng = np.random.default_rng(self.random_seed)
             if not self.replace and ttl_number > dataset.nrows:
                 raise ValueError(
                     "sampling number should at most the same size as the "
@@ -407,11 +404,11 @@ class SamplingRows(NodeProcessFunction):
         elif self.ratio is not MISSING:
             new_target = dataset.target.sample(frac=self.ratio,
                                                replace=self.replace,
-                                               random_state=self.random_seed)
+                                               random_state=self._rng)
         else:
             new_target = dataset.target.sample(n=self.number,
                                                replace=self.replace,
-                                               random_state=self.random_seed)
+                                               random_state=self._rng)
         new_features = dataset.features.loc[new_target.index]
         if self.return_rest:
             rest_index = dataset.target.index.difference(new_target.index)

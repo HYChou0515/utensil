@@ -5,13 +5,14 @@ import warnings
 
 import pytest
 
-from utensil.dag.dag import (
-    Dag,
+from test.fixtures import FIXTURE_BASE
+from utensil.loopflow.loopflow import (
+    Flow,
     NodeProcessFunction,
     register_node_process_functions,
     reset_node_process_functions,
 )
-from utensil.dag.functions import basic, dataflow
+from utensil.loopflow.functions import basic, dataflow
 from utensil.general.logger import get_logger
 
 logger = get_logger(__name__)
@@ -95,7 +96,7 @@ class Pickle(NodeProcessFunction):
         pickle.dump(obj, open(self.path, "wb"))
 
 
-class TestSimpleDag(ut.TestCase):
+class TestSimpleFlow(ut.TestCase):
 
     @pytest.mark.timeout(10)
     def test_end_to_end(self):
@@ -107,9 +108,9 @@ class TestSimpleDag(ut.TestCase):
             warnings.warn("simple.output deleted")
             os.remove("simple.output")
 
-        dag_path = "simple.dag"
-        dag = Dag.parse_yaml(dag_path)
-        dag.start()
+        flow_path = os.path.join(FIXTURE_BASE, "simple.flow")
+        flow = Flow.parse_yaml(flow_path)
+        flow.start()
 
         self.assertTrue(os.path.isfile("simple.output"))
         import pickle
@@ -120,7 +121,7 @@ class TestSimpleDag(ut.TestCase):
         os.remove("simple.output")
 
 
-class TestCovtypeDag(ut.TestCase):
+class TestCovtypeFlow(ut.TestCase):
 
     @pytest.mark.timeout(60)
     def test_end_to_end(self):
@@ -128,9 +129,9 @@ class TestCovtypeDag(ut.TestCase):
         register_node_process_functions(proc_func_module=basic)
         register_node_process_functions(proc_func_module=dataflow)
 
-        dag_path = "covtype.dag"
-        dag = Dag.parse_yaml(dag_path)
-        results = dag.start()
+        flow_path = os.path.join(FIXTURE_BASE, "covtype.flow")
+        flow = Flow.parse_yaml(flow_path)
+        results = flow.start()
         logger.debug(results)
         self.assertEqual(3, len(results))
         for result in results:
