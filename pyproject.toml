@@ -1,9 +1,21 @@
 [tool.poetry]
 name = "utensil"
-version = "0.0.2"
-description = "A useful tool kit for machine learning."
-authors = ["Chou Hung-Yi <hychou.svm@gmail.com>"]
+version = "0.0.2a"
+description = "A useful utensil kit for machine learning."
 license = "BSD-3-Clause"
+authors = ["Chou Hung-Yi <hychou.svm@gmail.com>"]
+maintainers = ["Chou Hung-Yi <hychou.svm@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/HYChou0515/utensil"
+repository = "https://github.com/HYChou0515/utensil"
+documentation = "https://github.com/HYChou0515/utensil"
+keywords = ["flow", "machine learning"]
+classifiers = [
+        "Development Status :: 1 - Planning",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Utilities",
+    ]
 
 [tool.poetry.dependencies]
 python = ">=3.7.4,<4"
