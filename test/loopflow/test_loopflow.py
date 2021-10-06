@@ -133,7 +133,7 @@ class TestCovtypeFlow(ut.TestCase):
         flow = Flow.parse_yaml(flow_path)
         results = flow.start()
         logger.debug(results)
-        self.assertEqual(3, len(results))
+        self.assertEqual(2, len(results))
         for result in results:
             self.assertEqual("TEST_SCORE", result[0])
             self.assertEqual(1, len(result[1]))

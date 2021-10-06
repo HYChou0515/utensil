@@ -78,6 +78,7 @@ class NodeProcessMeta:
     process_funcs: List[NodeProcessFunction]
     export: Tuple[str]
     result_q: SimpleQueue
+    end_q: SimpleQueue
 
 
 class NodeProcessBuilder:
@@ -117,6 +118,7 @@ class NodeProcess(BaseNodeProcess):
                 child.push(ret, self.meta.node_name)
         except Exception as err:
             logger.exception(err)
+            self.meta.end_q.put(object())
             raise err
 
 
@@ -322,6 +324,7 @@ class Node(BaseNode):
             self.proc_funcs,
             self.export,
             self.result_q,
+            self.end_q,
         )
         process_builder = NodeProcessBuilder()
         process_builder.meta = meta
@@ -374,7 +377,7 @@ class Node(BaseNode):
             if self.end:
                 for proc in procs:
                     proc.join()
-                self.end_q.put(object)
+                self.end_q.put(object())
 
             procs = [proc for proc in procs if proc.is_alive()]
 

@@ -12,8 +12,13 @@ Example:
 
 from __future__ import annotations
 
+import os.path
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
+
+import requests
+import urllib3
+import tempfile
 
 from utensil import get_logger
 from utensil.loopflow.loopflow import NodeProcessFunction
@@ -199,12 +204,11 @@ class LoadData(NodeProcessFunction):
                 #. CSV
                 #. HDF5
 
-        url (str): URL for the dataset. Should be a path.
+        url (str): URL for the dataset. Should be a path or a url with the scheme `http`, `https` or `file`.
 
             .. todo::
                 More types are needed
 
-                #. web link.
                 #. sklearn data.
 
         target (str): The column of the dataset treated as a target.
@@ -225,9 +229,22 @@ class LoadData(NodeProcessFunction):
 
     def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
+            parsed_url = urllib3.util.parse_url(self.url)
+            if parsed_url.scheme in ('http', 'https'):
+                r = requests.get(self.url)
+                with tempfile.NamedTemporaryFile('wb',
+                                                 delete=False,
+                                                 suffix=os.path.basename(
+                                                     parsed_url.path)) as tmp:
+                    tmp.write(r.content)
+                    fpath = tmp.name
+            elif parsed_url.scheme in (None, 'file'):
+                fpath = parsed_url.path
+            else:
+                raise RuntimeError(f'E29 {self.url}')
             if isinstance(sklearn_datasets, ImportError):
                 raise sklearn_datasets
-            features, target, *_ = sklearn_datasets.load_svmlight_file(self.url)
+            features, target, *_ = sklearn_datasets.load_svmlight_file(fpath)
         else:
             raise ValueError(self.dformat)
         features = (pd.DataFrame.sparse.from_spmatrix(
