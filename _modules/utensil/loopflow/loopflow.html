@@ -1,0 +1,682 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utensil.loopflow.loopflow &#8212; utensil  documentation</title>
+    
+  <link href="../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/blank.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="../../../index.html">
+<p class="title">utensil</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../utensil.html">
+  utensil package
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for utensil.loopflow.loopflow</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Queue</span><span class="p">,</span> <span class="n">SimpleQueue</span>
+<span class="kn">from</span> <span class="nn">queue</span> <span class="kn">import</span> <span class="n">Empty</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">utensil</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">utensil.general</span> <span class="kn">import</span> <span class="n">open_utf8</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">yaml</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">yaml</span> <span class="o">=</span> <span class="n">e</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseNode"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.BaseNode">[docs]</a><span class="k">class</span> <span class="nc">BaseNode</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="BaseNodeProcess"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.BaseNodeProcess">[docs]</a><span class="k">class</span> <span class="nc">BaseNodeProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NodeProcessFunction"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction">[docs]</a><span class="k">class</span> <span class="nc">NodeProcessFunction</span><span class="p">:</span>
+
+<div class="viewcode-block" id="NodeProcessFunction.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]:</span>
+        <span class="n">proc_map</span> <span class="o">=</span> <span class="n">_NODE_PROCESS_MAPPING</span>
+
+        <span class="k">def</span> <span class="nf">_parse_1</span><span class="p">(</span><span class="n">_o</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_o</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">proc_map</span><span class="p">[</span><span class="n">_o</span><span class="p">]()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_o</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E3&quot;</span><span class="p">)</span>
+                <span class="n">name</span><span class="p">,</span> <span class="n">params</span> <span class="o">=</span> <span class="n">_o</span><span class="o">.</span><span class="n">popitem</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">proc_map</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="o">*</span><span class="n">params</span><span class="p">)</span>  <span class="c1"># noqa</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+                    <span class="k">return</span> <span class="n">proc_map</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>  <span class="c1"># noqa</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">proc_map</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="k">return</span> <span class="n">proc_map</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="n">params</span><span class="p">)</span>  <span class="c1"># noqa</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E4&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">_parse_1</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">o</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="NodeProcessFunction.main"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction.main">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_varnames</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="o">*</span><span class="n">params</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NodeProcessMeta"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessMeta">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">NodeProcessMeta</span><span class="p">:</span>
+    <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">triggerings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span>
+    <span class="n">children</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span>
+    <span class="n">process_funcs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]</span>
+    <span class="n">export</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span></div>
+
+
+<div class="viewcode-block" id="NodeProcessBuilder"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessBuilder">[docs]</a><span class="k">class</span> <span class="nc">NodeProcessBuilder</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NodeProcessMeta</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="NodeProcessBuilder.build"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessBuilder.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E12&quot;</span><span class="p">)</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">proc</span> <span class="o">=</span> <span class="n">NodeProcess</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proc</span></div></div>
+
+
+<div class="viewcode-block" id="NodeProcess"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcess">[docs]</a><span class="k">class</span> <span class="nc">NodeProcess</span><span class="p">(</span><span class="n">BaseNodeProcess</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meta</span><span class="p">:</span> <span class="n">NodeProcessMeta</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">:</span> <span class="n">NodeProcessMeta</span> <span class="o">=</span> <span class="n">meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="NodeProcess.run"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcess.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Node </span><span class="si">{}</span><span class="s1"> started&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">process_funcs</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">proc_func</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">process_funcs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">proc_func</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;PRINT&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">export</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;RETURN&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">export</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">result_q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="p">,</span> <span class="n">ret</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">triggering</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">triggerings</span><span class="p">:</span>
+                <span class="n">triggering</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">err</span></div></div>
+
+
+<span class="n">DEFAULT_FLOW</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">_Operator</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">OR</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span>
+    <span class="n">FLOW</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span>
+    <span class="n">FLOW_OR</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span>
+    <span class="n">SUB</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span>
+    <span class="n">FLOW_USE</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span>
+
+
+<div class="viewcode-block" id="ParentSpecifier"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.ParentSpecifier">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ParentSpecifier</span><span class="p">:</span>
+    <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">flow_condition</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">flows</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+    <span class="n">flow_use</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ParentSpecifier.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.ParentSpecifier.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="c1"># s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span>
+                <span class="sa">rf</span><span class="s2">&quot;\w+&quot;</span>  <span class="c1"># node_name</span>
+                <span class="sa">rf</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">_Operator</span><span class="o">.</span><span class="n">SUB</span><span class="si">}</span><span class="s2">\w+)*&quot;</span>  <span class="c1"># flow condition</span>
+                <span class="sa">rf</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW</span><span class="si">}</span><span class="s2">\w+(</span><span class="si">{</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW_OR</span><span class="si">}</span><span class="s2">\w+)*)?&quot;</span>  <span class="c1"># flows</span>
+                <span class="sa">rf</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW_USE</span><span class="si">}</span><span class="s2">\w+(</span><span class="si">{</span><span class="n">_Operator</span><span class="o">.</span><span class="n">SUB</span><span class="si">}</span><span class="s2">\w+)*)?&quot;</span><span class="p">,</span>  <span class="c1"># flow use</span>
+                <span class="n">s</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E18&quot;</span><span class="p">)</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">flow_use</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW_USE</span><span class="p">)</span>
+        <span class="n">flow_use</span> <span class="o">=</span> <span class="n">flow_use</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span> <span class="k">if</span> <span class="n">flow_use</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">s</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">flows</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW</span><span class="p">)</span>
+        <span class="n">flows</span> <span class="o">=</span> <span class="n">flows</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">FLOW_OR</span><span class="p">)</span> <span class="k">if</span> <span class="n">flows</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">node_name</span><span class="p">,</span> <span class="o">*</span><span class="n">flow_condition</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">SUB</span><span class="p">)</span>
+
+        <span class="c1"># A.B.C is alias to A.B.C=B.C</span>
+        <span class="c1"># A.B.C/True is not</span>
+        <span class="c1"># A.B.C=D is not</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flow_use</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">flows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">flow_use</span> <span class="o">=</span> <span class="n">flow_condition</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">node_name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">flow_condition</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">flows</span><span class="p">),</span>
+                   <span class="nb">tuple</span><span class="p">(</span><span class="n">flow_use</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="ParentSpecifiers"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.ParentSpecifiers">[docs]</a><span class="k">class</span> <span class="nc">ParentSpecifiers</span><span class="p">(</span><span class="nb">tuple</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ParentSpecifiers.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.ParentSpecifiers.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">list_str</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list_str</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">list_str</span> <span class="o">=</span> <span class="p">[</span><span class="n">list_str</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">ParentSpecifier</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">_Operator</span><span class="o">.</span><span class="n">OR</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_str</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Parents"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Parents">[docs]</a><span class="k">class</span> <span class="nc">Parents</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ParentSpecifiers</span><span class="p">]</span> <span class="o">=</span> <span class="p">([]</span> <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span>
+            <span class="n">ParentSpecifiers</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">args</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ParentSpecifiers</span><span class="p">]</span> <span class="o">=</span> <span class="p">({}</span> <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">ParentSpecifiers</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_map</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">parent_specs</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">),</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_keys</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E19&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent_keys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">specs</span> <span class="ow">in</span> <span class="n">parent_specs</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">node_map</span><span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">node_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="n">spec</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Parents.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Parents.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">([],</span> <span class="n">o</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">o</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">item</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E1&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">([</span><span class="n">o</span><span class="p">],</span> <span class="p">{})</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E2&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Triggers"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Triggers">[docs]</a><span class="k">class</span> <span class="nc">Triggers</span><span class="p">(</span><span class="n">Parents</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Triggers.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Triggers.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">([</span><span class="n">o</span><span class="p">],</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E20&quot;</span><span class="p">)</span></div></div>
+
+
+<span class="n">SWITCHON</span> <span class="o">=</span> <span class="s2">&quot;SWITCHON&quot;</span>
+
+
+<div class="viewcode-block" id="TriggerToken"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.TriggerToken">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">TriggerToken</span><span class="p">:</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">BaseNode</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">end</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">proc_funcs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">],</span>
+        <span class="n">end_q</span><span class="p">:</span> <span class="n">SimpleQueue</span><span class="p">,</span>
+        <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span><span class="p">,</span>
+        <span class="n">triggers</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Triggers</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">parents</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Parents</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">export</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proc_funcs</span> <span class="o">=</span> <span class="n">proc_funcs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triggers</span> <span class="o">=</span> <span class="n">Triggers</span><span class="p">()</span> <span class="k">if</span> <span class="n">triggers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">triggers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parents</span> <span class="o">=</span> <span class="n">Parents</span><span class="p">()</span> <span class="k">if</span> <span class="n">parents</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">parents</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triggerings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span> <span class="o">=</span> <span class="n">end_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span> <span class="o">=</span> <span class="n">result_q</span>
+        <span class="k">if</span> <span class="n">export</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">export</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export</span> <span class="o">=</span> <span class="p">(</span><span class="n">export</span><span class="p">,)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">export</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">export</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E24&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tqs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Queue</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">Queue</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">triggers</span><span class="o">.</span><span class="n">parent_keys</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_qs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span>
+                       <span class="n">Queue</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">Queue</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">parent_keys</span><span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_getitem</span><span class="p">(</span><span class="n">_p</span><span class="p">,</span> <span class="n">_attr</span><span class="p">):</span>
+        <span class="n">_attr</span> <span class="o">=</span> <span class="n">_attr</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_p</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">_p</span><span class="p">[</span><span class="n">_attr</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_p</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">_attr</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Node.push"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Node.push">[docs]</a>    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">caller_name</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">parent_key</span><span class="p">,</span> <span class="n">parent_spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">node_map</span><span class="p">[</span><span class="n">caller_name</span><span class="p">]:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">param</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">parent_spec</span><span class="o">.</span><span class="n">flow_condition</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getitem</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">param</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">parent_spec</span><span class="o">.</span><span class="n">flow_use</span><span class="p">:</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getitem</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent_spec</span><span class="o">.</span><span class="n">flows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_qs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">flow</span> <span class="ow">in</span> <span class="n">parent_spec</span><span class="o">.</span><span class="n">flows</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="n">flow</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_qs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">break</span>  <span class="c1"># only need to put one</span></div>
+
+<div class="viewcode-block" id="Node.trigger"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Node.trigger">[docs]</a>    <span class="k">def</span> <span class="nf">trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">caller_name</span><span class="p">):</span>
+        <span class="c1"># triggered by unexpected caller is</span>
+        <span class="c1"># currently considered fine, e.g. SWITCHON</span>
+        <span class="k">if</span> <span class="n">caller_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">triggers</span><span class="o">.</span><span class="n">node_map</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">parent_key</span><span class="p">,</span> <span class="n">parent_spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">triggers</span><span class="o">.</span><span class="n">node_map</span><span class="p">[</span><span class="n">caller_name</span><span class="p">]:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">param</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">parent_spec</span><span class="o">.</span><span class="n">flow_condition</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_getitem</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parent_spec</span><span class="o">.</span><span class="n">flows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tqs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">TriggerToken</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">flow</span> <span class="ow">in</span> <span class="n">parent_spec</span><span class="o">.</span><span class="n">flows</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="n">flow</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_tqs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">TriggerToken</span><span class="p">())</span>
+                    <span class="k">break</span>  <span class="c1"># only need to put one</span></div>
+
+<div class="viewcode-block" id="Node.run"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Node.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">NodeProcessMeta</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">triggerings</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc_funcs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">process_builder</span> <span class="o">=</span> <span class="n">NodeProcessBuilder</span><span class="p">()</span>
+        <span class="n">process_builder</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
+
+        <span class="k">def</span> <span class="nf">check_queues</span><span class="p">(</span><span class="n">_q_vals</span><span class="p">,</span> <span class="n">qs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Queue</span><span class="p">]):</span>
+            <span class="n">_ok</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_q_vals</span><span class="p">:</span>
+                    <span class="c1"># got this key already</span>
+                    <span class="k">continue</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">_q_vals</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">Empty</span><span class="p">:</span>
+                    <span class="n">_ok</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="n">_ok</span><span class="p">,</span> <span class="n">_q_vals</span>
+
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">triggered</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">procs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="n">triggers_ok</span><span class="p">,</span> <span class="n">triggered</span> <span class="o">=</span> <span class="n">check_queues</span><span class="p">(</span><span class="n">triggered</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tqs</span><span class="p">)</span>
+            <span class="n">parents_ok</span><span class="p">,</span> <span class="n">inputs</span> <span class="o">=</span> <span class="n">check_queues</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qs</span><span class="p">)</span>
+
+            <span class="c1"># if there&#39;s no triggers defined, use parents as triggers</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tqs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">triggers_ok</span> <span class="o">=</span> <span class="n">parents_ok</span>
+
+            <span class="c1"># if not getting triggered, sleep and try again</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">triggers_ok</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># if getting triggered, reset triggers but not inputs</span>
+            <span class="n">triggered</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># if triggers ok but parents not ok, use whatever it have</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">args</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inputs</span>
+            <span class="p">]</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">inputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">inputs</span>
+            <span class="p">}</span>
+            <span class="n">procs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">process_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+            <span class="n">procs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="n">procs</span><span class="p">:</span>
+                    <span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+
+            <span class="n">procs</span> <span class="o">=</span> <span class="p">[</span><span class="n">proc</span> <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="n">procs</span> <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()]</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="n">procs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+                    <span class="n">proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;killing proc </span><span class="si">{}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">proc</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span></div>
+
+<div class="viewcode-block" id="Node.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Node.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">end_q</span><span class="p">:</span> <span class="n">SimpleQueue</span><span class="p">,</span> <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">SWITCHON</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E21&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E5&quot;</span><span class="p">)</span>
+        <span class="n">proc_funcs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">triggers</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">parents</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">export</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">o</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;PROCESS&quot;</span><span class="p">:</span>
+                <span class="n">proc_funcs</span> <span class="o">=</span> <span class="n">NodeProcessFunction</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;TRIGGERS&quot;</span><span class="p">:</span>
+                <span class="n">triggers</span> <span class="o">=</span> <span class="n">Triggers</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;PARENTS&quot;</span><span class="p">:</span>
+                <span class="n">parents</span> <span class="o">=</span> <span class="n">Parents</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;END&quot;</span><span class="p">:</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;EXPORT&quot;</span><span class="p">:</span>
+                <span class="n">export</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;E13: </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">triggers</span><span class="o">=</span><span class="n">triggers</span><span class="p">,</span>
+            <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+            <span class="n">proc_funcs</span><span class="o">=</span><span class="n">proc_funcs</span><span class="p">,</span>
+            <span class="n">end_q</span><span class="o">=</span><span class="n">end_q</span><span class="p">,</span>
+            <span class="n">result_q</span><span class="o">=</span><span class="n">result_q</span><span class="p">,</span>
+            <span class="n">parents</span><span class="o">=</span><span class="n">parents</span><span class="p">,</span>
+            <span class="n">export</span><span class="o">=</span><span class="n">export</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Flow"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Flow">[docs]</a><span class="k">class</span> <span class="nc">Flow</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">],</span> <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span> <span class="o">=</span> <span class="n">result_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Process</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E6&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">triggers</span><span class="o">.</span><span class="n">node_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">SWITCHON</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">triggerings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="o">.</span><span class="n">node_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Flow.parse"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Flow.parse">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E7&quot;</span><span class="p">)</span>
+        <span class="n">end_q</span> <span class="o">=</span> <span class="n">SimpleQueue</span><span class="p">()</span>
+        <span class="n">result_q</span> <span class="o">=</span> <span class="n">SimpleQueue</span><span class="p">()</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">Node</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">end_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">o</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">result_q</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Flow.parse_yaml"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Flow.parse_yaml">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">parse_yaml</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flow_path</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yaml</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">yaml</span>
+
+        <span class="k">with</span> <span class="n">open_utf8</span><span class="p">(</span><span class="n">flow_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">main_dscp</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">main_dscp</span><span class="p">[</span><span class="s2">&quot;FLOW&quot;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Flow.start"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.Flow.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="n">TriggerToken</span><span class="p">(),</span> <span class="n">SWITCHON</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">processes</span><span class="p">:</span>
+            <span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="o">.</span><span class="n">get</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">results</span></div></div>
+
+
+<span class="n">_NODE_PROCESS_MAPPING</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="camel_to_snake"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.camel_to_snake">[docs]</a><span class="k">def</span> <span class="nf">camel_to_snake</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(?&lt;!^)(?=[A-Z])&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="default_node_process_function_name"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.default_node_process_function_name">[docs]</a><span class="k">def</span> <span class="nf">default_node_process_function_name</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]):</span>
+    <span class="k">return</span> <span class="n">camel_to_snake</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="reset_node_process_functions"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.reset_node_process_functions">[docs]</a><span class="k">def</span> <span class="nf">reset_node_process_functions</span><span class="p">():</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">_NODE_PROCESS_MAPPING</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">_NODE_PROCESS_MAPPING</span><span class="o">.</span><span class="n">popitem</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="register_node_process_functions"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.register_node_process_functions">[docs]</a><span class="k">def</span> <span class="nf">register_node_process_functions</span><span class="p">(</span>
+    <span class="n">proc_funcs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">proc_func_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">proc_func_module</span><span class="p">:</span> <span class="n">ModuleType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">raise_on_exist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">proc_funcs</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">proc_funcs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">proc_funcs</span>
+    <span class="n">proc_func_map</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">proc_func_map</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">proc_func_map</span>
+
+    <span class="k">def</span> <span class="nf">_check_before_update</span><span class="p">(</span><span class="n">_name</span><span class="p">,</span> <span class="n">_proc_func</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">_name</span> <span class="ow">in</span> <span class="n">_NODE_PROCESS_MAPPING</span> <span class="ow">and</span> <span class="n">raise_on_exist</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;E25 </span><span class="si">{</span><span class="n">_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">_NODE_PROCESS_MAPPING</span><span class="p">[</span><span class="n">_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_proc_func</span>
+
+    <span class="k">for</span> <span class="n">proc_func</span> <span class="ow">in</span> <span class="n">proc_funcs</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">default_node_process_function_name</span><span class="p">(</span><span class="n">proc_func</span><span class="p">)</span>
+        <span class="n">_check_before_update</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">proc_func</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">proc_func_module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">proc_func</span> <span class="ow">in</span> <span class="n">proc_func_module</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">proc_func</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="n">proc_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">NodeProcessFunction</span> <span class="ow">and</span>
+                    <span class="nb">issubclass</span><span class="p">(</span><span class="n">proc_func</span><span class="p">,</span> <span class="n">NodeProcessFunction</span><span class="p">)):</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">default_node_process_function_name</span><span class="p">(</span><span class="n">proc_func</span><span class="p">)</span>
+                <span class="n">_check_before_update</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">proc_func</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">proc_func</span> <span class="ow">in</span> <span class="n">proc_func_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">_check_before_update</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">proc_func</span><span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Hung-Yi Chou.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

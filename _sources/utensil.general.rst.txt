@@ -1,0 +1,21 @@
+utensil.general package
+=======================
+
+Submodules
+----------
+
+utensil.general.logger module
+-----------------------------
+
+.. automodule:: utensil.general.logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: utensil.general
+   :members:
+   :undoc-members:
+   :show-inheritance:

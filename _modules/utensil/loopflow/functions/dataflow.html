@@ -1,0 +1,1052 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utensil.loopflow.functions.dataflow &#8212; utensil  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="../../../../index.html">
+<p class="title">utensil</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../utensil.html">
+  utensil package
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for utensil.loopflow.functions.dataflow</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;**Provide NodeProcessFunction for machine learning work flows.**</span>
+
+<span class="sd">Example:</span>
+
+<span class="sd">.. highlight:: python</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from utensil.loopflow.functions import dataflow</span>
+<span class="sd">    from utensil.loopflow.loopflow import register_node_process_functions</span>
+<span class="sd">    register_node_process_functions(dataflow)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">utensil</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">utensil.loopflow.loopflow</span> <span class="kn">import</span> <span class="n">NodeProcessFunction</span>
+<span class="kn">from</span> <span class="nn">utensil.loopflow.functions.basic</span> <span class="kn">import</span> <span class="n">MISSING</span>
+<span class="kn">from</span> <span class="nn">utensil.general</span> <span class="kn">import</span> <span class="n">warn_left_keys</span>
+<span class="kn">from</span> <span class="nn">utensil.random_search</span> <span class="kn">import</span> <span class="n">RandomizedParam</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">e</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">sklearn.datasets</span> <span class="k">as</span> <span class="nn">sklearn_datasets</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">sklearn_datasets</span> <span class="o">=</span> <span class="n">e</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">GradientBoostingClassifier</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">GradientBoostingClassifier</span> <span class="o">=</span> <span class="n">e</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">xgboost</span> <span class="k">as</span> <span class="nn">_xgboost</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">_xgboost</span> <span class="o">=</span> <span class="n">e</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Feature"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Feature">[docs]</a><span class="k">class</span> <span class="nc">Feature</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A feature of a dataset.</span>
+
+<span class="sd">    :class:`.Feature` is an individual measurable property or characteristic</span>
+<span class="sd">    of a phenomenon. It can be a list of numbers, strings with or without</span>
+<span class="sd">    missing values. The length of a feature (missing values included) should</span>
+<span class="sd">    be the number of instance in a dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Features"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Features">[docs]</a><span class="k">class</span> <span class="nc">Features</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A list of features.</span>
+
+<span class="sd">    :class:`.Features` is a list of :class:`.Feature`. It can be represented as</span>
+<span class="sd">    a matrix of numbers, strings, missing values, etc.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Target">[docs]</a><span class="k">class</span> <span class="nc">Target</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The target of a dataset.</span>
+
+<span class="sd">    :class:`.Target` is whatever the output of the input variables. Typically,</span>
+<span class="sd">    it is the variables a supervised model trying to learn to predict,</span>
+<span class="sd">    either numerical or categorical.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Dataset"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Dataset">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Dataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A dataset used to train a model or to let a model predict its target.</span>
+
+<span class="sd">    A pair of :class:`.Target` and :class:`.Features`. For supervised case, to</span>
+<span class="sd">    train or to score a model, use both of target and features; to predict</span>
+<span class="sd">    only, use only the features. The length of target should be identical to</span>
+<span class="sd">    the length of every feature of features, i.e., the number of instances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">Target</span>
+    <span class="sd">&quot;&quot;&quot;The target of the dataset.&quot;&quot;&quot;</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">Features</span>
+    <span class="sd">&quot;&quot;&quot;The features of the dataset.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">nrows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Number of rows/instances.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;rows of target and that of features should be the same&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ncols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Number of columns/features.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A base model class to be trained and to predict target based on a</span>
+<span class="sd">    dataset.</span>
+
+<span class="sd">    Before calling :meth:`.Model.train`, the model is untrained and should</span>
+<span class="sd">    not be used to predict. After that, :meth:`.Model.predict` can be called to</span>
+<span class="sd">    predict the :class:`.Target` of :class:`.Features`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Model.train"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Model.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Train a model.</span>
+
+<span class="sd">        Use ``self`` as a base model to train on ``dataset`` for a trained</span>
+<span class="sd">        model.</span>
+
+<span class="sd">        *Should be overridden by subclass for implementation.*</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): dataset to be trained on.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A trained :class:`.Model`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="Model.predict"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Model.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Features</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Predict the target.</span>
+
+<span class="sd">        Model returned from :meth:`.Model.train` can predict for</span>
+<span class="sd">        :class:`.Target` on a given :class:`.Features`.</span>
+
+<span class="sd">        *Should be overridden by subclass for implementation.*</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            features (:class:`.Features`): used to predicted :class:`.Target`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The prediction of :class:`.Target`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="SklearnModel"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SklearnModel">[docs]</a><span class="k">class</span> <span class="nc">SklearnModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A wrapper for ``sklearn`` models.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (``sklearn`` model):</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
+
+<div class="viewcode-block" id="SklearnModel.train"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SklearnModel.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Train a model.</span>
+
+<span class="sd">        Use ``self`` as a base model to train on ``dataset`` for a trained</span>
+<span class="sd">        model. Typically the ``fit`` method of the ``sklearn`` model is used.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): dataset to be trained on.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A trained :class:`.Model`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SklearnModel.predict"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SklearnModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Features</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Predict the target.</span>
+
+<span class="sd">        Model returned from :meth:`.Model.train` can</span>
+<span class="sd">        predict for :class:`.Target` on a given :class:`.Features`.</span>
+<span class="sd">        Typically the ``predict`` method of the ``sklearn`` model is used.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            features (:class:`.Features`): used to predicted :class:`.Target`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The prediction of :class:`.Target`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Target</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="LoadData"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LoadData">[docs]</a><span class="k">class</span> <span class="nc">LoadData</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Load a dataset from an URL.</span>
+
+<span class="sd">    URL can be a path. Data format can be ``SVMLIGHT``.</span>
+
+<span class="sd">    Attributes:</span>
+
+<span class="sd">        dformat (str): Data format. Valid options are ``SVMLIGHT``.</span>
+
+<span class="sd">            .. todo::</span>
+<span class="sd">                More format are needed</span>
+
+<span class="sd">                #. CSV</span>
+<span class="sd">                #. HDF5</span>
+
+<span class="sd">        url (str): URL for the dataset. Should be a path.</span>
+
+<span class="sd">            .. todo::</span>
+<span class="sd">                More types are needed</span>
+
+<span class="sd">                #. web link.</span>
+<span class="sd">                #. sklearn data.</span>
+
+<span class="sd">        target (str): The column of the dataset treated as a target.</span>
+
+<span class="sd">        features (dict[int, str]):</span>
+<span class="sd">            A mapping from 0-index of column to its name. This is useful when</span>
+<span class="sd">            the dataset itself does not contain its own column names,</span>
+<span class="sd">            for example, ``svmlight`` format.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dformat</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dformat</span> <span class="o">=</span> <span class="n">dformat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">features</span>
+
+<div class="viewcode-block" id="LoadData.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LoadData.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dformat</span> <span class="o">==</span> <span class="s2">&quot;SVMLIGHT&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sklearn_datasets</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">sklearn_datasets</span>
+            <span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">sklearn_datasets</span><span class="o">.</span><span class="n">load_svmlight_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dformat</span><span class="p">)</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">from_spmatrix</span><span class="p">(</span>
+            <span class="n">features</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">Target</span><span class="p">(</span><span class="n">target</span><span class="p">),</span> <span class="n">Features</span><span class="p">(</span><span class="n">features</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="FilterRows"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.FilterRows">[docs]</a><span class="k">class</span> <span class="nc">FilterRows</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Filter rows of :class:`.Dataset`.</span>
+
+<span class="sd">    Filter rows of dataset by the value of its :class:`.Target`.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        filter_by (dict[str, Any]): Indicate to filter by which</span>
+<span class="sd">            column with what values. Typical usage is to filter ``TARGET`` with</span>
+<span class="sd">            a list of values. For example, ``filter_by={&quot;TARGET&quot;: [1, 2]}``</span>
+<span class="sd">            filters the target column to only contains 1 or 2.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_by</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_by</span> <span class="o">=</span> <span class="n">filter_by</span>
+
+<div class="viewcode-block" id="FilterRows.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.FilterRows.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): the dataset to be filtered.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A filtered dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">for</span> <span class="n">filter_key</span><span class="p">,</span> <span class="n">filter_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_by</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">filter_key</span> <span class="o">==</span> <span class="s2">&quot;TARGET&quot;</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span>
+                    <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">filter_val</span><span class="p">)])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">filter_key</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dataset</span></div></div>
+
+
+<div class="viewcode-block" id="SamplingRows"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SamplingRows">[docs]</a><span class="k">class</span> <span class="nc">SamplingRows</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sampling rows of a dataset.</span>
+
+<span class="sd">    This method samples a dataset to a specific number of rows or to a ratio.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        number (`int`) :</span>
+<span class="sd">            Sampled dataset will have this many rows. Suppressed by `ratio`.</span>
+
+<span class="sd">        ratio (`float`, default `1.0` if `number` is not set) :</span>
+<span class="sd">            Sampled dataset will have `ratio * dataset.nrows` rows.</span>
+<span class="sd">            Suppressing `number`.</span>
+
+<span class="sd">        stratified (`bool`, default `False`) :</span>
+<span class="sd">            If `True`, the dataset will be sampled using a stratified manner.</span>
+<span class="sd">            That is, there will be same number of rows for each category of</span>
+<span class="sd">            the dataset target, if possible.</span>
+
+<span class="sd">        replace (`bool`, default `False`) :</span>
+<span class="sd">            If `True`, the dataset will be sampled with replacement and a row</span>
+<span class="sd">            may be selected multiple times. Will raise an exception if</span>
+<span class="sd">            `replace` is set to `False` and `number` larger than</span>
+<span class="sd">            `dataset.nrows` or `ratio` larger than `1`.</span>
+
+<span class="sd">        random_seed (`None` or `int`, default `None`) :</span>
+<span class="sd">            Random seed used to sample the dataset. It is used to set</span>
+<span class="sd">            `numpy.random.BitGenerator`. See</span>
+<span class="sd">            `Numpy Documentation</span>
+<span class="sd">            &lt;https://numpy.org/doc/stable/reference/random/bit_generators/generated/numpy.random.BitGenerator.html#numpy.random.BitGenerator&gt;`_</span>
+<span class="sd">            for more information.</span>
+
+<span class="sd">        return_rest (`bool`, default `False`) :</span>
+<span class="sd">            If `False`, only the sampled dataset is returned.</span>
+
+<span class="sd">            If `True`, this method will return a dictionary of two datasets,</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                {</span>
+<span class="sd">                    &#39;sampled&#39;: sampled_dataset,</span>
+<span class="sd">                    &#39;rest&#39;: rest_dataset,</span>
+<span class="sd">                }</span>
+
+<span class="sd">            `rest_dataset` contains all rows not in `sampled_dataset`.</span>
+
+<span class="sd">            .. note::</span>
+
+<span class="sd">                Even if `sampled_dataset` is sampled with replacement,</span>
+<span class="sd">                `rest_dataset` does not contain duplicated rows.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">,</span>
+        <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">,</span>
+        <span class="n">stratified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_seed</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">return_rest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="o">=</span> <span class="n">number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stratified</span> <span class="o">=</span> <span class="n">stratified</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replace</span> <span class="o">=</span> <span class="n">replace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">return_rest</span> <span class="o">=</span> <span class="n">return_rest</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="n">MISSING</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span> <span class="nf">_get_number_each</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value_counts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">ttl_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">replace</span> <span class="ow">or</span> <span class="n">ttl_number</span> <span class="o">//</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span>
+                <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">min</span><span class="p">():</span>
+            <span class="n">number_each</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">value_counts</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">+</span>
+                           <span class="n">ttl_number</span> <span class="o">//</span> <span class="n">value_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">categories</span> <span class="o">=</span> <span class="n">number_each</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">categories</span><span class="p">)</span>
+            <span class="n">residual</span> <span class="o">=</span> <span class="n">ttl_number</span> <span class="o">-</span> <span class="n">number_each</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">number_each</span> <span class="o">+=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span>
+                <span class="n">cat</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">residual</span> <span class="k">else</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">categories</span><span class="p">)</span>
+            <span class="p">})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">number_each</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">value_counts</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                                    <span class="n">index</span><span class="o">=</span><span class="n">value_counts</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">residual</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_number_each</span><span class="p">(</span>
+                <span class="n">value_counts</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="n">value_counts</span><span class="o">.</span><span class="n">idxmin</span><span class="p">())</span> <span class="o">-</span>
+                <span class="n">value_counts</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
+                <span class="n">ttl_number</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">number_each</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">number_each</span> <span class="o">+=</span> <span class="p">(</span><span class="n">residual</span> <span class="o">+</span>
+                            <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">number_each</span><span class="o">.</span><span class="n">index</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">number_each</span>
+
+<div class="viewcode-block" id="SamplingRows.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SamplingRows.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): the dataset to be sampled.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A sampled dataset or a dictionary of the `sampled` dataset and</span>
+<span class="sd">            the `rest` dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stratified</span><span class="p">:</span>
+            <span class="n">ttl_number</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">)</span>
+                          <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+            <span class="n">value_counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">replace</span> <span class="ow">and</span> <span class="n">ttl_number</span> <span class="o">&gt;</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;sampling number should at most the same size as the &quot;</span>
+                    <span class="s2">&quot;dataset &quot;</span>
+                    <span class="s1">&#39;when &quot;replace&quot; is set False&#39;</span><span class="p">)</span>
+            <span class="n">number_each</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_number_each</span><span class="p">(</span><span class="n">value_counts</span><span class="p">,</span> <span class="n">ttl_number</span><span class="p">)</span>
+            <span class="n">selected_idx</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cat</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+                    <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">selected_idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span>
+                                     <span class="n">number_each</span><span class="p">[</span><span class="n">cat</span><span class="p">],</span>
+                                     <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">))</span>
+            <span class="n">selected_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">selected_idx</span><span class="p">)</span>
+            <span class="n">imap</span> <span class="o">=</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="p">)}</span>
+            <span class="n">selected_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">selected_idx</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">imap</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">))</span>
+            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">selected_idx</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span><span class="p">,</span>
+                                               <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">,</span>
+                                               <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span>
+                                               <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">,</span>
+                                               <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="p">)</span>
+        <span class="n">new_features</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">new_target</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_rest</span><span class="p">:</span>
+            <span class="n">rest_index</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">new_target</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">rest_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rest_index</span><span class="p">]</span>
+            <span class="n">rest_features</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rest_index</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;sampled&quot;</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">Target</span><span class="p">(</span><span class="n">new_target</span><span class="p">),</span> <span class="n">Features</span><span class="p">(</span><span class="n">new_features</span><span class="p">)),</span>
+                <span class="s2">&quot;rest&quot;</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">Target</span><span class="p">(</span><span class="n">rest_target</span><span class="p">),</span> <span class="n">Features</span><span class="p">(</span><span class="n">rest_features</span><span class="p">)),</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">Target</span><span class="p">(</span><span class="n">new_target</span><span class="p">),</span> <span class="n">Features</span><span class="p">(</span><span class="n">new_features</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="MakeDataset"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MakeDataset">[docs]</a><span class="k">class</span> <span class="nc">MakeDataset</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make a dataset using `target` and `features`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MakeDataset.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MakeDataset.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Target</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Features</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            target (:class:`.Target`): the input target.</span>
+<span class="sd">            features (:class:`.Features`): the input features.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A `dataset` consisted of `target` and `features`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">features</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GetTarget"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.GetTarget">[docs]</a><span class="k">class</span> <span class="nc">GetTarget</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get `target` from a `dataset`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="GetTarget.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.GetTarget.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): get `target` from this `dataset`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The `target` of the `dataset`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span></div></div>
+
+
+<div class="viewcode-block" id="GetFeature"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.GetFeature">[docs]</a><span class="k">class</span> <span class="nc">GetFeature</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get `feature` from a `dataset` with a given name.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        feature (str):</span>
+<span class="sd">            This `feature` will be retrieved from the `dataset`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="n">feature</span>
+
+<div class="viewcode-block" id="GetFeature.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.GetFeature.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Feature</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset (:class:`.Dataset`): get `feature` from this `dataset`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The `feature` with the given name of the `dataset`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Feature</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="MergeFeatures"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MergeFeatures">[docs]</a><span class="k">class</span> <span class="nc">MergeFeatures</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Merge a list of `feature` to `features`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MergeFeatures.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MergeFeatures.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">features</span><span class="p">:</span> <span class="n">Feature</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Features</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *features (list of :class:`.Feature`): list of feature to be merged.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`.Features` object contains the list `features`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Features</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">features</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_is_number</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_number</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_max</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_min</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">sp_values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LinearNormalize"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LinearNormalize">[docs]</a><span class="k">class</span> <span class="nc">LinearNormalize</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Perform linear normalization of a 1d array.</span>
+
+<span class="sd">    Linearly maps the given array from range ``(u1, l1)`` to ``(u2, l2)``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        upper (`dict` of ``FROM`` and ``TO``, default both ``MAX``):</span>
+<span class="sd">            Sets ``u1=upper[&quot;FROM&quot;]`` and ``u2=upper[&quot;TO&quot;]``. ``u*`` should</span>
+<span class="sd">            be a number or a string, ``MAX`` or ``MIN``. ``MAX`` means the</span>
+<span class="sd">            maximum of the array, and ``MIN`` means the minimum of the array.</span>
+
+<span class="sd">        lower (`dict` of ``FROM`` and ``TO``, default both ``MIN``):</span>
+<span class="sd">            Sets ``l1=lower[&quot;FROM&quot;]`` and ``l2=lower[&quot;TO&quot;]``. ``l*`` should</span>
+<span class="sd">            be a number or a string, ``MAX`` or ``MIN``. ``MAX`` means the</span>
+<span class="sd">            maximum of the array, and ``MIN`` means the minimum of the array.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">upper</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">lower</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;FROM&quot;</span><span class="p">:</span> <span class="s2">&quot;MAX&quot;</span><span class="p">,</span> <span class="s2">&quot;TO&quot;</span><span class="p">:</span> <span class="s2">&quot;MAX&quot;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="o">.</span><span class="n">update</span><span class="p">({}</span> <span class="k">if</span> <span class="n">upper</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">upper</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;FROM&quot;</span><span class="p">:</span> <span class="s2">&quot;MIN&quot;</span><span class="p">,</span> <span class="s2">&quot;TO&quot;</span><span class="p">:</span> <span class="s2">&quot;MIN&quot;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="o">.</span><span class="n">update</span><span class="p">({}</span> <span class="k">if</span> <span class="n">lower</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lower</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_compile_limit</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">arr1d</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;MAX&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_get_max</span><span class="p">(</span><span class="n">arr1d</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;MIN&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_get_min</span><span class="p">(</span><span class="n">arr1d</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;E27 </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_is_number</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cmd</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LinearNormalize.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LinearNormalize.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr1d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">hifrom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;FROM&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
+        <span class="n">hito</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;TO&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
+        <span class="n">lofrom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;FROM&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
+        <span class="n">loto</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;TO&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">arr1d</span> <span class="o">*</span> <span class="p">(</span><span class="n">hito</span> <span class="o">-</span> <span class="n">loto</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hifrom</span> <span class="o">-</span> <span class="n">lofrom</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="n">hito</span> <span class="o">*</span> <span class="n">lofrom</span> <span class="o">-</span> <span class="n">hifrom</span> <span class="o">-</span> <span class="n">loto</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hifrom</span> <span class="o">-</span> <span class="n">lofrom</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MakeModel"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MakeModel">[docs]</a><span class="k">class</span> <span class="nc">MakeModel</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make an untrained model.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        method (str) : the model will use this method to train. Options are</span>
+<span class="sd">            ``XGBOOST_REGRESSOR``, ``XGBOOST_CLASSIFIER``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_after_assign_params_routine</span><span class="p">(</span><span class="n">_from</span><span class="p">,</span> <span class="n">_to</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">_to</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">_to</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">warn_left_keys</span><span class="p">(</span><span class="n">_from</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MakeModel.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MakeModel.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_params (dict):</span>
+<span class="sd">                The parameters to create the model. Based on the `method`,</span>
+<span class="sd">                different parameters can be set.</span>
+
+<span class="sd">                * ``XGBOOST_REGRESSOR``:</span>
+
+<span class="sd">                    See more details in `XGBoost documentation</span>
+<span class="sd">                    &lt;https://xgboost.readthedocs.io/en/latest/parameter.html&gt;`_</span>
+
+<span class="sd">                    * ``learning_rate``</span>
+<span class="sd">                    * ``max_depth``</span>
+<span class="sd">                    * ``n_estimators``</span>
+
+<span class="sd">                * ``XGBOOST_CLASSIFIER``:</span>
+
+<span class="sd">                    See more details in `XGBoost documentation</span>
+<span class="sd">                    &lt;https://xgboost.readthedocs.io/en/latest/parameter.html&gt;`_</span>
+
+<span class="sd">                    * ``learning_rate``</span>
+<span class="sd">                    * ``max_depth``</span>
+<span class="sd">                    * ``n_estimators``</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An untrained :class:`.Model`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;XGBOOST_REGRESSOR&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_xgboost</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">_xgboost</span>
+            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">_xgboost</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;XGBOOST_CLASSIFIER&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_xgboost</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">_xgboost</span>
+            <span class="n">_model_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LEARNING_RATE&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;max_depth&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;MAX_DEPTH&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;N_ESTIMATORS&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_after_assign_params_routine</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">_model_params</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span>
+                <span class="n">_xgboost</span><span class="o">.</span><span class="n">XGBClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">,</span> <span class="n">use_label_encoder</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;SKLEARN_GRADIENT_BOOSTING_CLASSIFIER&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">GradientBoostingClassifier</span>
+            <span class="n">_model_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LEARNING_RATE&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;max_depth&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;MAX_DEPTH&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;N_ESTIMATORS&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_after_assign_params_routine</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">_model_params</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span></div></div>
+
+
+<div class="viewcode-block" id="Train"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Train">[docs]</a><span class="k">class</span> <span class="nc">Train</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Train a model.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Train.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Train.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (:class:`.Model`):</span>
+<span class="sd">                The model to be trained.</span>
+<span class="sd">            dataset (:class:`.Dataset`):</span>
+<span class="sd">                The dataset to be trained on.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            A trained :class:`.Model`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div></div>
+
+
+<div class="viewcode-block" id="Predict"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Predict">[docs]</a><span class="k">class</span> <span class="nc">Predict</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Predict a target.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Predict.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Predict.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="n">Features</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Target</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model (:class:`.Model`):</span>
+<span class="sd">                The prediction is from this model.</span>
+<span class="sd">            features (:class:`.Features`):</span>
+<span class="sd">                The features used for prediction.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            A :class:`.Target` based on the `model` and `features`. The</span>
+<span class="sd">            length of the `target` is identical to the number of rows of the</span>
+<span class="sd">            `features`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ParameterSearch"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.ParameterSearch">[docs]</a><span class="k">class</span> <span class="nc">ParameterSearch</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Random search the model parameters.</span>
+
+<span class="sd">    See more in :class:`utensil.random_search`.</span>
+
+<span class="sd">    Attributes:</span>
+
+<span class="sd">        init_state (int, default 0)</span>
+<span class="sd">        seed (int, default 0)</span>
+<span class="sd">        search_map (dict, default `None`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">search_map</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">init_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_seed_gen</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_seed</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">search_map</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">search_map</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">search_map</span>
+        <span class="k">for</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">search_method</span> <span class="ow">in</span> <span class="n">search_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">search_method</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">search_method</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span>
+                <span class="n">search_type</span><span class="p">,</span> <span class="n">search_option</span> <span class="o">=</span> <span class="n">search_method</span><span class="o">.</span><span class="n">popitem</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="p">[</span>
+                    <span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">RandomizedParam</span><span class="o">.</span><span class="n">create_randomized_param</span><span class="p">(</span>
+                        <span class="n">search_type</span><span class="p">,</span> <span class="n">search_option</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_method</span>
+
+    <span class="k">def</span> <span class="nf">_random_between</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">a</span>
+
+    <span class="k">def</span> <span class="nf">_generate_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rand_space</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">base</span>
+            <span class="k">if</span> <span class="n">offset</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">rand_space</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">linspace</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">rand_space</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_random_between</span><span class="p">(</span>
+                        <span class="n">linspace</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                        <span class="n">linspace</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+                        <span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span><span class="p">,</span>
+                    <span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+                <span class="p">])</span>
+
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">rand_space</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+
+            <span class="n">model_r</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rand_space</span><span class="p">[</span><span class="n">offset</span><span class="p">])</span>
+
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">model_r</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="ParameterSearch.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.ParameterSearch.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Next randomly generated parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span><span class="p">,</span> <span class="n">r_list</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_seed_gen</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">RandomizedParam</span><span class="p">):</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">from_random</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="k">return</span> <span class="n">params</span></div></div>
+
+
+<div class="viewcode-block" id="Score"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Score">[docs]</a><span class="k">class</span> <span class="nc">Score</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculate scores of a model, based on its prediction and a ground truth.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        dataset (str):</span>
+<span class="sd">            The name of the dataset. It is used to generate an informative</span>
+<span class="sd">            output.</span>
+<span class="sd">        methods (str or list of str):</span>
+<span class="sd">             The method or a list of methods to score a model. Options are</span>
+<span class="sd">             ``ACCURACY``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">dataset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">,</span>
+                 <span class="n">methods</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_name</span> <span class="o">=</span> <span class="n">dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">methods</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">methods</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Score.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Score.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prediction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Target</span><span class="p">,</span> <span class="n">Features</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">],</span>
+        <span class="n">ground_truth</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Target</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">],</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+
+<span class="sd">            prediction (`target`, `features` or `dataset`):</span>
+<span class="sd">                If `prediction` is :class:`.Target`, it will be directly used</span>
+<span class="sd">                to calculate the score without using the `model`.</span>
+
+<span class="sd">                If it is :class:`.Features`, `model` will make a prediction</span>
+<span class="sd">                based on it.</span>
+
+<span class="sd">                If it is :class:`.Dataset`, `model` will make a prediction</span>
+<span class="sd">                based on its `features`.</span>
+
+<span class="sd">            ground_truth (`target` or `dataset`):</span>
+<span class="sd">                If `ground_truth` is a :class:`.Target`, it is directly</span>
+<span class="sd">                compared to `prediction`.</span>
+
+<span class="sd">                If `ground_truth` is a :class:`.Dataset`, its `target` is</span>
+<span class="sd">                compared to `prediction`.</span>
+
+<span class="sd">            model (:class:`.Model`):</span>
+<span class="sd">                The `model` to be scored.</span>
+
+<span class="sd">                .. note::</span>
+
+<span class="sd">                    If `prediction` is :class:`.Target`, then the `model` is</span>
+<span class="sd">                    not used.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of scoring results. A scoring result is consisted of two</span>
+<span class="sd">            or three attributes, the scoring method name, the dataset name (</span>
+<span class="sd">            if provided), and the score.</span>
+
+<span class="sd">            For example:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                # if dataset name is &#39;MNIST&#39;</span>
+<span class="sd">                [</span>
+<span class="sd">                    (&#39;ACCURACY&#39;, &#39;MNIST&#39;, 0.812641),</span>
+<span class="sd">                    (&#39;FSCORE&#39;, &#39;MNIST&#39;, 0.713278),</span>
+<span class="sd">                ]</span>
+
+<span class="sd">                # if dataset name is not provided</span>
+<span class="sd">                [</span>
+<span class="sd">                    (&#39;ACCURACY&#39;, 0.812641),</span>
+<span class="sd">                    (&#39;FSCORE&#39;, 0.713278),</span>
+<span class="sd">                ]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">Target</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">Features</span><span class="p">):</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">prediction</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">Target</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
+            <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">ground_truth</span><span class="o">.</span><span class="n">target</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+
+        <span class="k">def</span> <span class="nf">wrap_output</span><span class="p">(</span><span class="n">_method</span><span class="p">,</span> <span class="n">_score</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_name</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">_method</span><span class="p">,</span> <span class="n">_score</span>
+            <span class="k">return</span> <span class="n">_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">_score</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ACCURACY&quot;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">wrap_output</span><span class="p">(</span>
+                        <span class="n">method</span><span class="p">,</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prediction</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="n">ground_truth</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="o">/</span>
+                        <span class="n">prediction</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="p">))</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+
+
+<div class="viewcode-block" id="ChangeTypeTo"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.ChangeTypeTo">[docs]</a><span class="k">class</span> <span class="nc">ChangeTypeTo</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Change the type of a given `arr`.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        to_type (str):</span>
+<span class="sd">            The `arr` will be this type. Options are ``INTEGER``, ``FLOAT``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">to_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">to_type</span> <span class="o">==</span> <span class="s2">&quot;INTEGER&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_type</span> <span class="o">=</span> <span class="nb">int</span>
+        <span class="k">elif</span> <span class="n">to_type</span> <span class="o">==</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_type</span> <span class="o">=</span> <span class="nb">float</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;E22&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChangeTypeTo.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.ChangeTypeTo.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Feature</span><span class="p">,</span> <span class="n">Target</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            arr (:class:`.Feature` or :class:`.Target`):</span>
+<span class="sd">                The type of this will be changed.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The `arr` with type changed to `to_type`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_type</span><span class="p">)</span></div></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Hung-Yi Chou.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

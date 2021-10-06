@@ -1,0 +1,500 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utensil.loopflow package &#8212; utensil  documentation</title>
+    
+  <link href="_static/css/theme.css" rel="stylesheet">
+  <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/blank.css" />
+    
+  <link rel="preload" as="script" href="_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utensil.loopflow.functions package" href="utensil.loopflow.functions.html" />
+    <link rel="prev" title="utensil.general package" href="utensil.general.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="index.html">
+<p class="title">utensil</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="utensil.html">
+  utensil package
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="utensil.constant.html">
+   utensil.constant package
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="utensil.general.html">
+   utensil.general package
+  </a>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="current reference internal" href="#">
+   utensil.loopflow package
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="utensil.loopflow.functions.html">
+     utensil.loopflow.functions package
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="utensil.random_search.html">
+   utensil.random_search package
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#subpackages">
+   Subpackages
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#submodules">
+   Submodules
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-utensil.loopflow.loopflow">
+   utensil.loopflow.loopflow module
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-utensil.loopflow">
+   Module contents
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <div class="section" id="utensil-loopflow-package">
+<h1>utensil.loopflow package<a class="headerlink" href="#utensil-loopflow-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="utensil.loopflow.functions.html">utensil.loopflow.functions package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utensil.loopflow.functions.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utensil.loopflow.functions.html#module-utensil.loopflow.functions.basic">utensil.loopflow.functions.basic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utensil.loopflow.functions.html#module-utensil.loopflow.functions.dataflow">utensil.loopflow.functions.dataflow module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utensil.loopflow.functions.html#module-utensil.loopflow.functions">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-utensil.loopflow.loopflow">
+<span id="utensil-loopflow-loopflow-module"></span><h2>utensil.loopflow.loopflow module<a class="headerlink" href="#module-utensil.loopflow.loopflow" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.BaseNode">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">BaseNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#BaseNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.BaseNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">multiprocessing.context.Process</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.BaseNodeProcess">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">BaseNodeProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#BaseNodeProcess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.BaseNodeProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">multiprocessing.context.Process</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessFunction">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">NodeProcessFunction</span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessFunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessFunction.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">o</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessFunction.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessFunction.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessFunction.main">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessFunction.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessFunction.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">NodeProcessMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triggerings</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'List[Node]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">children</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'List[Node]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_funcs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'List[NodeProcessFunction]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'Tuple[str]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'SimpleQueue'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessMeta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.node_name">
+<span class="sig-name descname"><span class="pre">node_name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.node_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.triggerings">
+<span class="sig-name descname"><span class="pre">triggerings</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.Node" title="utensil.loopflow.loopflow.Node"><span class="pre">utensil.loopflow.loopflow.Node</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.triggerings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.children">
+<span class="sig-name descname"><span class="pre">children</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.Node" title="utensil.loopflow.loopflow.Node"><span class="pre">utensil.loopflow.loopflow.Node</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.children" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.process_funcs">
+<span class="sig-name descname"><span class="pre">process_funcs</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.process_funcs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.export">
+<span class="sig-name descname"><span class="pre">export</span></span><em class="property"><span class="pre">:</span> <span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.export" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessMeta.result_q">
+<span class="sig-name descname"><span class="pre">result_q</span></span><em class="property"><span class="pre">:</span> <span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></em><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessMeta.result_q" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessBuilder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">NodeProcessBuilder</span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessBuilder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcessBuilder.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcessBuilder.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcessBuilder.build" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcess">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">NodeProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessMeta" title="utensil.loopflow.loopflow.NodeProcessMeta"><span class="pre">utensil.loopflow.loopflow.NodeProcessMeta</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#utensil.loopflow.loopflow.BaseNodeProcess" title="utensil.loopflow.loopflow.BaseNodeProcess"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.BaseNodeProcess</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.NodeProcess.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#NodeProcess.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.NodeProcess.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to be run in sub-process; can be overridden in sub-class</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">ParentSpecifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'str'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_condition</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'Tuple[str]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flows</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'Tuple[Any]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_use</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">'Tuple[str]'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#ParentSpecifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier.node_name">
+<span class="sig-name descname"><span class="pre">node_name</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier.node_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier.flow_condition">
+<span class="sig-name descname"><span class="pre">flow_condition</span></span><em class="property"><span class="pre">:</span> <span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier.flow_condition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier.flows">
+<span class="sig-name descname"><span class="pre">flows</span></span><em class="property"><span class="pre">:</span> <span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier.flows" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier.flow_use">
+<span class="sig-name descname"><span class="pre">flow_use</span></span><em class="property"><span class="pre">:</span> <span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier.flow_use" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifier.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#ParentSpecifier.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifier.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifiers">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">ParentSpecifiers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#ParentSpecifiers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.ParentSpecifiers.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_str</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#ParentSpecifiers.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.ParentSpecifiers.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Parents">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">Parents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Parents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Parents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Parents.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">o</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Parents.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Parents.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Triggers">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">Triggers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Triggers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Triggers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#utensil.loopflow.loopflow.Parents" title="utensil.loopflow.loopflow.Parents"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.Parents</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Triggers.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">o</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Triggers.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Triggers.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.TriggerToken">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">TriggerToken</span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#TriggerToken"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.TriggerToken" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Node">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">Node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc_funcs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triggers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#utensil.loopflow.loopflow.Triggers" title="utensil.loopflow.loopflow.Triggers"><span class="pre">utensil.loopflow.loopflow.Triggers</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#utensil.loopflow.loopflow.Parents" title="utensil.loopflow.loopflow.Parents"><span class="pre">utensil.loopflow.loopflow.Parents</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Node"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#utensil.loopflow.loopflow.BaseNode" title="utensil.loopflow.loopflow.BaseNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.BaseNode</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Node.push">
+<span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caller_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Node.push"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Node.push" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Node.trigger">
+<span class="sig-name descname"><span class="pre">trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">caller_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Node.trigger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Node.trigger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Node.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Node.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Node.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to be run in sub-process; can be overridden in sub-class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Node.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Node.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Node.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Flow">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">Flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.Node" title="utensil.loopflow.loopflow.Node"><span class="pre">utensil.loopflow.loopflow.Node</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">multiprocessing.context.BaseContext.SimpleQueue</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Flow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Flow.parse">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">o</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Flow.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Flow.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Flow.parse_yaml">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">parse_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flow_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Flow.parse_yaml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Flow.parse_yaml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.Flow.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#Flow.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.Flow.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.camel_to_snake">
+<span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">camel_to_snake</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#camel_to_snake"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.camel_to_snake" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.default_node_process_function_name">
+<span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">default_node_process_function_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#default_node_process_function_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.default_node_process_function_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.reset_node_process_functions">
+<span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">reset_node_process_functions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#reset_node_process_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.reset_node_process_functions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.loopflow.loopflow.register_node_process_functions">
+<span class="sig-prename descclassname"><span class="pre">utensil.loopflow.loopflow.</span></span><span class="sig-name descname"><span class="pre">register_node_process_functions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proc_funcs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc_func_map</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proc_func_module</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">module</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_on_exist</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/loopflow.html#register_node_process_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.loopflow.register_node_process_functions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-utensil.loopflow">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-utensil.loopflow" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="utensil.general.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">utensil.general package</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="utensil.loopflow.functions.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">utensil.loopflow.functions package</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Hung-Yi Chou.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

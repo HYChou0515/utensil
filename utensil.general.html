@@ -1,0 +1,440 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>utensil.general package &#8212; utensil  documentation</title>
+    
+  <link href="_static/css/theme.css" rel="stylesheet">
+  <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/blank.css" />
+    
+  <link rel="preload" as="script" href="_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="utensil.loopflow package" href="utensil.loopflow.html" />
+    <link rel="prev" title="utensil.constant package" href="utensil.constant.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="index.html">
+<p class="title">utensil</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="utensil.html">
+  utensil package
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="utensil.constant.html">
+   utensil.constant package
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   utensil.general package
+  </a>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="utensil.loopflow.html">
+   utensil.loopflow package
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="utensil.loopflow.functions.html">
+     utensil.loopflow.functions package
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="utensil.random_search.html">
+   utensil.random_search package
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#submodules">
+   Submodules
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-utensil.general.logger">
+   utensil.general.logger module
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-utensil.general">
+   Module contents
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <div class="section" id="utensil-general-package">
+<h1>utensil.general package<a class="headerlink" href="#utensil-general-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-utensil.general.logger">
+<span id="utensil-general-logger-module"></span><h2>utensil.general.logger module<a class="headerlink" href="#module-utensil.general.logger" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.general.logger.parse_log_level">
+<span class="sig-prename descclassname"><span class="pre">utensil.general.logger.</span></span><span class="sig-name descname"><span class="pre">parse_log_level</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/general/logger.html#parse_log_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.general.logger.parse_log_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.general.logger.</span></span><span class="sig-name descname"><span class="pre">LoggerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'info'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handlers</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">logging.Handler</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">(None,)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'{asctime:s}.{msecs:06.0f}</span> <span class="pre">localhost</span> <span class="pre">fv-az196-944</span> <span class="pre">{processName:s}({process:d})</span> <span class="pre">{threadName:s}({thread:d})</span> <span class="pre">{levelname:s}</span> <span class="pre">({name:s}.{funcName:s})</span> <span class="pre">{message:s}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">style</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'{'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'%Y-%m-%d</span> <span class="pre">%I:%M:%S'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/general/logger.html#LoggerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.general.logger.LoggerConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig.level">
+<span class="sig-name descname"><span class="pre">level</span></span><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">'info'</span></em><a class="headerlink" href="#utensil.general.logger.LoggerConfig.level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig.handlers">
+<span class="sig-name descname"><span class="pre">handlers</span></span><em class="property"><span class="pre">:</span> <span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">logging.Handler</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">(None,)</span></em><a class="headerlink" href="#utensil.general.logger.LoggerConfig.handlers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig.format">
+<span class="sig-name descname"><span class="pre">format</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'{asctime:s}.{msecs:06.0f}</span> <span class="pre">localhost</span> <span class="pre">fv-az196-944</span> <span class="pre">{processName:s}({process:d})</span> <span class="pre">{threadName:s}({thread:d})</span> <span class="pre">{levelname:s}</span> <span class="pre">({name:s}.{funcName:s})</span> <span class="pre">{message:s}'</span></em><a class="headerlink" href="#utensil.general.logger.LoggerConfig.format" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig.style">
+<span class="sig-name descname"><span class="pre">style</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'{'</span></em><a class="headerlink" href="#utensil.general.logger.LoggerConfig.style" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="utensil.general.logger.LoggerConfig.datefmt">
+<span class="sig-name descname"><span class="pre">datefmt</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><em class="property"> <span class="pre">=</span> <span class="pre">'%Y-%m-%d</span> <span class="pre">%I:%M:%S'</span></em><a class="headerlink" href="#utensil.general.logger.LoggerConfig.datefmt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.general.logger.get_logger">
+<span class="sig-prename descclassname"><span class="pre">utensil.general.logger.</span></span><span class="sig-name descname"><span class="pre">get_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/general/logger.html#get_logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.general.logger.get_logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-utensil.general">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-utensil.general" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.general.chunks">
+<span class="sig-prename descclassname"><span class="pre">utensil.general.</span></span><span class="sig-name descname"><span class="pre">chunks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/general/_general.html#chunks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.general.chunks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield successive n-sized chunks from lst.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.general.warn_left_keys">
+<span class="sig-prename descclassname"><span class="pre">utensil.general.</span></span><span class="sig-name descname"><span class="pre">warn_left_keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/general/_general.html#warn_left_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.general.warn_left_keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="utensil.general.open_utf8">
+<span class="sig-prename descclassname"><span class="pre">utensil.general.</span></span><span class="sig-name descname"><span class="pre">open_utf8</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'UTF-8'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closefd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opener</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#utensil.general.open_utf8" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open file and return a stream.  Raise OSError upon failure.</p>
+<p>file is either a text or byte string giving the name (and the path
+if the file isn’t in the current working directory) of the file to
+be opened or an integer file descriptor of the file to be
+wrapped. (If a file descriptor is given, it is closed when the
+returned I/O object is closed, unless closefd is set to False.)</p>
+<p>mode is an optional string that specifies the mode in which the file
+is opened. It defaults to ‘r’ which means open for reading in text
+mode.  Other common values are ‘w’ for writing (truncating the file if
+it already exists), ‘x’ for creating and writing to a new file, and
+‘a’ for appending (which on some Unix systems, means that all writes
+append to the end of the file regardless of the current seek position).
+In text mode, if encoding is not specified the encoding used is platform
+dependent: locale.getpreferredencoding(False) is called to get the
+current locale encoding. (For reading and writing raw bytes use binary
+mode and leave encoding unspecified.) The available modes are:</p>
+<table class="table">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Character</p></td>
+<td><p>Meaning</p></td>
+</tr>
+<tr class="row-even"><td><p>‘r’</p></td>
+<td><p>open for reading (default)</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘w’</p></td>
+<td><p>open for writing, truncating the file first</p></td>
+</tr>
+<tr class="row-even"><td><p>‘x’</p></td>
+<td><p>create a new file and open it for writing</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘a’</p></td>
+<td><p>open for writing, appending to the end of the file if it exists</p></td>
+</tr>
+<tr class="row-even"><td><p>‘b’</p></td>
+<td><p>binary mode</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘t’</p></td>
+<td><p>text mode (default)</p></td>
+</tr>
+<tr class="row-even"><td><p>‘+’</p></td>
+<td><p>open a disk file for updating (reading and writing)</p></td>
+</tr>
+<tr class="row-odd"><td><p>‘U’</p></td>
+<td><p>universal newline mode (deprecated)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The default mode is ‘rt’ (open for reading text). For binary random
+access, the mode ‘w+b’ opens and truncates the file to 0 bytes, while
+‘r+b’ opens the file without truncation. The ‘x’ mode implies ‘w’ and
+raises an <cite>FileExistsError</cite> if the file already exists.</p>
+<p>Python distinguishes between files opened in binary and text modes,
+even when the underlying operating system doesn’t. Files opened in
+binary mode (appending ‘b’ to the mode argument) return contents as
+bytes objects without any decoding. In text mode (the default, or when
+‘t’ is appended to the mode argument), the contents of the file are
+returned as strings, the bytes having been first decoded using a
+platform-dependent encoding or using the specified encoding if given.</p>
+<p>‘U’ mode is deprecated and will raise an exception in future versions
+of Python.  It has no effect in Python 3.  Use newline to control
+universal newlines mode.</p>
+<p>buffering is an optional integer used to set the buffering policy.
+Pass 0 to switch buffering off (only allowed in binary mode), 1 to select
+line buffering (only usable in text mode), and an integer &gt; 1 to indicate
+the size of a fixed-size chunk buffer.  When no buffering argument is
+given, the default buffering policy works as follows:</p>
+<ul class="simple">
+<li><p>Binary files are buffered in fixed-size chunks; the size of the buffer
+is chosen using a heuristic trying to determine the underlying device’s
+“block size” and falling back on <cite>io.DEFAULT_BUFFER_SIZE</cite>.
+On many systems, the buffer will typically be 4096 or 8192 bytes long.</p></li>
+<li><p>“Interactive” text files (files for which isatty() returns True)
+use line buffering.  Other text files use the policy described above
+for binary files.</p></li>
+</ul>
+<p>encoding is the name of the encoding used to decode or encode the
+file. This should only be used in text mode. The default encoding is
+platform dependent, but any encoding supported by Python can be
+passed.  See the codecs module for the list of supported encodings.</p>
+<p>errors is an optional string that specifies how encoding errors are to
+be handled—this argument should not be used in binary mode. Pass
+‘strict’ to raise a ValueError exception if there is an encoding error
+(the default of None has the same effect), or pass ‘ignore’ to ignore
+errors. (Note that ignoring encoding errors can lead to data loss.)
+See the documentation for codecs.register or run ‘help(codecs.Codec)’
+for a list of the permitted encoding error strings.</p>
+<p>newline controls how universal newlines works (it only applies to text
+mode). It can be None, ‘’, ‘n’, ‘r’, and ‘rn’.  It works as
+follows:</p>
+<ul class="simple">
+<li><p>On input, if newline is None, universal newlines mode is
+enabled. Lines in the input can end in ‘n’, ‘r’, or ‘rn’, and
+these are translated into ‘n’ before being returned to the
+caller. If it is ‘’, universal newline mode is enabled, but line
+endings are returned to the caller untranslated. If it has any of
+the other legal values, input lines are only terminated by the given
+string, and the line ending is returned to the caller untranslated.</p></li>
+<li><p>On output, if newline is None, any ‘n’ characters written are
+translated to the system default line separator, os.linesep. If
+newline is ‘’ or ‘n’, no translation takes place. If newline is any
+of the other legal values, any ‘n’ characters written are translated
+to the given string.</p></li>
+</ul>
+<p>If closefd is False, the underlying file descriptor will be kept open
+when the file is closed. This does not work when a file name is given
+and must be True in that case.</p>
+<p>A custom opener can be used by passing a callable as <em>opener</em>. The
+underlying file descriptor for the file object is then obtained by
+calling <em>opener</em> with (<em>file</em>, <em>flags</em>). <em>opener</em> must return an open
+file descriptor (passing os.open as <em>opener</em> results in functionality
+similar to passing None).</p>
+<p>open() returns a file object whose type depends on the mode, and
+through which the standard file operations such as reading and writing
+are performed. When open() is used to open a file in a text mode (‘w’,
+‘r’, ‘wt’, ‘rt’, etc.), it returns a TextIOWrapper. When used to open
+a file in a binary mode, the returned class varies: in read binary
+mode, it returns a BufferedReader; in write binary and append binary
+modes, it returns a BufferedWriter, and in read/write mode, it returns
+a BufferedRandom.</p>
+<p>It is also possible to use a string or bytearray as a file for both
+reading and writing. For strings StringIO can be used like a file
+opened in a text mode, and for bytes a BytesIO can be used like a file
+opened in a binary mode.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="utensil.constant.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">utensil.constant package</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="utensil.loopflow.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">utensil.loopflow package</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Hung-Yi Chou.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
