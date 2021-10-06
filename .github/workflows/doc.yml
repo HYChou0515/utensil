@@ -1,0 +1,35 @@
+name: doc
+on: [push]
+jobs:
+  create-doc:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8]
+        poetry-version: [1.1.10]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: setup poetry
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: install dependency
+        run: poetry install -E loopflow -E loguru
+      - name: install sphinx-toolbox
+        run: poetry run pip install sphinx-toolbox
+      - name: create doc
+        run: poetry run sphinx-apidoc -fF -o _docs -t docsrc utensil
+      - name: make html
+        run: poetry run make -C _docs html
+      - name: copy built documentations into docs
+        run: cp -a _docs/_build/html/* docs/
+      - name: deploy to gh-page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
