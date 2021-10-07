@@ -203,7 +203,8 @@
     <span class="n">children</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Node</span><span class="p">]</span>
     <span class="n">process_funcs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">NodeProcessFunction</span><span class="p">]</span>
     <span class="n">export</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span></div>
+    <span class="n">result_q</span><span class="p">:</span> <span class="n">SimpleQueue</span>
+    <span class="n">end_q</span><span class="p">:</span> <span class="n">SimpleQueue</span></div>
 
 
 <div class="viewcode-block" id="NodeProcessBuilder"><a class="viewcode-back" href="../../../utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessBuilder">[docs]</a><span class="k">class</span> <span class="nc">NodeProcessBuilder</span><span class="p">:</span>
@@ -243,6 +244,7 @@
                 <span class="n">child</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">node_name</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">end_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="nb">object</span><span class="p">())</span>
             <span class="k">raise</span> <span class="n">err</span></div></div>
 
 
@@ -448,6 +450,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">proc_funcs</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">export</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">process_builder</span> <span class="o">=</span> <span class="n">NodeProcessBuilder</span><span class="p">()</span>
         <span class="n">process_builder</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
@@ -500,7 +503,7 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="n">procs</span><span class="p">:</span>
                     <span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end_q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="nb">object</span><span class="p">())</span>
 
             <span class="n">procs</span> <span class="o">=</span> <span class="p">[</span><span class="n">proc</span> <span class="k">for</span> <span class="n">proc</span> <span class="ow">in</span> <span class="n">procs</span> <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()]</span>
 
