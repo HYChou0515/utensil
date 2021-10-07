@@ -504,7 +504,21 @@ the length of every feature of features, i.e., the number of instances.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.Dataset.nrows">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">nrows</span></span><a class="headerlink" href="#utensil.loopflow.functions.dataflow.Dataset.nrows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of rows/instances.</p>
+<dd><p>Number of rows/instances.
+&gt;&gt;&gt; dataset = Dataset(
+…     Target(np.random.randint(2, size=3)),
+…     Features(np.random.random(size=(3, 4)))
+… )
+&gt;&gt;&gt; dataset.nrows
+3
+&gt;&gt;&gt; bad_dataset = Dataset(
+…     Target(np.random.randint(2, size=2)),
+…     Features(np.random.random(size=(3, 4)))
+… )
+&gt;&gt;&gt; bad_dataset.nrows
+Traceback (most recent call last):
+…
+ValueError: rows of target and that of features should be the same</p>
 </dd></dl>
 
 <dl class="py property">
@@ -628,7 +642,8 @@ Typically the <code class="docutils literal notranslate"><span class="pre">predi
 <dl class="py attribute">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.LoadData.url">
 <span class="sig-name descname"><span class="pre">url</span></span><a class="headerlink" href="#utensil.loopflow.functions.dataflow.LoadData.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>URL for the dataset. Should be a path or a url with the scheme <cite>http</cite>, <cite>https</cite> or <cite>file</cite>.</p>
+<dd><p>URL for the dataset. Should be a path or a url with the
+scheme <cite>http</cite>, <cite>https</cite> or <cite>file</cite>.</p>
 <div class="admonition-todo admonition" id="id2">
 <p class="admonition-title">Todo</p>
 <p>More types are needed</p>
@@ -1466,7 +1481,21 @@ the length of every feature of features, i.e., the number of instances.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Dataset.nrows">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">nrows</span></span><a class="headerlink" href="#utensil.loopflow.functions.Dataset.nrows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of rows/instances.</p>
+<dd><p>Number of rows/instances.
+&gt;&gt;&gt; dataset = Dataset(
+…     Target(np.random.randint(2, size=3)),
+…     Features(np.random.random(size=(3, 4)))
+… )
+&gt;&gt;&gt; dataset.nrows
+3
+&gt;&gt;&gt; bad_dataset = Dataset(
+…     Target(np.random.randint(2, size=2)),
+…     Features(np.random.random(size=(3, 4)))
+… )
+&gt;&gt;&gt; bad_dataset.nrows
+Traceback (most recent call last):
+…
+ValueError: rows of target and that of features should be the same</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1590,7 +1619,8 @@ Typically the <code class="docutils literal notranslate"><span class="pre">predi
 <dl class="py attribute">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.LoadData.url">
 <span class="sig-name descname"><span class="pre">url</span></span><a class="headerlink" href="#utensil.loopflow.functions.LoadData.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>URL for the dataset. Should be a path or a url with the scheme <cite>http</cite>, <cite>https</cite> or <cite>file</cite>.</p>
+<dd><p>URL for the dataset. Should be a path or a url with the
+scheme <cite>http</cite>, <cite>https</cite> or <cite>file</cite>.</p>
 <div class="admonition-todo admonition" id="id5">
 <p class="admonition-title">Todo</p>
 <p>More types are needed</p>
