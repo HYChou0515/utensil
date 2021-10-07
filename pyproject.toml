@@ -8,7 +8,7 @@ maintainers = ["Chou Hung-Yi <hychou.svm@gmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/HYChou0515/utensil"
 repository = "https://github.com/HYChou0515/utensil"
-documentation = "https://github.com/HYChou0515/utensil"
+documentation = "https://www.hychou.dev"
 keywords = ["flow", "machine learning"]
 classifiers = [
         "Development Status :: 1 - Planning",
