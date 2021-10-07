@@ -21,7 +21,7 @@ jobs:
       - name: install dependency
         run: poetry install -E loopflow -E loguru
       - name: run test
-        run: poetry run pytest test
+        run: poetry run pytest
 
   create-doc:
     needs: test

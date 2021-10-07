@@ -16,9 +16,9 @@ import os.path
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
+import tempfile
 import requests
 import urllib3
-import tempfile
 
 from utensil import get_logger
 from utensil.loopflow.loopflow import NodeProcessFunction
@@ -93,7 +93,22 @@ class Dataset:
 
     @property
     def nrows(self):
-        """Number of rows/instances."""
+        """Number of rows/instances.
+        >>> dataset = Dataset(
+        ...     Target(np.random.randint(2, size=3)),
+        ...     Features(np.random.random(size=(3, 4)))
+        ... )
+        >>> dataset.nrows
+        3
+        >>> bad_dataset = Dataset(
+        ...     Target(np.random.randint(2, size=2)),
+        ...     Features(np.random.random(size=(3, 4)))
+        ... )
+        >>> bad_dataset.nrows
+        Traceback (most recent call last):
+        ...
+        ValueError: rows of target and that of features should be the same
+        """
         if self.target.shape[0] != self.features.shape[0]:
             raise ValueError(
                 "rows of target and that of features should be the same")
@@ -204,7 +219,8 @@ class LoadData(NodeProcessFunction):
                 #. CSV
                 #. HDF5
 
-        url (str): URL for the dataset. Should be a path or a url with the scheme `http`, `https` or `file`.
+        url (str): URL for the dataset. Should be a path or a url with the
+            scheme `http`, `https` or `file`.
 
             .. todo::
                 More types are needed
@@ -230,21 +246,22 @@ class LoadData(NodeProcessFunction):
     def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
             parsed_url = urllib3.util.parse_url(self.url)
+            if isinstance(sklearn_datasets, ImportError):
+                raise sklearn_datasets
             if parsed_url.scheme in ('http', 'https'):
                 r = requests.get(self.url)
                 with tempfile.NamedTemporaryFile('wb',
-                                                 delete=False,
                                                  suffix=os.path.basename(
                                                      parsed_url.path)) as tmp:
                     tmp.write(r.content)
-                    fpath = tmp.name
+                    tmp.flush()
+                    features, target, *_ = sklearn_datasets.load_svmlight_file(
+                        tmp.name)
             elif parsed_url.scheme in (None, 'file'):
-                fpath = parsed_url.path
+                features, target, *_ = sklearn_datasets.load_svmlight_file(
+                    parsed_url.path)
             else:
                 raise RuntimeError(f'E29 {self.url}')
-            if isinstance(sklearn_datasets, ImportError):
-                raise sklearn_datasets
-            features, target, *_ = sklearn_datasets.load_svmlight_file(fpath)
         else:
             raise ValueError(self.dformat)
         features = (pd.DataFrame.sparse.from_spmatrix(

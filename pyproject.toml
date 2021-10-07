@@ -47,3 +47,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.yapf]
 based_on_style = "google"
+
+[tool.pytest.ini_options]
+addopts = "--cov=utensil --cov-report=html --doctest-modules utensil test"

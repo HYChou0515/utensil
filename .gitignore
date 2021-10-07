@@ -7,6 +7,8 @@ gmon.out
 utensil.egg-info
 dist
 build
-_doc
+_docs
+htmlcov
 .utensil
 .python-version
+.coverage
