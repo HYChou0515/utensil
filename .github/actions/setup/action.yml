@@ -1,0 +1,15 @@
+name: Set up utensil
+description: Runs all the setup steps required to have a built pandas ready to use
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: setup poetry
+      uses: abatilo/actions-poetry@v2.0.0
+      with:
+        poetry-version: 1.1.10
+    - name: install dependency
+      run: poetry install -E loopflow -E loguru
+      shell: bash -l {0}

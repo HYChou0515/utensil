@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "utensil"
-version = "0.0.2a"
+version = "0.0.2a1"
 description = "A useful utensil kit for machine learning."
 license = "BSD-3-Clause"
 authors = ["Chou Hung-Yi <hychou.svm@gmail.com>"]
@@ -49,4 +49,4 @@ build-backend = "poetry.core.masonry.api"
 based_on_style = "google"
 
 [tool.pytest.ini_options]
-addopts = "--cov=utensil --cov-report=html --doctest-modules utensil test"
+addopts = "--cov=utensil --cov-report=html --doctest-modules"
