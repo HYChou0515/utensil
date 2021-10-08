@@ -11,4 +11,4 @@ _docs
 htmlcov
 .utensil
 .python-version
-.coverage
+.coverage*

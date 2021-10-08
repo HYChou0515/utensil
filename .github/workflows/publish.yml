@@ -1,0 +1,43 @@
+name: ci
+on:
+  workflow_dispatch:
+jobs:
+  create-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup utensil
+        uses: ./.github/actions/setup
+      - name: install sphinx-toolbox
+        run: poetry run pip install sphinx-toolbox
+      - name: create doc
+        run: poetry run sphinx-apidoc -fF -o _docs -t docsrc utensil
+      - name: make html
+        run: poetry run make -C _docs html
+      - name: copy built documentations into docs
+        run: cp -a _docs/_build/html/* docs/
+      - name: deploy to gh-page
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+
+  publish:
+    environment: publish-keys
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup utensil
+        uses: ./.github/actions/setup
+      - name: build dist
+        run: poetry build
+      - name: config pypi
+        run: |
+          poetry config repositories.pypi https://pypi.org/simple/
+          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
+      - name: publish pypi dry run
+        run: poetry publish -r pypi -n --dry-run
+      - name: publish test pypi
+        run: poetry publish -r pypi -n
