@@ -25,7 +25,7 @@ jobs:
   publish:
     environment: publish-keys
     needs:
-      - build
+      - create-doc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -38,6 +38,6 @@ jobs:
           poetry config repositories.pypi https://pypi.org/simple/
           poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
       - name: publish pypi dry run
-        run: poetry publish -r pypi -n --dry-run
-      - name: publish test pypi
-        run: poetry publish -r pypi -n
+        run: poetry publish --dry-run
+      - name: publish pypi
+        run: poetry publish
