@@ -1,5 +1,6 @@
 # Utensil
 
+[![PyPI Latest Release](https://img.shields.io/pypi/v/utensil.svg)](https://pypi.org/project/utensil/)
 [![License](https://img.shields.io/pypi/l/utensil.svg)](https://github.com/HYChou0515/utensil/blob/develop/LISCENCE)
 [![Code style: Google](https://img.shields.io/badge/code--style-yapf-blue)](https://github.com/google/yapf)
 
