@@ -12,3 +12,4 @@ htmlcov
 .utensil
 .python-version
 .coverage*
+coverage.xml
