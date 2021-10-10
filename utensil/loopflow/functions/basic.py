@@ -10,6 +10,7 @@ Example:
     register_node_process_functions(basic)
 """
 from collections import namedtuple
+from typing import Any
 
 from utensil.loopflow.loopflow import NodeProcessFunction
 
@@ -29,9 +30,12 @@ class Dummy(NodeProcessFunction):
     """Identical function.
 
     Returns whatever it get.
+
+    >>> Dummy().main('anything')
+    'anything'
     """
 
-    def main(self, a=MISSING):
+    def main(self, a: Any = MISSING):
         return a
 
 
@@ -42,13 +46,23 @@ class Default(NodeProcessFunction):
 
     Attributes:
         default: the default value.
+
+    >>> default = Default('my_default')
+
+    This will return the input.
+    >>> default.main('my_input')
+    'my_input'
+
+    This will return the default value.
+    >>> default.main()
+    'my_default'
     """
 
     def __init__(self, default):
         super().__init__()
         self.default = default
 
-    def main(self, o=MISSING):
+    def main(self, o: Any = MISSING):
         if o is MISSING:
             return self.default
         return o
@@ -59,6 +73,12 @@ class Add(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be added.
+
+    >>> p = Add(3)
+    >>> p.main(5)
+    8
+    >>> p.main(9)
+    12
     """
 
     def __init__(self, a):
@@ -91,6 +111,11 @@ class LessEqual(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be compared with.
+
+    >>> LessEqual(3).main(3)
+    ConditionValue(c=True, v=3)
+    >>> LessEqual(5).main(10)
+    ConditionValue(c=False, v=10)
     """
 
     def __init__(self, a):
@@ -115,6 +140,11 @@ class Equal(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be compared with.
+
+    >>> Equal(3).main(3)
+    ConditionValue(c=True, v=3)
+    >>> Equal(5).main(10)
+    ConditionValue(c=False, v=10)
     """
 
     def __init__(self, a):
@@ -139,6 +169,11 @@ class GreaterEqual(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be compared with.
+
+    >>> GreaterEqual(3).main(3)
+    ConditionValue(c=True, v=3)
+    >>> GreaterEqual(15).main(10)
+    ConditionValue(c=False, v=10)
     """
 
     def __init__(self, a):
@@ -163,6 +198,11 @@ class LessThan(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be compared with.
+
+    >>> LessThan(3).main(3)
+    ConditionValue(c=False, v=3)
+    >>> LessThan(15).main(10)
+    ConditionValue(c=True, v=10)
     """
 
     def __init__(self, a):
@@ -187,6 +227,11 @@ class GreaterThan(NodeProcessFunction):
 
     Attributes:
         a: the constant value to be compared with.
+
+    >>> GreaterThan(3).main(3)
+    ConditionValue(c=False, v=3)
+    >>> GreaterThan(5).main(10)
+    ConditionValue(c=True, v=10)
     """
 
     def __init__(self, a):
