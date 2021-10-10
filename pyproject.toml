@@ -49,4 +49,4 @@ build-backend = "poetry.core.masonry.api"
 based_on_style = "google"
 
 [tool.pytest.ini_options]
-addopts = "--cov=utensil --cov-report=html --doctest-modules"
+addopts = "--cov=utensil --cov-report=html --cov-report=term --cov-report=xml --doctest-modules"

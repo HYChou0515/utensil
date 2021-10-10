@@ -2,6 +2,7 @@ name: ci
 on: [push, pull_request]
 jobs:
   test:
+    environment: publish-keys
     strategy:
       fail-fast: false
       matrix:
@@ -22,6 +23,12 @@ jobs:
         run: poetry install -E loopflow -E loguru
       - name: run test
         run: poetry run pytest utensil test
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+          verbose: true
 
   build:
     needs:
