@@ -1,4 +1,4 @@
-name: ci
+name: CI
 on: [push, pull_request]
 jobs:
   test:
@@ -8,6 +8,8 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9]
         poetry-version: [1.1.10]
+        install-loopflow: ["-E loopflow", ""]
+        install-loguru: ["-E loguru", ""]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -20,9 +22,9 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: install dependency
-        run: poetry install -E loopflow -E loguru
+        run: poetry install ${{ matrix.install-loopflow }} ${{ matrix.install-loguru }}
       - name: run test
-        run: poetry run pytest utensil test
+        run: LOOPFLOW_INSTALLED=$(if [ "${{ matrix.install-loopflow }}" == "" ]; then echo "0"; else echo "1"; fi) poetry run pytest utensil test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:

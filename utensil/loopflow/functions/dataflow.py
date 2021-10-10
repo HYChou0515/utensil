@@ -85,6 +85,23 @@ class Dataset:
     train or to score a model, use both of target and features; to predict
     only, use only the features. The length of target should be identical to
     the length of every feature of features, i.e., the number of instances.
+
+    >>> dataset = Dataset(
+    ...     Target(np.random.randint(2, size=3)),
+    ...     Features(np.random.random(size=(3, 4)))
+    ... )
+    >>> dataset.nrows
+    3
+    >>> dataset.ncols
+    4
+    >>> bad_dataset = Dataset(
+    ...     Target(np.random.randint(2, size=2)),
+    ...     Features(np.random.random(size=(3, 4)))
+    ... )
+    >>> bad_dataset.nrows
+    Traceback (most recent call last):
+    ...
+    ValueError: rows of target and that of features should be the same
     """
     target: Target
     """The target of the dataset."""
@@ -93,22 +110,7 @@ class Dataset:
 
     @property
     def nrows(self):
-        """Number of rows/instances.
-        >>> dataset = Dataset(
-        ...     Target(np.random.randint(2, size=3)),
-        ...     Features(np.random.random(size=(3, 4)))
-        ... )
-        >>> dataset.nrows
-        3
-        >>> bad_dataset = Dataset(
-        ...     Target(np.random.randint(2, size=2)),
-        ...     Features(np.random.random(size=(3, 4)))
-        ... )
-        >>> bad_dataset.nrows
-        Traceback (most recent call last):
-        ...
-        ValueError: rows of target and that of features should be the same
-        """
+        """Number of rows/instances."""
         if self.target.shape[0] != self.features.shape[0]:
             raise ValueError(
                 "rows of target and that of features should be the same")
@@ -136,6 +138,13 @@ class Model:
         model.
 
         *Should be overridden by subclass for implementation.*
+        >>> Model().train(Dataset(
+        ...     Target(np.random.randint(2, size=3)),
+        ...     Features(np.random.random(size=(3, 4)))
+        ... ))
+        Traceback (most recent call last):
+          ...
+        NotImplementedError
 
         Args:
             dataset (:class:`.Dataset`): dataset to be trained on.
@@ -152,6 +161,10 @@ class Model:
         :class:`.Target` on a given :class:`.Features`.
 
         *Should be overridden by subclass for implementation.*
+        >>> Model().predict(Features(np.random.random(size=(3, 4))))
+        Traceback (most recent call last):
+          ...
+        NotImplementedError
 
         Args:
             features (:class:`.Features`): used to predicted :class:`.Target`.
@@ -163,7 +176,20 @@ class Model:
 
 
 class SklearnModel(Model):
-    """A wrapper for ``sklearn`` models."""
+    """A wrapper for ``sklearn`` models.
+
+    >>> from sklearn.linear_model import LinearRegression
+    >>> model = SklearnModel(LinearRegression())
+    >>> target = Target([1, 2, 3])
+    >>> features = Features([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+    >>> model = model.train(Dataset(target, features))
+    >>> model.predict(features + 1)
+    0    1.25
+    1    2.25
+    2    3.25
+    dtype: float64
+
+    """
 
     def __init__(self, model):
         """

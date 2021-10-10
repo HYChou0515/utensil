@@ -1,19 +1,19 @@
 import os
+import pickle
 import sys
 import unittest as ut
 import warnings
+from test.fixtures import FIXTURE_BASE
 
 import pytest
 
-from test.fixtures import FIXTURE_BASE
-from utensil.loopflow.loopflow import (
-    Flow,
-    NodeProcessFunction,
-    register_node_process_functions,
-    reset_node_process_functions,
-)
-from utensil.loopflow.functions import basic, dataflow
 from utensil.general.logger import get_logger
+from utensil.loopflow.functions import basic, dataflow
+from utensil.loopflow.loopflow import (Flow, NodeProcessFunction,
+                                       register_node_process_functions,
+                                       reset_node_process_functions)
+
+LOOPFLOW_INSTALLED = os.environ.get('LOOPFLOW_INSTALLED', '0') == '1'
 
 logger = get_logger(__name__)
 
@@ -40,9 +40,6 @@ class AddValue(NodeProcessFunction):
 
 class Add(NodeProcessFunction):
 
-    def __init__(self):
-        super().__init__()
-
     def main(self, a, b):
         return a + b
 
@@ -59,26 +56,17 @@ class TimeValue(NodeProcessFunction):
 
 class ListAddSum(NodeProcessFunction):
 
-    def __init__(self):
-        super().__init__()
-
     def main(self, add, *args):
         return sum([a + add for a in args])
 
 
 class Sum(NodeProcessFunction):
 
-    def __init__(self):
-        super().__init__()
-
     def main(self, l):
         return sum(l)
 
 
 class Divide(NodeProcessFunction):
-
-    def __init__(self):
-        super().__init__()
 
     def main(self, a, b):
         return a / b
@@ -91,14 +79,18 @@ class Pickle(NodeProcessFunction):
         self.path = path
 
     def main(self, obj):
-        import pickle
-
-        pickle.dump(obj, open(self.path, "wb"))
+        with open(self.path, "wb", encoding='utf-8') as f:
+            pickle.dump(obj, f)
 
 
 class TestSimpleFlow(ut.TestCase):
 
     @pytest.mark.timeout(10)
+    @pytest.mark.xfail(
+        condition=not LOOPFLOW_INSTALLED,
+        reason="loopflow not installed",
+        raises=ImportError,
+    )
     def test_end_to_end(self):
         reset_node_process_functions()
         register_node_process_functions(proc_func_module=sys.modules[__name__])
@@ -113,9 +105,8 @@ class TestSimpleFlow(ut.TestCase):
         flow.start()
 
         self.assertTrue(os.path.isfile("simple.output"))
-        import pickle
-
-        output = pickle.load(open("simple.output", "rb"))
+        with open("simple.output", "rb", encoding='utf-8') as f:
+            output = pickle.load(f)
         self.assertEqual(115, output)
 
         os.remove("simple.output")
@@ -124,6 +115,11 @@ class TestSimpleFlow(ut.TestCase):
 class TestCovtypeFlow(ut.TestCase):
 
     @pytest.mark.timeout(60)
+    @pytest.mark.xfail(
+        condition=not LOOPFLOW_INSTALLED,
+        reason="loopflow not installed",
+        raises=ImportError,
+    )
     def test_end_to_end(self):
         reset_node_process_functions()
         register_node_process_functions(proc_func_module=basic)
