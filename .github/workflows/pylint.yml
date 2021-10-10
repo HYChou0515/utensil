@@ -1,0 +1,21 @@
+name: check badge
+on: [push]
+jobs:
+  build_and_test:
+    environment: publish-keys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup utensil
+        uses: ./.github/actions/setup
+      - name: backup current badges
+        run: cp -r badges badges.old
+      - name: generate new badges
+        run: bash scripts/create_badges.sh
+      - name: check badges are same
+        run: |
+          diffs=$(diff badges badges.old)
+          if [[ "$diffs" != "" ]]; then
+            echo $diffs
+            exit -1
+          fi
