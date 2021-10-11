@@ -24,7 +24,13 @@ jobs:
       - name: install dependency
         run: poetry install ${{ matrix.install-loopflow }} ${{ matrix.install-loguru }}
       - name: run test
-        run: LOOPFLOW_INSTALLED=$(if [ "${{ matrix.install-loopflow }}" == "" ]; then echo "0"; else echo "1"; fi) poetry run pytest utensil test
+        run: |
+          export LOOPFLOW_INSTALLED=$(if [ "${{ matrix.install-loopflow }}" == "" ]; then echo "0"; else echo "1"; fi)
+          if [ "$LOOPFLOW_INSTALLED" == "1" ]; then
+            poetry run pytest utensil test
+          else
+            poetry run pytest test
+          fi
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:

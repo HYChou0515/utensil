@@ -15,11 +15,6 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from utensil import get_logger
 from utensil.general import open_utf8
 
-try:
-    import yaml
-except ImportError as e:
-    yaml = e
-
 logger = get_logger(__name__)
 
 
@@ -456,8 +451,7 @@ class Flow:
 
     @classmethod
     def parse_yaml(cls, flow_path):
-        if isinstance(yaml, ImportError):
-            raise yaml
+        import yaml
 
         with open_utf8(flow_path, "r") as f:
             main_dscp = yaml.safe_load(f)
