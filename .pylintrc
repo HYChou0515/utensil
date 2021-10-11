@@ -122,7 +122,60 @@ confidence=
 # Unfortunately, since the options parsing does not support multi-line entries
 # nor line continuation, all of the above items are redundantly specified here
 # in a way that pylint is willing to parse.
-disable=super-on-old-class,arguments-differ,signature-differs,method-hidden,abstract-method,no-member,relative-import,no-init,import-error,attribute-defined-outside-init,abstract-class-not-used,unused-argument,unused-variable,invalid-name,duplicate-code,abstract-class-little-used,too-few-public-methods,too-many-instance-attributes,too-many-ancestors,too-many-return-statements,too-many-lines,too-many-locals,too-many-function-args,too-many-public-methods,too-many-arguments,bad-continuation,no-self-use,missing-docstring,fixme,star-args,locally-disabled,locally-enabled,bad-option-value
+disable=
+    # Fix-worthy:
+    # ----
+    # Possible bugs:
+    # ----
+    super-on-old-class,
+    arguments-differ, # (# of arguments to overriding/overridden method)
+    signature-differs,
+    method-hidden,
+    abstract-method,  # (Abstract method not overridden in derived class)
+    no-member,        # (self.foo used when foo not declared in class)
+    # ----
+    # Easy-to-fix and improves readability, cleanliness:
+    # ----
+    relative-import,
+    # ----
+    # Probably legitimate, but needs markup to indicate intentionality
+    # ----
+    no-init,          # (Class does not have __init__, nor do ancestor classes)
+    import-error,
+    attribute-defined-outside-init,
+    abstract-class-not-used,
+    # Fix when economical:
+    # ----
+    # Minor code cleanliness problems; fix when encountered.
+    # ----
+    unused-argument,
+    unused-variable,
+    invalid-name,     # (Variable name does not meet coding standard)
+    duplicate-code,
+    # ----
+    # Laundry list of tunable parameters for when things are too big/small
+    # ----
+    abstract-class-little-used,
+    too-few-public-methods,
+    too-many-instance-attributes,
+    too-many-ancestors,
+    too-many-return-statements,
+    too-many-lines,
+    too-many-locals,
+    too-many-function-args,
+    too-many-public-methods,
+    too-many-arguments,
+    # Ignored; OK by our coding standard:
+    bad-continuation,   # (Bad whitespace on following line)
+    no-self-use,        # (Member function never uses 'self' parameter)
+    missing-docstring,
+    fixme,
+    star-args,
+    locally-disabled,   # (Notes local suppression of warning)
+    locally-enabled,    # (Notes re-enable of suppressed warning)
+    bad-option-value,   # (Notes suppression of unknown warning)
+    abstract-class-not-used,  # (Warns when not used in same file)
+    import-outside-toplevel,  # (Warns when local import)
 
 [REPORTS]
 

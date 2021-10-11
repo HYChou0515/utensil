@@ -1,5 +1,4 @@
 import os
-import pickle
 import sys
 import unittest as ut
 import warnings
@@ -79,6 +78,7 @@ class Pickle(NodeProcessFunction):
         self.path = path
 
     def main(self, obj):
+        import pickle
         with open(self.path, "wb", encoding='utf-8') as f:
             pickle.dump(obj, f)
 
@@ -105,6 +105,7 @@ class TestSimpleFlow(ut.TestCase):
         flow.start()
 
         self.assertTrue(os.path.isfile("simple.output"))
+        import pickle
         with open("simple.output", "rb", encoding='utf-8') as f:
             output = pickle.load(f)
         self.assertEqual(115, output)
