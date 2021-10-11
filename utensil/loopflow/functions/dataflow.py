@@ -31,21 +31,6 @@ try:
 except ImportError as e:
     raise e
 
-try:
-    import sklearn.datasets as sklearn_datasets
-except ImportError as e:
-    sklearn_datasets = e
-
-try:
-    from sklearn.ensemble import GradientBoostingClassifier
-except ImportError as e:
-    GradientBoostingClassifier = e
-
-try:
-    import xgboost as _xgboost
-except ImportError as e:
-    _xgboost = e
-
 logger = get_logger(__name__)
 
 
@@ -271,8 +256,7 @@ class LoadData(NodeProcessFunction):
     def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
             parsed_url = urllib3.util.parse_url(self.url)
-            if isinstance(sklearn_datasets, ImportError):
-                raise sklearn_datasets
+            from sklearn import datasets
             if parsed_url.scheme in ('http', 'https'):
                 r = requests.get(self.url)
                 with tempfile.NamedTemporaryFile('wb',
@@ -280,10 +264,9 @@ class LoadData(NodeProcessFunction):
                                                      parsed_url.path)) as tmp:
                     tmp.write(r.content)
                     tmp.flush()
-                    features, target, *_ = sklearn_datasets.load_svmlight_file(
-                        tmp.name)
+                    features, target, *_ = datasets.load_svmlight_file(tmp.name)
             elif parsed_url.scheme in (None, 'file'):
-                features, target, *_ = sklearn_datasets.load_svmlight_file(
+                features, target, *_ = datasets.load_svmlight_file(
                     parsed_url.path)
             else:
                 raise RuntimeError(f'E29 {self.url}')
@@ -668,12 +651,10 @@ class MakeModel(NodeProcessFunction):
             An untrained :class:`.Model`.
         """
         if self.method == "XGBOOST_REGRESSOR":
-            if isinstance(_xgboost, ImportError):
-                raise _xgboost
-            return SklearnModel(_xgboost.XGBRegressor())
+            import xgboost
+            return SklearnModel(xgboost.XGBRegressor())
         if self.method == "XGBOOST_CLASSIFIER":
-            if isinstance(_xgboost, ImportError):
-                raise _xgboost
+            import xgboost
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
@@ -681,17 +662,17 @@ class MakeModel(NodeProcessFunction):
             }
             self._after_assign_params_routine(model_params, _model_params)
             return SklearnModel(
-                _xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
+                xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
         if self.method == "SKLEARN_GRADIENT_BOOSTING_CLASSIFIER":
-            if isinstance(GradientBoostingClassifier, ImportError):
-                raise GradientBoostingClassifier
+            from sklearn import ensemble
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
                 "n_estimators": model_params.pop("N_ESTIMATORS", MISSING),
             }
             self._after_assign_params_routine(model_params, _model_params)
-            return SklearnModel(GradientBoostingClassifier(**_model_params))
+            return SklearnModel(
+                ensemble.GradientBoostingClassifier(**_model_params))
         raise ValueError
 
 
