@@ -13,18 +13,17 @@ Example:
 from __future__ import annotations
 
 import os.path
+import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
-import tempfile
 import requests
 import urllib3
 
 from utensil import get_logger
-from utensil.loopflow.loopflow import NodeProcessFunction
-from utensil.loopflow.functions.basic import MISSING
 from utensil.general import warn_left_keys
-from utensil.random_search import RandomizedParam
+from utensil.loopflow.functions.basic import MISSING
+from utensil.loopflow.loopflow import NodeProcessFunction
 
 try:
     import numpy as np
@@ -747,6 +746,8 @@ class ParameterSearch(NodeProcessFunction):
 
     def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
         super().__init__()
+        from utensil import random_search
+
         self.state = init_state
         self._nr_randomized_params = 0
         self._rng = np.random.default_rng(seed)
@@ -758,9 +759,9 @@ class ParameterSearch(NodeProcessFunction):
                 if len(search_method) != 1:
                     raise ValueError
                 search_type, search_option = search_method.popitem()
-                self._search_map[
-                    param_name] = RandomizedParam.create_randomized_param(
-                        search_type, search_option)
+                self._search_map[param_name] = (
+                    random_search.RandomizedParam.create_randomized_param(
+                        search_type, search_option))
                 self._nr_randomized_params += 1
             else:
                 self._search_map[param_name] = search_method
@@ -797,13 +798,14 @@ class ParameterSearch(NodeProcessFunction):
         Returns:
             Next randomly generated parameters.
         """
+        from utensil import random_search
         state, r_list = next(self._seed_gen)
         if len(r_list) != self._nr_randomized_params:
             raise ValueError
         r = iter(r_list)
         params = {}
         for k, v in self._search_map.items():
-            if isinstance(v, RandomizedParam):
+            if isinstance(v, random_search.RandomizedParam):
                 params[k] = v.from_random(next(r))
             else:
                 params[k] = v

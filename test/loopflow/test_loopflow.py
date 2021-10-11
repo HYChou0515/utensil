@@ -79,7 +79,7 @@ class Pickle(NodeProcessFunction):
 
     def main(self, obj):
         import pickle
-        with open(self.path, "wb", encoding='utf-8') as f:
+        with open(self.path, "wb") as f:
             pickle.dump(obj, f)
 
 
@@ -106,7 +106,7 @@ class TestSimpleFlow(ut.TestCase):
 
         self.assertTrue(os.path.isfile("simple.output"))
         import pickle
-        with open("simple.output", "rb", encoding='utf-8') as f:
+        with open("simple.output", "rb") as f:
             output = pickle.load(f)
         self.assertEqual(115, output)
 
