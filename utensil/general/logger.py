@@ -7,11 +7,6 @@ from typing import Iterable, Union
 
 from utensil import constant
 
-try:
-    from loguru import logger as loguru_logger
-except ImportError:
-    loguru_logger = None
-
 
 def parse_log_level(level):
     if isinstance(level, str):
@@ -78,10 +73,34 @@ class LoggerConfig:
             self.handlers = _logger_handlers
 
 
+class BraceString(str):
+
+    def __mod__(self, other):
+        return self.format(*other)
+
+    def __str__(self):  # pylint: disable=invalid-str-returned
+        # `self` is a string
+        return self
+
+
+class StyleAdapter(logging.LoggerAdapter):
+
+    def __init__(self, logger, extra=None):
+        super().__init__(logger, extra)
+
+    def process(self, msg, kwargs):
+        if kwargs.pop('style', "{") == "{":  # optional
+            msg = BraceString(msg)
+        return msg, kwargs
+
+
 def get_logger(name, logger_config=None):
-    if loguru_logger:
-        loguru_logger.opt(lazy=True)
-        return loguru_logger
+    try:
+        from loguru import logger
+        logger.opt(lazy=True)
+        return logger
+    except ImportError:
+        pass
     if logger_config is None:
         logger_config = LoggerConfig()
     logger = logging.getLogger(name)
@@ -94,7 +113,7 @@ def get_logger(name, logger_config=None):
     for handler in logger_config.handlers:
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-    return logger
+    return StyleAdapter(logger)
 
 
 class _DummyLogger:

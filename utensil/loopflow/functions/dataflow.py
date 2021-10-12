@@ -13,39 +13,23 @@ Example:
 from __future__ import annotations
 
 import os.path
+import tempfile
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
-import tempfile
 import requests
 import urllib3
 
 from utensil import get_logger
-from utensil.loopflow.loopflow import NodeProcessFunction
-from utensil.loopflow.functions.basic import MISSING
 from utensil.general import warn_left_keys
-from utensil.random_search import RandomizedParam
+from utensil.loopflow.functions.basic import MISSING
+from utensil.loopflow.loopflow import NodeProcessFunction
 
 try:
     import numpy as np
     import pandas as pd
 except ImportError as e:
     raise e
-
-try:
-    import sklearn.datasets as sklearn_datasets
-except ImportError as e:
-    sklearn_datasets = e
-
-try:
-    from sklearn.ensemble import GradientBoostingClassifier
-except ImportError as e:
-    GradientBoostingClassifier = e
-
-try:
-    import xgboost as _xgboost
-except ImportError as e:
-    _xgboost = e
 
 logger = get_logger(__name__)
 
@@ -85,6 +69,23 @@ class Dataset:
     train or to score a model, use both of target and features; to predict
     only, use only the features. The length of target should be identical to
     the length of every feature of features, i.e., the number of instances.
+
+    >>> dataset = Dataset(
+    ...     Target(np.random.randint(2, size=3)),
+    ...     Features(np.random.random(size=(3, 4)))
+    ... )
+    >>> dataset.nrows
+    3
+    >>> dataset.ncols
+    4
+    >>> bad_dataset = Dataset(
+    ...     Target(np.random.randint(2, size=2)),
+    ...     Features(np.random.random(size=(3, 4)))
+    ... )
+    >>> bad_dataset.nrows
+    Traceback (most recent call last):
+    ...
+    ValueError: rows of target and that of features should be the same
     """
     target: Target
     """The target of the dataset."""
@@ -93,22 +94,7 @@ class Dataset:
 
     @property
     def nrows(self):
-        """Number of rows/instances.
-        >>> dataset = Dataset(
-        ...     Target(np.random.randint(2, size=3)),
-        ...     Features(np.random.random(size=(3, 4)))
-        ... )
-        >>> dataset.nrows
-        3
-        >>> bad_dataset = Dataset(
-        ...     Target(np.random.randint(2, size=2)),
-        ...     Features(np.random.random(size=(3, 4)))
-        ... )
-        >>> bad_dataset.nrows
-        Traceback (most recent call last):
-        ...
-        ValueError: rows of target and that of features should be the same
-        """
+        """Number of rows/instances."""
         if self.target.shape[0] != self.features.shape[0]:
             raise ValueError(
                 "rows of target and that of features should be the same")
@@ -136,6 +122,13 @@ class Model:
         model.
 
         *Should be overridden by subclass for implementation.*
+        >>> Model().train(Dataset(
+        ...     Target(np.random.randint(2, size=3)),
+        ...     Features(np.random.random(size=(3, 4)))
+        ... ))
+        Traceback (most recent call last):
+          ...
+        NotImplementedError
 
         Args:
             dataset (:class:`.Dataset`): dataset to be trained on.
@@ -152,6 +145,10 @@ class Model:
         :class:`.Target` on a given :class:`.Features`.
 
         *Should be overridden by subclass for implementation.*
+        >>> Model().predict(Features(np.random.random(size=(3, 4))))
+        Traceback (most recent call last):
+          ...
+        NotImplementedError
 
         Args:
             features (:class:`.Features`): used to predicted :class:`.Target`.
@@ -163,7 +160,20 @@ class Model:
 
 
 class SklearnModel(Model):
-    """A wrapper for ``sklearn`` models."""
+    """A wrapper for ``sklearn`` models.
+
+    >>> from sklearn.linear_model import LinearRegression
+    >>> model = SklearnModel(LinearRegression())
+    >>> target = Target([1, 2, 3])
+    >>> features = Features([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])
+    >>> model = model.train(Dataset(target, features))
+    >>> model.predict(features + 1)
+    0    1.25
+    1    2.25
+    2    3.25
+    dtype: float64
+
+    """
 
     def __init__(self, model):
         """
@@ -246,8 +256,7 @@ class LoadData(NodeProcessFunction):
     def main(self) -> Dataset:
         if self.dformat == "SVMLIGHT":
             parsed_url = urllib3.util.parse_url(self.url)
-            if isinstance(sklearn_datasets, ImportError):
-                raise sklearn_datasets
+            from sklearn import datasets
             if parsed_url.scheme in ('http', 'https'):
                 r = requests.get(self.url)
                 with tempfile.NamedTemporaryFile('wb',
@@ -255,15 +264,16 @@ class LoadData(NodeProcessFunction):
                                                      parsed_url.path)) as tmp:
                     tmp.write(r.content)
                     tmp.flush()
-                    features, target, *_ = sklearn_datasets.load_svmlight_file(
-                        tmp.name)
+                    features, target, *_ = datasets.load_svmlight_file(tmp.name)
             elif parsed_url.scheme in (None, 'file'):
-                features, target, *_ = sklearn_datasets.load_svmlight_file(
+                features, target, *_ = datasets.load_svmlight_file(
                     parsed_url.path)
             else:
-                raise RuntimeError(f'E29 {self.url}')
+                raise ValueError(f'scheme "{parsed_url.scheme}" cannot be '
+                                 f'recognized in {self.url}')
         else:
-            raise ValueError(self.dformat)
+            raise ValueError(
+                f'data format "{self.dformat}" cannot be recognized')
         features = (pd.DataFrame.sparse.from_spmatrix(
             features).loc[:,
                           self.features.keys()].rename(columns=self.features))
@@ -302,7 +312,8 @@ class FilterRows(NodeProcessFunction):
                 idx = idx.intersection(
                     dataset.target.index[dataset.target.isin(filter_val)])
             else:
-                raise ValueError(filter_key)
+                raise ValueError(
+                    f'filter key "{filter_key}" cannot be recognized')
         dataset.target = dataset.target.loc[idx]
         dataset.features = dataset.features.loc[idx]
         return dataset
@@ -400,8 +411,9 @@ class SamplingRows(NodeProcessFunction):
                 value_counts.min(),
                 ttl_number - np.sum(number_each),
             )
-            number_each += (residual +
-                            pd.Series(0, index=number_each.index)).astype(int)
+            number_each += (
+                residual +
+                pd.Series(0, index=number_each.index)).fillna(0).astype(int)
         return number_each
 
     def main(self, dataset: Dataset) -> Union[Dataset, Dict[str, Dataset]]:
@@ -414,15 +426,15 @@ class SamplingRows(NodeProcessFunction):
             A sampled dataset or a dictionary of the `sampled` dataset and
             the `rest` dataset.
         """
+        ttl_number = (int(self.ratio * dataset.nrows)
+                      if self.ratio is not MISSING else self.number)
+        if not self.replace and ttl_number > dataset.nrows:
+            raise ValueError(
+                "sampling number should at most the same size as the "
+                "dataset "
+                'when "replace" is set False')
         if self.stratified:
-            ttl_number = (int(self.ratio * dataset.nrows)
-                          if self.ratio is not MISSING else self.number)
             value_counts = dataset.target.value_counts()
-            if not self.replace and ttl_number > dataset.nrows:
-                raise ValueError(
-                    "sampling number should at most the same size as the "
-                    "dataset "
-                    'when "replace" is set False')
             number_each = self._get_number_each(value_counts, ttl_number)
             selected_idx = []
             for cat, idx in dataset.target.groupby(
@@ -435,14 +447,11 @@ class SamplingRows(NodeProcessFunction):
             imap = {idx: i for i, idx in enumerate(dataset.target.index)}
             selected_idx = np.array(sorted(selected_idx, key=imap.__getitem__))
             new_target = dataset.target.loc[selected_idx]
-        elif self.ratio is not MISSING:
-            new_target = dataset.target.sample(frac=self.ratio,
-                                               replace=self.replace,
-                                               random_state=self._rng)
         else:
-            new_target = dataset.target.sample(n=self.number,
-                                               replace=self.replace,
-                                               random_state=self._rng)
+            new_target = dataset.target.sample(
+                n=ttl_number,
+                replace=self.replace,
+                random_state=self._rng.bit_generator)
         new_features = dataset.features.loc[new_target.index]
         if self.return_rest:
             rest_index = dataset.target.index.difference(new_target.index)
@@ -579,10 +588,10 @@ class LinearNormalize(NodeProcessFunction):
                 return _get_max(arr1d)
             if cmd == "MIN":
                 return _get_min(arr1d)
-            raise RuntimeError(f"E27 {cmd}")
+            raise ValueError(f'command "{cmd}" cannot be recognized')
         if _is_number(cmd):
             return cmd
-        raise ValueError(cmd)
+        raise ValueError(f'Expecting str or number, got {type(cmd).__name__}')
 
     def main(self, arr1d: np.ndarray) -> np.ndarray:
         hifrom = self._compile_limit(self.upper.pop("FROM"), arr1d)
@@ -590,8 +599,13 @@ class LinearNormalize(NodeProcessFunction):
         lofrom = self._compile_limit(self.lower.pop("FROM"), arr1d)
         loto = self._compile_limit(self.lower.pop("TO"), arr1d)
 
-        return arr1d * (hito - loto) / (hifrom - lofrom) + (
-            hito * lofrom - hifrom - loto) / (hifrom - lofrom)
+        if hifrom == lofrom:
+            if hito == loto:
+                return arr1d
+            raise ValueError(f'Cannot map a single value ({hifrom}) to '
+                             f'a different values ({hito}, {loto})')
+
+        return arr1d * (hito - loto) / (hifrom - lofrom) + loto
 
 
 class MakeModel(NodeProcessFunction):
@@ -639,16 +653,20 @@ class MakeModel(NodeProcessFunction):
                     * ``max_depth``
                     * ``n_estimators``
 
+                * ``SKLEARN_GRADIENT_BOOSTING_CLASSIFIER``:
+
+                    See more details in `Scikit Learn documentation
+                    <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html>`_
+
+                    * ``learning_rate``
+                    * ``max_depth``
+                    * ``n_estimators``
+
         Returns:
             An untrained :class:`.Model`.
         """
         if self.method == "XGBOOST_REGRESSOR":
-            if isinstance(_xgboost, ImportError):
-                raise _xgboost
-            return SklearnModel(_xgboost.XGBRegressor())
-        if self.method == "XGBOOST_CLASSIFIER":
-            if isinstance(_xgboost, ImportError):
-                raise _xgboost
+            import xgboost
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
@@ -656,18 +674,28 @@ class MakeModel(NodeProcessFunction):
             }
             self._after_assign_params_routine(model_params, _model_params)
             return SklearnModel(
-                _xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
-        if self.method == "SKLEARN_GRADIENT_BOOSTING_CLASSIFIER":
-            if isinstance(GradientBoostingClassifier, ImportError):
-                raise GradientBoostingClassifier
+                xgboost.XGBRegressor(**_model_params, use_label_encoder=True))
+        if self.method == "XGBOOST_CLASSIFIER":
+            import xgboost
             _model_params = {
                 "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
                 "max_depth": model_params.pop("MAX_DEPTH", MISSING),
                 "n_estimators": model_params.pop("N_ESTIMATORS", MISSING),
             }
             self._after_assign_params_routine(model_params, _model_params)
-            return SklearnModel(GradientBoostingClassifier(**_model_params))
-        raise ValueError
+            return SklearnModel(
+                xgboost.XGBClassifier(**_model_params, use_label_encoder=True))
+        if self.method == "SKLEARN_GRADIENT_BOOSTING_CLASSIFIER":
+            from sklearn import ensemble
+            _model_params = {
+                "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
+                "max_depth": model_params.pop("MAX_DEPTH", MISSING),
+                "n_estimators": model_params.pop("N_ESTIMATORS", MISSING),
+            }
+            self._after_assign_params_routine(model_params, _model_params)
+            return SklearnModel(
+                ensemble.GradientBoostingClassifier(**_model_params))
+        raise ValueError(f'method "{self.method}" cannot be recognized')
 
 
 class Train(NodeProcessFunction):
@@ -721,6 +749,8 @@ class ParameterSearch(NodeProcessFunction):
 
     def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
         super().__init__()
+        from utensil import random_search
+
         self.state = init_state
         self._nr_randomized_params = 0
         self._rng = np.random.default_rng(seed)
@@ -732,9 +762,9 @@ class ParameterSearch(NodeProcessFunction):
                 if len(search_method) != 1:
                     raise ValueError
                 search_type, search_option = search_method.popitem()
-                self._search_map[
-                    param_name] = RandomizedParam.create_randomized_param(
-                        search_type, search_option)
+                self._search_map[param_name] = (
+                    random_search.RandomizedParam.create_randomized_param(
+                        search_type, search_option))
                 self._nr_randomized_params += 1
             else:
                 self._search_map[param_name] = search_method
@@ -771,13 +801,14 @@ class ParameterSearch(NodeProcessFunction):
         Returns:
             Next randomly generated parameters.
         """
+        from utensil import random_search
         state, r_list = next(self._seed_gen)
         if len(r_list) != self._nr_randomized_params:
             raise ValueError
         r = iter(r_list)
         params = {}
         for k, v in self._search_map.items():
-            if isinstance(v, RandomizedParam):
+            if isinstance(v, random_search.RandomizedParam):
                 params[k] = v.from_random(next(r))
             else:
                 params[k] = v
