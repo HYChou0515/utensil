@@ -269,9 +269,11 @@ class LoadData(NodeProcessFunction):
                 features, target, *_ = datasets.load_svmlight_file(
                     parsed_url.path)
             else:
-                raise RuntimeError(f'E29 {self.url}')
+                raise ValueError(f'scheme "{parsed_url.scheme}" cannot be '
+                                 f'recognized in {self.url}')
         else:
-            raise ValueError(self.dformat)
+            raise ValueError(
+                f'data format "{self.dformat}" cannot be recognized')
         features = (pd.DataFrame.sparse.from_spmatrix(
             features).loc[:,
                           self.features.keys()].rename(columns=self.features))
@@ -310,7 +312,8 @@ class FilterRows(NodeProcessFunction):
                 idx = idx.intersection(
                     dataset.target.index[dataset.target.isin(filter_val)])
             else:
-                raise ValueError(filter_key)
+                raise ValueError(
+                    f'filter key "{filter_key}" cannot be recognized')
         dataset.target = dataset.target.loc[idx]
         dataset.features = dataset.features.loc[idx]
         return dataset
@@ -408,8 +411,9 @@ class SamplingRows(NodeProcessFunction):
                 value_counts.min(),
                 ttl_number - np.sum(number_each),
             )
-            number_each += (residual +
-                            pd.Series(0, index=number_each.index)).astype(int)
+            number_each += (
+                residual +
+                pd.Series(0, index=number_each.index)).fillna(0).astype(int)
         return number_each
 
     def main(self, dataset: Dataset) -> Union[Dataset, Dict[str, Dataset]]:
@@ -422,15 +426,15 @@ class SamplingRows(NodeProcessFunction):
             A sampled dataset or a dictionary of the `sampled` dataset and
             the `rest` dataset.
         """
+        ttl_number = (int(self.ratio * dataset.nrows)
+                      if self.ratio is not MISSING else self.number)
+        if not self.replace and ttl_number > dataset.nrows:
+            raise ValueError(
+                "sampling number should at most the same size as the "
+                "dataset "
+                'when "replace" is set False')
         if self.stratified:
-            ttl_number = (int(self.ratio * dataset.nrows)
-                          if self.ratio is not MISSING else self.number)
             value_counts = dataset.target.value_counts()
-            if not self.replace and ttl_number > dataset.nrows:
-                raise ValueError(
-                    "sampling number should at most the same size as the "
-                    "dataset "
-                    'when "replace" is set False')
             number_each = self._get_number_each(value_counts, ttl_number)
             selected_idx = []
             for cat, idx in dataset.target.groupby(
@@ -443,14 +447,11 @@ class SamplingRows(NodeProcessFunction):
             imap = {idx: i for i, idx in enumerate(dataset.target.index)}
             selected_idx = np.array(sorted(selected_idx, key=imap.__getitem__))
             new_target = dataset.target.loc[selected_idx]
-        elif self.ratio is not MISSING:
-            new_target = dataset.target.sample(frac=self.ratio,
-                                               replace=self.replace,
-                                               random_state=self._rng)
         else:
-            new_target = dataset.target.sample(n=self.number,
-                                               replace=self.replace,
-                                               random_state=self._rng)
+            new_target = dataset.target.sample(
+                n=ttl_number,
+                replace=self.replace,
+                random_state=self._rng.bit_generator)
         new_features = dataset.features.loc[new_target.index]
         if self.return_rest:
             rest_index = dataset.target.index.difference(new_target.index)
@@ -587,10 +588,10 @@ class LinearNormalize(NodeProcessFunction):
                 return _get_max(arr1d)
             if cmd == "MIN":
                 return _get_min(arr1d)
-            raise RuntimeError(f"E27 {cmd}")
+            raise ValueError(f'command "{cmd}" cannot be recognized')
         if _is_number(cmd):
             return cmd
-        raise ValueError(cmd)
+        raise ValueError(f'Expecting str or number, got {type(cmd).__name__}')
 
     def main(self, arr1d: np.ndarray) -> np.ndarray:
         hifrom = self._compile_limit(self.upper.pop("FROM"), arr1d)
@@ -598,8 +599,13 @@ class LinearNormalize(NodeProcessFunction):
         lofrom = self._compile_limit(self.lower.pop("FROM"), arr1d)
         loto = self._compile_limit(self.lower.pop("TO"), arr1d)
 
-        return arr1d * (hito - loto) / (hifrom - lofrom) + (
-            hito * lofrom - hifrom - loto) / (hifrom - lofrom)
+        if hifrom == lofrom:
+            if hito == loto:
+                return arr1d
+            raise ValueError(f'Cannot map a single value ({hifrom}) to '
+                             f'a different values ({hito}, {loto})')
+
+        return arr1d * (hito - loto) / (hifrom - lofrom) + loto
 
 
 class MakeModel(NodeProcessFunction):
@@ -647,12 +653,28 @@ class MakeModel(NodeProcessFunction):
                     * ``max_depth``
                     * ``n_estimators``
 
+                * ``SKLEARN_GRADIENT_BOOSTING_CLASSIFIER``:
+
+                    See more details in `Scikit Learn documentation
+                    <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html>`_
+
+                    * ``learning_rate``
+                    * ``max_depth``
+                    * ``n_estimators``
+
         Returns:
             An untrained :class:`.Model`.
         """
         if self.method == "XGBOOST_REGRESSOR":
             import xgboost
-            return SklearnModel(xgboost.XGBRegressor())
+            _model_params = {
+                "learning_rate": model_params.pop("LEARNING_RATE", MISSING),
+                "max_depth": model_params.pop("MAX_DEPTH", MISSING),
+                "n_estimators": model_params.pop("N_ESTIMATORS", MISSING),
+            }
+            self._after_assign_params_routine(model_params, _model_params)
+            return SklearnModel(
+                xgboost.XGBRegressor(**_model_params, use_label_encoder=True))
         if self.method == "XGBOOST_CLASSIFIER":
             import xgboost
             _model_params = {
@@ -673,7 +695,7 @@ class MakeModel(NodeProcessFunction):
             self._after_assign_params_routine(model_params, _model_params)
             return SklearnModel(
                 ensemble.GradientBoostingClassifier(**_model_params))
-        raise ValueError
+        raise ValueError(f'method "{self.method}" cannot be recognized')
 
 
 class Train(NodeProcessFunction):
