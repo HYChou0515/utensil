@@ -225,9 +225,13 @@
 <dd><p>Bases: <a class="reference internal" href="utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></code></a></p>
 <p>Identical function.</p>
 <p>Returns whatever it get.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Dummy</span><span class="p">()</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="s1">&#39;anything&#39;</span><span class="p">)</span>
+<span class="go">&#39;anything&#39;</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.Dummy.main">
-<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">a=MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Dummy.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Dummy.main" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">a:</span> <span class="pre">Any</span> <span class="pre">=</span> <span class="pre">MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Dummy.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Dummy.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -244,9 +248,18 @@
 <dd><p>the default value.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">default</span> <span class="o">=</span> <span class="n">Default</span><span class="p">(</span><span class="s1">&#39;my_default&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will return the input.
+&gt;&gt;&gt; default.main(‘my_input’)
+‘my_input’</p>
+<p>This will return the default value.
+&gt;&gt;&gt; default.main()
+‘my_default’</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.Default.main">
-<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">o=MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Default.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Default.main" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">o:</span> <span class="pre">Any</span> <span class="pre">=</span> <span class="pre">MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Default.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Default.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -262,6 +275,13 @@
 <dd><p>the constant value to be added.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="go">8</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+<span class="go">12</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.Add.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Add.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Add.main" title="Permalink to this definition">¶</a></dt>
@@ -316,6 +336,12 @@
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LessEqual</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LessEqual</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.LessEqual.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#LessEqual.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.LessEqual.main" title="Permalink to this definition">¶</a></dt>
@@ -343,6 +369,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Equal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Equal</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.Equal.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Equal.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.Equal.main" title="Permalink to this definition">¶</a></dt>
@@ -370,6 +402,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterEqual</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterEqual</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.GreaterEqual.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#GreaterEqual.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.GreaterEqual.main" title="Permalink to this definition">¶</a></dt>
@@ -397,6 +435,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LessThan</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LessThan</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.LessThan.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#LessThan.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.LessThan.main" title="Permalink to this definition">¶</a></dt>
@@ -424,6 +468,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterThan</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterThan</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.basic.GreaterThan.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#GreaterThan.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.basic.GreaterThan.main" title="Permalink to this definition">¶</a></dt>
@@ -489,6 +539,24 @@ either numerical or categorical.</p>
 train or to score a model, use both of target and features; to predict
 only, use only the features. The length of target should be identical to
 the length of every feature of features, i.e., the number of instances.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">Target</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">)),</span>
+<span class="gp">... </span>    <span class="n">Features</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="o">.</span><span class="n">ncols</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bad_dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">Target</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+<span class="gp">... </span>    <span class="n">Features</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bad_dataset</span><span class="o">.</span><span class="n">nrows</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">rows of target and that of features should be the same</span>
+</pre></div>
+</div>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.Dataset.target">
 <span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Target" title="utensil.loopflow.functions.dataflow.Target"><span class="pre">utensil.loopflow.functions.dataflow.Target</span></a></em><a class="headerlink" href="#utensil.loopflow.functions.dataflow.Dataset.target" title="Permalink to this definition">¶</a></dt>
@@ -504,21 +572,7 @@ the length of every feature of features, i.e., the number of instances.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.Dataset.nrows">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">nrows</span></span><a class="headerlink" href="#utensil.loopflow.functions.dataflow.Dataset.nrows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of rows/instances.
-&gt;&gt;&gt; dataset = Dataset(
-…     Target(np.random.randint(2, size=3)),
-…     Features(np.random.random(size=(3, 4)))
-… )
-&gt;&gt;&gt; dataset.nrows
-3
-&gt;&gt;&gt; bad_dataset = Dataset(
-…     Target(np.random.randint(2, size=2)),
-…     Features(np.random.random(size=(3, 4)))
-… )
-&gt;&gt;&gt; bad_dataset.nrows
-Traceback (most recent call last):
-…
-ValueError: rows of target and that of features should be the same</p>
+<dd><p>Number of rows/instances.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -544,7 +598,16 @@ predict the <a class="reference internal" href="#utensil.loopflow.functions.data
 <dd><p>Train a model.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">self</span></code> as a base model to train on <code class="docutils literal notranslate"><span class="pre">dataset</span></code> for a trained
 model.</p>
-<p><em>Should be overridden by subclass for implementation.</em></p>
+<p><em>Should be overridden by subclass for implementation.</em>
+&gt;&gt;&gt; Model().train(Dataset(
+…     Target(np.random.randint(2, size=3)),
+…     Features(np.random.random(size=(3, 4)))
+… ))
+Traceback (most recent call last):</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+<p>NotImplementedError</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="#utensil.loopflow.functions.dataflow.Dataset" title="utensil.loopflow.functions.dataflow.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>) – dataset to be trained on.</p>
@@ -561,7 +624,13 @@ model.</p>
 <dd><p>Predict the target.</p>
 <p>Model returned from <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Model.train" title="utensil.loopflow.functions.dataflow.Model.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Model.train()</span></code></a> can predict for
 <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Target" title="utensil.loopflow.functions.dataflow.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">Target</span></code></a> on a given <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Features" title="utensil.loopflow.functions.dataflow.Features"><code class="xref py py-class docutils literal notranslate"><span class="pre">Features</span></code></a>.</p>
-<p><em>Should be overridden by subclass for implementation.</em></p>
+<p><em>Should be overridden by subclass for implementation.</em>
+&gt;&gt;&gt; Model().predict(Features(np.random.random(size=(3, 4))))
+Traceback (most recent call last):</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+<p>NotImplementedError</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>features</strong> (<a class="reference internal" href="#utensil.loopflow.functions.dataflow.Features" title="utensil.loopflow.functions.dataflow.Features"><code class="xref py py-class docutils literal notranslate"><span class="pre">Features</span></code></a>) – used to predicted <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Target" title="utensil.loopflow.functions.dataflow.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">Target</span></code></a>.</p>
@@ -579,6 +648,18 @@ model.</p>
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.dataflow.</span></span><span class="sig-name descname"><span class="pre">SklearnModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#SklearnModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.dataflow.SklearnModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Model" title="utensil.loopflow.functions.dataflow.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.functions.dataflow.Model</span></code></a></p>
 <p>A wrapper for <code class="docutils literal notranslate"><span class="pre">sklearn</span></code> models.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">LinearRegression</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">features</span> <span class="o">=</span> <span class="n">Features</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">Dataset</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">features</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">0    1.25</span>
+<span class="go">1    2.25</span>
+<span class="go">2    3.25</span>
+<span class="go">dtype: float64</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.SklearnModel.train">
 <span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#utensil.loopflow.functions.dataflow.Dataset" title="utensil.loopflow.functions.dataflow.Dataset"><span class="pre">utensil.loopflow.functions.dataflow.Dataset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.dataflow.Model" title="utensil.loopflow.functions.dataflow.Model"><span class="pre">utensil.loopflow.functions.dataflow.Model</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#SklearnModel.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.dataflow.SklearnModel.train" title="Permalink to this definition">¶</a></dt>
@@ -1012,6 +1093,16 @@ different parameters can be set.</p>
 </ul>
 </div></blockquote>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKLEARN_GRADIENT_BOOSTING_CLASSIFIER</span></code>:</p>
+<blockquote>
+<div><p>See more details in <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html">Scikit Learn documentation</a></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">learning_rate</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_depth</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_estimators</span></code></p></li>
+</ul>
+</div></blockquote>
+</li>
 </ul>
 </p>
 </dd>
@@ -1121,7 +1212,7 @@ length of the <cite>target</cite> is identical to the number of rows of the
 
 <dl class="py class">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.dataflow.Score">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.dataflow.</span></span><span class="sig-name descname"><span class="pre">Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dataset:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">MISSING,</span> <span class="pre">methods:</span> <span class="pre">Optional[Union[List[str],</span> <span class="pre">str]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.dataflow.Score" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.dataflow.</span></span><span class="sig-name descname"><span class="pre">Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dataset:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">MISSING</span></em>, <em class="sig-param"><span class="pre">methods:</span> <span class="pre">Optional[Union[str</span></em>, <em class="sig-param"><span class="pre">List[str]]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.dataflow.Score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></code></a></p>
 <p>Calculate scores of a model, based on its prediction and a ground truth.</p>
 <dl class="py attribute">
@@ -1240,9 +1331,13 @@ if provided), and the score.</p>
 <dd><p>Bases: <a class="reference internal" href="utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></code></a></p>
 <p>Identical function.</p>
 <p>Returns whatever it get.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Dummy</span><span class="p">()</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="s1">&#39;anything&#39;</span><span class="p">)</span>
+<span class="go">&#39;anything&#39;</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Dummy.main">
-<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">a=MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Dummy.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Dummy.main" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">a:</span> <span class="pre">Any</span> <span class="pre">=</span> <span class="pre">MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Dummy.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Dummy.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1259,9 +1354,18 @@ if provided), and the score.</p>
 <dd><p>the default value.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">default</span> <span class="o">=</span> <span class="n">Default</span><span class="p">(</span><span class="s1">&#39;my_default&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will return the input.
+&gt;&gt;&gt; default.main(‘my_input’)
+‘my_input’</p>
+<p>This will return the default value.
+&gt;&gt;&gt; default.main()
+‘my_default’</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Default.main">
-<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">o=MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Default.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Default.main" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">o:</span> <span class="pre">Any</span> <span class="pre">=</span> <span class="pre">MISSING</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Default.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Default.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1277,6 +1381,13 @@ if provided), and the score.</p>
 <dd><p>the constant value to be added.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">p</span> <span class="o">=</span> <span class="n">Add</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="go">8</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">p</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+<span class="go">12</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Add.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Add.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Add.main" title="Permalink to this definition">¶</a></dt>
@@ -1303,6 +1414,12 @@ if provided), and the score.</p>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LessEqual</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LessEqual</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.LessEqual.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#LessEqual.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.LessEqual.main" title="Permalink to this definition">¶</a></dt>
@@ -1330,6 +1447,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Equal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Equal</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Equal.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#Equal.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Equal.main" title="Permalink to this definition">¶</a></dt>
@@ -1357,6 +1480,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterEqual</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterEqual</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.GreaterEqual.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#GreaterEqual.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.GreaterEqual.main" title="Permalink to this definition">¶</a></dt>
@@ -1384,6 +1513,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LessThan</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">LessThan</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.LessThan.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#LessThan.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.LessThan.main" title="Permalink to this definition">¶</a></dt>
@@ -1411,6 +1546,12 @@ and <code class="docutils literal notranslate"><span class="pre">v</span></code>
 <dd><p>the constant value to be compared with.</p>
 </dd></dl>
 
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterThan</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">ConditionValue(c=False, v=3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">GreaterThan</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="go">ConditionValue(c=True, v=10)</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.GreaterThan.main">
 <span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.basic.ConditionValue" title="utensil.loopflow.functions.basic.ConditionValue"><span class="pre">utensil.loopflow.functions.basic.ConditionValue</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/basic.html#GreaterThan.main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.GreaterThan.main" title="Permalink to this definition">¶</a></dt>
@@ -1466,6 +1607,24 @@ either numerical or categorical.</p>
 train or to score a model, use both of target and features; to predict
 only, use only the features. The length of target should be identical to
 the length of every feature of features, i.e., the number of instances.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">Target</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">3</span><span class="p">)),</span>
+<span class="gp">... </span>    <span class="n">Features</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="o">.</span><span class="n">ncols</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bad_dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">Target</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+<span class="gp">... </span>    <span class="n">Features</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bad_dataset</span><span class="o">.</span><span class="n">nrows</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">rows of target and that of features should be the same</span>
+</pre></div>
+</div>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Dataset.target">
 <span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Target" title="utensil.loopflow.functions.dataflow.Target"><span class="pre">utensil.loopflow.functions.dataflow.Target</span></a></em><a class="headerlink" href="#utensil.loopflow.functions.Dataset.target" title="Permalink to this definition">¶</a></dt>
@@ -1481,21 +1640,7 @@ the length of every feature of features, i.e., the number of instances.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Dataset.nrows">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">nrows</span></span><a class="headerlink" href="#utensil.loopflow.functions.Dataset.nrows" title="Permalink to this definition">¶</a></dt>
-<dd><p>Number of rows/instances.
-&gt;&gt;&gt; dataset = Dataset(
-…     Target(np.random.randint(2, size=3)),
-…     Features(np.random.random(size=(3, 4)))
-… )
-&gt;&gt;&gt; dataset.nrows
-3
-&gt;&gt;&gt; bad_dataset = Dataset(
-…     Target(np.random.randint(2, size=2)),
-…     Features(np.random.random(size=(3, 4)))
-… )
-&gt;&gt;&gt; bad_dataset.nrows
-Traceback (most recent call last):
-…
-ValueError: rows of target and that of features should be the same</p>
+<dd><p>Number of rows/instances.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1521,7 +1666,16 @@ predict the <a class="reference internal" href="#utensil.loopflow.functions.Targ
 <dd><p>Train a model.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">self</span></code> as a base model to train on <code class="docutils literal notranslate"><span class="pre">dataset</span></code> for a trained
 model.</p>
-<p><em>Should be overridden by subclass for implementation.</em></p>
+<p><em>Should be overridden by subclass for implementation.</em>
+&gt;&gt;&gt; Model().train(Dataset(
+…     Target(np.random.randint(2, size=3)),
+…     Features(np.random.random(size=(3, 4)))
+… ))
+Traceback (most recent call last):</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+<p>NotImplementedError</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="#utensil.loopflow.functions.Dataset" title="utensil.loopflow.functions.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>) – dataset to be trained on.</p>
@@ -1538,7 +1692,13 @@ model.</p>
 <dd><p>Predict the target.</p>
 <p>Model returned from <a class="reference internal" href="#utensil.loopflow.functions.Model.train" title="utensil.loopflow.functions.Model.train"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Model.train()</span></code></a> can predict for
 <a class="reference internal" href="#utensil.loopflow.functions.Target" title="utensil.loopflow.functions.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">Target</span></code></a> on a given <a class="reference internal" href="#utensil.loopflow.functions.Features" title="utensil.loopflow.functions.Features"><code class="xref py py-class docutils literal notranslate"><span class="pre">Features</span></code></a>.</p>
-<p><em>Should be overridden by subclass for implementation.</em></p>
+<p><em>Should be overridden by subclass for implementation.</em>
+&gt;&gt;&gt; Model().predict(Features(np.random.random(size=(3, 4))))
+Traceback (most recent call last):</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+<p>NotImplementedError</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>features</strong> (<a class="reference internal" href="#utensil.loopflow.functions.Features" title="utensil.loopflow.functions.Features"><code class="xref py py-class docutils literal notranslate"><span class="pre">Features</span></code></a>) – used to predicted <a class="reference internal" href="#utensil.loopflow.functions.Target" title="utensil.loopflow.functions.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">Target</span></code></a>.</p>
@@ -1556,6 +1716,18 @@ model.</p>
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.</span></span><span class="sig-name descname"><span class="pre">SklearnModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#SklearnModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.SklearnModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#utensil.loopflow.functions.dataflow.Model" title="utensil.loopflow.functions.dataflow.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.functions.dataflow.Model</span></code></a></p>
 <p>A wrapper for <code class="docutils literal notranslate"><span class="pre">sklearn</span></code> models.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">LinearRegression</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">features</span> <span class="o">=</span> <span class="n">Features</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">train</span><span class="p">(</span><span class="n">Dataset</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">features</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">features</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">0    1.25</span>
+<span class="go">1    2.25</span>
+<span class="go">2    3.25</span>
+<span class="go">dtype: float64</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.SklearnModel.train">
 <span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#utensil.loopflow.functions.dataflow.Dataset" title="utensil.loopflow.functions.dataflow.Dataset"><span class="pre">utensil.loopflow.functions.dataflow.Dataset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#utensil.loopflow.functions.dataflow.Model" title="utensil.loopflow.functions.dataflow.Model"><span class="pre">utensil.loopflow.functions.dataflow.Model</span></a></span></span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#SklearnModel.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.SklearnModel.train" title="Permalink to this definition">¶</a></dt>
@@ -1989,6 +2161,16 @@ different parameters can be set.</p>
 </ul>
 </div></blockquote>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKLEARN_GRADIENT_BOOSTING_CLASSIFIER</span></code>:</p>
+<blockquote>
+<div><p>See more details in <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html">Scikit Learn documentation</a></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">learning_rate</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_depth</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_estimators</span></code></p></li>
+</ul>
+</div></blockquote>
+</li>
 </ul>
 </p>
 </dd>
@@ -2098,7 +2280,7 @@ length of the <cite>target</cite> is identical to the number of rows of the
 
 <dl class="py class">
 <dt class="sig sig-object py" id="utensil.loopflow.functions.Score">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.</span></span><span class="sig-name descname"><span class="pre">Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dataset:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">MISSING,</span> <span class="pre">methods:</span> <span class="pre">Optional[Union[List[str],</span> <span class="pre">str]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Score" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">utensil.loopflow.functions.</span></span><span class="sig-name descname"><span class="pre">Score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dataset:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">MISSING</span></em>, <em class="sig-param"><span class="pre">methods:</span> <span class="pre">Optional[Union[str</span></em>, <em class="sig-param"><span class="pre">List[str]]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/utensil/loopflow/functions/dataflow.html#Score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utensil.loopflow.functions.Score" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="utensil.loopflow.html#utensil.loopflow.loopflow.NodeProcessFunction" title="utensil.loopflow.loopflow.NodeProcessFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">utensil.loopflow.loopflow.NodeProcessFunction</span></code></a></p>
 <p>Calculate scores of a model, based on its prediction and a ground truth.</p>
 <dl class="py attribute">

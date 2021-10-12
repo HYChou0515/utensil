@@ -131,8 +131,23 @@
 
 
 <div class="viewcode-block" id="chunks"><a class="viewcode-back" href="../../../utensil.general.html#utensil.chunks">[docs]</a><span class="k">def</span> <span class="nf">chunks</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Yield successive n-sized chunks from lst.</span>
+    <span class="sd">&quot;&quot;&quot;Yield successive n-sized chunks from lst.</span>
+
+<span class="sd">    &gt;&gt;&gt; for chunk in chunks([1, 2, 3, 4, 5], 2):</span>
+<span class="sd">    ...     print(chunk)</span>
+<span class="sd">    [1, 2]</span>
+<span class="sd">    [3, 4]</span>
+<span class="sd">    [5]</span>
+
+<span class="sd">    &gt;&gt;&gt; for chunk in chunks(range(5), 2):</span>
+<span class="sd">    ...     print(chunk)</span>
+<span class="sd">    [0, 1]</span>
+<span class="sd">    [2, 3]</span>
+<span class="sd">    [4]</span>
+
+<span class="sd">    &gt;&gt;&gt; for chunk in chunks(range(5), 0):</span>
+<span class="sd">    ...     print(chunk)</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">yield from</span> <span class="p">[]</span>
@@ -151,8 +166,27 @@
 
 
 <div class="viewcode-block" id="warn_left_keys"><a class="viewcode-back" href="../../../utensil.general.html#utensil.warn_left_keys">[docs]</a><span class="k">def</span> <span class="nf">warn_left_keys</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Warn if params have any items left.</span>
+<span class="sd">    This method is useful for configuration parsing and warn if keys not used.</span>
+
+<span class="sd">    &gt;&gt;&gt; def parse_config(config):</span>
+<span class="sd">    ...     first_name = config.pop(&#39;first_name&#39;, None)</span>
+<span class="sd">    ...     last_name = config.pop(&#39;last_name&#39;, None)</span>
+<span class="sd">    ...     warn_left_keys(config)</span>
+<span class="sd">    &gt;&gt;&gt; import warnings</span>
+
+<span class="sd">    `config` is not well-defined, should be `last_name` instead of `lastname`.</span>
+<span class="sd">    &gt;&gt;&gt; config = {&#39;first_name&#39;: &#39;Tom&#39;, &#39;lastname&#39;: &#39;Smith&#39;}</span>
+<span class="sd">    &gt;&gt;&gt; with warnings.catch_warnings(record=True) as w:</span>
+<span class="sd">    ...     parse_config(config)</span>
+<span class="sd">    ...     warnings.simplefilter(&quot;always&quot;)</span>
+<span class="sd">    ...     assert len(w) == 1</span>
+<span class="sd">    ...     assert issubclass(w[-1].category, SyntaxWarning)</span>
+<span class="sd">    ...     assert &quot;&#39;lastname&#39; is not used&quot; in str(w[-1].message)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is not used&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">)</span></div>
+        <span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is not used&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">SyntaxWarning</span><span class="p">)</span></div>
 
 
 <span class="n">open_utf8</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="nb">open</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;UTF-8&#39;</span><span class="p">)</span>

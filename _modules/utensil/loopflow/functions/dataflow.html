@@ -139,39 +139,23 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">import</span> <span class="nn">requests</span>
 <span class="kn">import</span> <span class="nn">urllib3</span>
 
 <span class="kn">from</span> <span class="nn">utensil</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">utensil.loopflow.loopflow</span> <span class="kn">import</span> <span class="n">NodeProcessFunction</span>
-<span class="kn">from</span> <span class="nn">utensil.loopflow.functions.basic</span> <span class="kn">import</span> <span class="n">MISSING</span>
 <span class="kn">from</span> <span class="nn">utensil.general</span> <span class="kn">import</span> <span class="n">warn_left_keys</span>
-<span class="kn">from</span> <span class="nn">utensil.random_search</span> <span class="kn">import</span> <span class="n">RandomizedParam</span>
+<span class="kn">from</span> <span class="nn">utensil.loopflow.functions.basic</span> <span class="kn">import</span> <span class="n">MISSING</span>
+<span class="kn">from</span> <span class="nn">utensil.loopflow.loopflow</span> <span class="kn">import</span> <span class="n">NodeProcessFunction</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
     <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
     <span class="k">raise</span> <span class="n">e</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">sklearn.datasets</span> <span class="k">as</span> <span class="nn">sklearn_datasets</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">sklearn_datasets</span> <span class="o">=</span> <span class="n">e</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">GradientBoostingClassifier</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">GradientBoostingClassifier</span> <span class="o">=</span> <span class="n">e</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">xgboost</span> <span class="k">as</span> <span class="nn">_xgboost</span>
-<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">_xgboost</span> <span class="o">=</span> <span class="n">e</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -211,6 +195,23 @@
 <span class="sd">    train or to score a model, use both of target and features; to predict</span>
 <span class="sd">    only, use only the features. The length of target should be identical to</span>
 <span class="sd">    the length of every feature of features, i.e., the number of instances.</span>
+
+<span class="sd">    &gt;&gt;&gt; dataset = Dataset(</span>
+<span class="sd">    ...     Target(np.random.randint(2, size=3)),</span>
+<span class="sd">    ...     Features(np.random.random(size=(3, 4)))</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; dataset.nrows</span>
+<span class="sd">    3</span>
+<span class="sd">    &gt;&gt;&gt; dataset.ncols</span>
+<span class="sd">    4</span>
+<span class="sd">    &gt;&gt;&gt; bad_dataset = Dataset(</span>
+<span class="sd">    ...     Target(np.random.randint(2, size=2)),</span>
+<span class="sd">    ...     Features(np.random.random(size=(3, 4)))</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; bad_dataset.nrows</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: rows of target and that of features should be the same</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">target</span><span class="p">:</span> <span class="n">Target</span>
     <span class="sd">&quot;&quot;&quot;The target of the dataset.&quot;&quot;&quot;</span>
@@ -219,22 +220,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">nrows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Number of rows/instances.</span>
-<span class="sd">        &gt;&gt;&gt; dataset = Dataset(</span>
-<span class="sd">        ...     Target(np.random.randint(2, size=3)),</span>
-<span class="sd">        ...     Features(np.random.random(size=(3, 4)))</span>
-<span class="sd">        ... )</span>
-<span class="sd">        &gt;&gt;&gt; dataset.nrows</span>
-<span class="sd">        3</span>
-<span class="sd">        &gt;&gt;&gt; bad_dataset = Dataset(</span>
-<span class="sd">        ...     Target(np.random.randint(2, size=2)),</span>
-<span class="sd">        ...     Features(np.random.random(size=(3, 4)))</span>
-<span class="sd">        ... )</span>
-<span class="sd">        &gt;&gt;&gt; bad_dataset.nrows</span>
-<span class="sd">        Traceback (most recent call last):</span>
-<span class="sd">        ...</span>
-<span class="sd">        ValueError: rows of target and that of features should be the same</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Number of rows/instances.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;rows of target and that of features should be the same&quot;</span><span class="p">)</span>
@@ -262,6 +248,13 @@
 <span class="sd">        model.</span>
 
 <span class="sd">        *Should be overridden by subclass for implementation.*</span>
+<span class="sd">        &gt;&gt;&gt; Model().train(Dataset(</span>
+<span class="sd">        ...     Target(np.random.randint(2, size=3)),</span>
+<span class="sd">        ...     Features(np.random.random(size=(3, 4)))</span>
+<span class="sd">        ... ))</span>
+<span class="sd">        Traceback (most recent call last):</span>
+<span class="sd">          ...</span>
+<span class="sd">        NotImplementedError</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            dataset (:class:`.Dataset`): dataset to be trained on.</span>
@@ -278,6 +271,10 @@
 <span class="sd">        :class:`.Target` on a given :class:`.Features`.</span>
 
 <span class="sd">        *Should be overridden by subclass for implementation.*</span>
+<span class="sd">        &gt;&gt;&gt; Model().predict(Features(np.random.random(size=(3, 4))))</span>
+<span class="sd">        Traceback (most recent call last):</span>
+<span class="sd">          ...</span>
+<span class="sd">        NotImplementedError</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            features (:class:`.Features`): used to predicted :class:`.Target`.</span>
@@ -289,7 +286,20 @@
 
 
 <div class="viewcode-block" id="SklearnModel"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SklearnModel">[docs]</a><span class="k">class</span> <span class="nc">SklearnModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A wrapper for ``sklearn`` models.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;A wrapper for ``sklearn`` models.</span>
+
+<span class="sd">    &gt;&gt;&gt; from sklearn.linear_model import LinearRegression</span>
+<span class="sd">    &gt;&gt;&gt; model = SklearnModel(LinearRegression())</span>
+<span class="sd">    &gt;&gt;&gt; target = Target([1, 2, 3])</span>
+<span class="sd">    &gt;&gt;&gt; features = Features([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]])</span>
+<span class="sd">    &gt;&gt;&gt; model = model.train(Dataset(target, features))</span>
+<span class="sd">    &gt;&gt;&gt; model.predict(features + 1)</span>
+<span class="sd">    0    1.25</span>
+<span class="sd">    1    2.25</span>
+<span class="sd">    2    3.25</span>
+<span class="sd">    dtype: float64</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -372,8 +382,7 @@
 <div class="viewcode-block" id="LoadData.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LoadData.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dformat</span> <span class="o">==</span> <span class="s2">&quot;SVMLIGHT&quot;</span><span class="p">:</span>
             <span class="n">parsed_url</span> <span class="o">=</span> <span class="n">urllib3</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">parse_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sklearn_datasets</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">sklearn_datasets</span>
+            <span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">datasets</span>
             <span class="k">if</span> <span class="n">parsed_url</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">,</span> <span class="s1">&#39;https&#39;</span><span class="p">):</span>
                 <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
                 <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="s1">&#39;wb&#39;</span><span class="p">,</span>
@@ -381,15 +390,16 @@
                                                      <span class="n">parsed_url</span><span class="o">.</span><span class="n">path</span><span class="p">))</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
                     <span class="n">tmp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
                     <span class="n">tmp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-                    <span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">sklearn_datasets</span><span class="o">.</span><span class="n">load_svmlight_file</span><span class="p">(</span>
-                        <span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_svmlight_file</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">parsed_url</span><span class="o">.</span><span class="n">scheme</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">):</span>
-                <span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">sklearn_datasets</span><span class="o">.</span><span class="n">load_svmlight_file</span><span class="p">(</span>
+                <span class="n">features</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_svmlight_file</span><span class="p">(</span>
                     <span class="n">parsed_url</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;E29 </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;scheme &quot;</span><span class="si">{</span><span class="n">parsed_url</span><span class="o">.</span><span class="n">scheme</span><span class="si">}</span><span class="s1">&quot; cannot be &#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;recognized in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dformat</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;data format &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dformat</span><span class="si">}</span><span class="s1">&quot; cannot be recognized&#39;</span><span class="p">)</span>
         <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">from_spmatrix</span><span class="p">(</span>
             <span class="n">features</span><span class="p">)</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">))</span>
@@ -428,7 +438,8 @@
                 <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span>
                     <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">filter_val</span><span class="p">)])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">filter_key</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;filter key &quot;</span><span class="si">{</span><span class="n">filter_key</span><span class="si">}</span><span class="s1">&quot; cannot be recognized&#39;</span><span class="p">)</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dataset</span></div></div>
@@ -526,8 +537,9 @@
                 <span class="n">value_counts</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
                 <span class="n">ttl_number</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">number_each</span><span class="p">),</span>
             <span class="p">)</span>
-            <span class="n">number_each</span> <span class="o">+=</span> <span class="p">(</span><span class="n">residual</span> <span class="o">+</span>
-                            <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">number_each</span><span class="o">.</span><span class="n">index</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">number_each</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">residual</span> <span class="o">+</span>
+                <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">number_each</span><span class="o">.</span><span class="n">index</span><span class="p">))</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">number_each</span>
 
 <div class="viewcode-block" id="SamplingRows.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.SamplingRows.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">]]:</span>
@@ -540,15 +552,15 @@
 <span class="sd">            A sampled dataset or a dictionary of the `sampled` dataset and</span>
 <span class="sd">            the `rest` dataset.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ttl_number</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">)</span>
+                      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">replace</span> <span class="ow">and</span> <span class="n">ttl_number</span> <span class="o">&gt;</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;sampling number should at most the same size as the &quot;</span>
+                <span class="s2">&quot;dataset &quot;</span>
+                <span class="s1">&#39;when &quot;replace&quot; is set False&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stratified</span><span class="p">:</span>
-            <span class="n">ttl_number</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">)</span>
-                          <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
             <span class="n">value_counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">replace</span> <span class="ow">and</span> <span class="n">ttl_number</span> <span class="o">&gt;</span> <span class="n">dataset</span><span class="o">.</span><span class="n">nrows</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;sampling number should at most the same size as the &quot;</span>
-                    <span class="s2">&quot;dataset &quot;</span>
-                    <span class="s1">&#39;when &quot;replace&quot; is set False&#39;</span><span class="p">)</span>
             <span class="n">number_each</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_number_each</span><span class="p">(</span><span class="n">value_counts</span><span class="p">,</span> <span class="n">ttl_number</span><span class="p">)</span>
             <span class="n">selected_idx</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">cat</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
@@ -561,14 +573,11 @@
             <span class="n">imap</span> <span class="o">=</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="p">)}</span>
             <span class="n">selected_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">selected_idx</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">imap</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">))</span>
             <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">selected_idx</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span><span class="p">:</span>
-            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span><span class="p">,</span>
-                                               <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">,</span>
-                                               <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="p">,</span>
-                                               <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">,</span>
-                                               <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="p">)</span>
+            <span class="n">new_target</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span>
+                <span class="n">n</span><span class="o">=</span><span class="n">ttl_number</span><span class="p">,</span>
+                <span class="n">replace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">bit_generator</span><span class="p">)</span>
         <span class="n">new_features</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">new_target</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_rest</span><span class="p">:</span>
             <span class="n">rest_index</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">new_target</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
@@ -705,10 +714,10 @@
                 <span class="k">return</span> <span class="n">_get_max</span><span class="p">(</span><span class="n">arr1d</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cmd</span> <span class="o">==</span> <span class="s2">&quot;MIN&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">_get_min</span><span class="p">(</span><span class="n">arr1d</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;E27 </span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;command &quot;</span><span class="si">{</span><span class="n">cmd</span><span class="si">}</span><span class="s1">&quot; cannot be recognized&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">_is_number</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">cmd</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Expecting str or number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="LinearNormalize.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.LinearNormalize.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr1d</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">hifrom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;FROM&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
@@ -716,8 +725,13 @@
         <span class="n">lofrom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;FROM&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
         <span class="n">loto</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;TO&quot;</span><span class="p">),</span> <span class="n">arr1d</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">arr1d</span> <span class="o">*</span> <span class="p">(</span><span class="n">hito</span> <span class="o">-</span> <span class="n">loto</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hifrom</span> <span class="o">-</span> <span class="n">lofrom</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span>
-            <span class="n">hito</span> <span class="o">*</span> <span class="n">lofrom</span> <span class="o">-</span> <span class="n">hifrom</span> <span class="o">-</span> <span class="n">loto</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hifrom</span> <span class="o">-</span> <span class="n">lofrom</span><span class="p">)</span></div></div>
+        <span class="k">if</span> <span class="n">hifrom</span> <span class="o">==</span> <span class="n">lofrom</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hito</span> <span class="o">==</span> <span class="n">loto</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">arr1d</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Cannot map a single value (</span><span class="si">{</span><span class="n">hifrom</span><span class="si">}</span><span class="s1">) to &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;a different values (</span><span class="si">{</span><span class="n">hito</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">loto</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">arr1d</span> <span class="o">*</span> <span class="p">(</span><span class="n">hito</span> <span class="o">-</span> <span class="n">loto</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">hifrom</span> <span class="o">-</span> <span class="n">lofrom</span><span class="p">)</span> <span class="o">+</span> <span class="n">loto</span></div></div>
 
 
 <div class="viewcode-block" id="MakeModel"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.MakeModel">[docs]</a><span class="k">class</span> <span class="nc">MakeModel</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
@@ -765,16 +779,20 @@
 <span class="sd">                    * ``max_depth``</span>
 <span class="sd">                    * ``n_estimators``</span>
 
+<span class="sd">                * ``SKLEARN_GRADIENT_BOOSTING_CLASSIFIER``:</span>
+
+<span class="sd">                    See more details in `Scikit Learn documentation</span>
+<span class="sd">                    &lt;https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html&gt;`_</span>
+
+<span class="sd">                    * ``learning_rate``</span>
+<span class="sd">                    * ``max_depth``</span>
+<span class="sd">                    * ``n_estimators``</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            An untrained :class:`.Model`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;XGBOOST_REGRESSOR&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_xgboost</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">_xgboost</span>
-            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">_xgboost</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">())</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;XGBOOST_CLASSIFIER&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_xgboost</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">_xgboost</span>
+            <span class="kn">import</span> <span class="nn">xgboost</span>
             <span class="n">_model_params</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LEARNING_RATE&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
                 <span class="s2">&quot;max_depth&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;MAX_DEPTH&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
@@ -782,18 +800,28 @@
             <span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_after_assign_params_routine</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">_model_params</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span>
-                <span class="n">_xgboost</span><span class="o">.</span><span class="n">XGBClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">,</span> <span class="n">use_label_encoder</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;SKLEARN_GRADIENT_BOOSTING_CLASSIFIER&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">GradientBoostingClassifier</span>
+                <span class="n">xgboost</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">,</span> <span class="n">use_label_encoder</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;XGBOOST_CLASSIFIER&quot;</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">xgboost</span>
             <span class="n">_model_params</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LEARNING_RATE&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
                 <span class="s2">&quot;max_depth&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;MAX_DEPTH&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
                 <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;N_ESTIMATORS&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
             <span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_after_assign_params_routine</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">_model_params</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span><span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">))</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span></div></div>
+            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span>
+                <span class="n">xgboost</span><span class="o">.</span><span class="n">XGBClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">,</span> <span class="n">use_label_encoder</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;SKLEARN_GRADIENT_BOOSTING_CLASSIFIER&quot;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">ensemble</span>
+            <span class="n">_model_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;learning_rate&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;LEARNING_RATE&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;max_depth&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;MAX_DEPTH&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+                <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;N_ESTIMATORS&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_after_assign_params_routine</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">_model_params</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SklearnModel</span><span class="p">(</span>
+                <span class="n">ensemble</span><span class="o">.</span><span class="n">GradientBoostingClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">_model_params</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;method &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s1">&quot; cannot be recognized&#39;</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="Train"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.dataflow.Train">[docs]</a><span class="k">class</span> <span class="nc">Train</span><span class="p">(</span><span class="n">NodeProcessFunction</span><span class="p">):</span>
@@ -847,6 +875,8 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">search_map</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="kn">from</span> <span class="nn">utensil</span> <span class="kn">import</span> <span class="n">random_search</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">init_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
@@ -858,9 +888,9 @@
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">search_method</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span>
                 <span class="n">search_type</span><span class="p">,</span> <span class="n">search_option</span> <span class="o">=</span> <span class="n">search_method</span><span class="o">.</span><span class="n">popitem</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="p">[</span>
-                    <span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">RandomizedParam</span><span class="o">.</span><span class="n">create_randomized_param</span><span class="p">(</span>
-                        <span class="n">search_type</span><span class="p">,</span> <span class="n">search_option</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">random_search</span><span class="o">.</span><span class="n">RandomizedParam</span><span class="o">.</span><span class="n">create_randomized_param</span><span class="p">(</span>
+                        <span class="n">search_type</span><span class="p">,</span> <span class="n">search_option</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="p">[</span><span class="n">param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">search_method</span>
@@ -897,13 +927,14 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            Next randomly generated parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">utensil</span> <span class="kn">import</span> <span class="n">random_search</span>
         <span class="n">state</span><span class="p">,</span> <span class="n">r_list</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_seed_gen</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nr_randomized_params</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span>
         <span class="n">r</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">RandomizedParam</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">random_search</span><span class="o">.</span><span class="n">RandomizedParam</span><span class="p">):</span>
                 <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">from_random</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">params</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>

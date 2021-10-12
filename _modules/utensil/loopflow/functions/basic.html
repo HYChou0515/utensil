@@ -136,6 +136,7 @@
 <span class="sd">    register_node_process_functions(basic)</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">utensil.loopflow.loopflow</span> <span class="kn">import</span> <span class="n">NodeProcessFunction</span>
 
@@ -155,9 +156,12 @@
     <span class="sd">&quot;&quot;&quot;Identical function.</span>
 
 <span class="sd">    Returns whatever it get.</span>
+
+<span class="sd">    &gt;&gt;&gt; Dummy().main(&#39;anything&#39;)</span>
+<span class="sd">    &#39;anything&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Dummy.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.basic.Dummy.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">MISSING</span><span class="p">):</span>
+<div class="viewcode-block" id="Dummy.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.basic.Dummy.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">a</span></div></div>
 
 
@@ -168,13 +172,23 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        default: the default value.</span>
+
+<span class="sd">    &gt;&gt;&gt; default = Default(&#39;my_default&#39;)</span>
+
+<span class="sd">    This will return the input.</span>
+<span class="sd">    &gt;&gt;&gt; default.main(&#39;my_input&#39;)</span>
+<span class="sd">    &#39;my_input&#39;</span>
+
+<span class="sd">    This will return the default value.</span>
+<span class="sd">    &gt;&gt;&gt; default.main()</span>
+<span class="sd">    &#39;my_default&#39;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">default</span>
 
-<div class="viewcode-block" id="Default.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.basic.Default.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">=</span><span class="n">MISSING</span><span class="p">):</span>
+<div class="viewcode-block" id="Default.main"><a class="viewcode-back" href="../../../../utensil.loopflow.functions.html#utensil.loopflow.functions.basic.Default.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">o</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span>
         <span class="k">return</span> <span class="n">o</span></div></div>
@@ -185,6 +199,12 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be added.</span>
+
+<span class="sd">    &gt;&gt;&gt; p = Add(3)</span>
+<span class="sd">    &gt;&gt;&gt; p.main(5)</span>
+<span class="sd">    8</span>
+<span class="sd">    &gt;&gt;&gt; p.main(9)</span>
+<span class="sd">    12</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
@@ -217,6 +237,11 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be compared with.</span>
+
+<span class="sd">    &gt;&gt;&gt; LessEqual(3).main(3)</span>
+<span class="sd">    ConditionValue(c=True, v=3)</span>
+<span class="sd">    &gt;&gt;&gt; LessEqual(5).main(10)</span>
+<span class="sd">    ConditionValue(c=False, v=10)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
@@ -241,6 +266,11 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be compared with.</span>
+
+<span class="sd">    &gt;&gt;&gt; Equal(3).main(3)</span>
+<span class="sd">    ConditionValue(c=True, v=3)</span>
+<span class="sd">    &gt;&gt;&gt; Equal(5).main(10)</span>
+<span class="sd">    ConditionValue(c=False, v=10)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
@@ -265,6 +295,11 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be compared with.</span>
+
+<span class="sd">    &gt;&gt;&gt; GreaterEqual(3).main(3)</span>
+<span class="sd">    ConditionValue(c=True, v=3)</span>
+<span class="sd">    &gt;&gt;&gt; GreaterEqual(15).main(10)</span>
+<span class="sd">    ConditionValue(c=False, v=10)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
@@ -289,6 +324,11 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be compared with.</span>
+
+<span class="sd">    &gt;&gt;&gt; LessThan(3).main(3)</span>
+<span class="sd">    ConditionValue(c=False, v=3)</span>
+<span class="sd">    &gt;&gt;&gt; LessThan(15).main(10)</span>
+<span class="sd">    ConditionValue(c=True, v=10)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
@@ -313,6 +353,11 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        a: the constant value to be compared with.</span>
+
+<span class="sd">    &gt;&gt;&gt; GreaterThan(3).main(3)</span>
+<span class="sd">    ConditionValue(c=False, v=3)</span>
+<span class="sd">    &gt;&gt;&gt; GreaterThan(5).main(10)</span>
+<span class="sd">    ConditionValue(c=True, v=10)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
