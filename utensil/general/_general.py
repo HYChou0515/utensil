@@ -1,5 +1,5 @@
-from typing import Any, Dict
 from functools import partial
+from typing import Any, Dict
 
 from _warnings import warn
 

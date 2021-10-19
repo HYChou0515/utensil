@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Union
 import requests
 import urllib3
 
+import utensil.param_search.parametric
 from utensil import get_logger
 from utensil.general import warn_left_keys
 from utensil.loopflow.functions.basic import MISSING
@@ -738,7 +739,7 @@ class Predict(NodeProcessFunction):
 class ParameterSearch(NodeProcessFunction):
     """Random search the model parameters.
 
-    See more in :class:`utensil.random_search`.
+    See more in :class:`utensil.param_search`.
 
     Attributes:
 
@@ -749,7 +750,6 @@ class ParameterSearch(NodeProcessFunction):
 
     def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
         super().__init__()
-        from utensil import random_search
 
         self.state = init_state
         self._nr_randomized_params = 0
@@ -763,8 +763,8 @@ class ParameterSearch(NodeProcessFunction):
                     raise ValueError
                 search_type, search_option = search_method.popitem()
                 self._search_map[param_name] = (
-                    random_search.RandomizedParam.create_randomized_param(
-                        search_type, search_option))
+                    utensil.param_search.parametric.Parametric.
+                    create_randomized_param(search_type, search_option))
                 self._nr_randomized_params += 1
             else:
                 self._search_map[param_name] = search_method
@@ -801,15 +801,14 @@ class ParameterSearch(NodeProcessFunction):
         Returns:
             Next randomly generated parameters.
         """
-        from utensil import random_search
         state, r_list = next(self._seed_gen)
         if len(r_list) != self._nr_randomized_params:
             raise ValueError
         r = iter(r_list)
         params = {}
         for k, v in self._search_map.items():
-            if isinstance(v, random_search.RandomizedParam):
-                params[k] = v.from_random(next(r))
+            if isinstance(v, utensil.param_search.parametric.Parametric):
+                params[k] = v.from_param(next(r))
             else:
                 params[k] = v
         return params

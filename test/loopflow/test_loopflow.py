@@ -7,7 +7,7 @@ import pytest
 
 from utensil.general.logger import get_logger
 
-LOOPFLOW_INSTALLED = os.environ.get('LOOPFLOW_INSTALLED', '0') == '1'
+LOOPFLOW_INSTALLED = os.environ.get('LOOPFLOW_INSTALLED', '1') == '1'
 
 logger = get_logger(__name__)
 

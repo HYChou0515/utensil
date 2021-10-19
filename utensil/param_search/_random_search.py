@@ -6,90 +6,17 @@ import os
 from collections import namedtuple
 from copy import deepcopy
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, Tuple, Union
 
 from utensil.general.logger import DUMMY_LOGGER
+
+from .parametric import Parametric
 
 try:
     import numpy as np
     import pandas as pd
 except ImportError as e:
     raise e
-
-
-class RandomizedParam(abc.ABC):
-
-    @abc.abstractmethod
-    def from_random(self, r):
-        raise NotImplementedError
-
-    @classmethod
-    def create_randomized_param(cls, param_type, options) -> RandomizedParam:
-        if param_type == "EXPONENTIAL_BETWEEN":
-            _option = {
-                "left": options.pop("LEFT"),
-                "right": options.pop("RIGHT"),
-                "otype": options.pop("TYPE", float),
-            }
-            if _option["otype"] == "INTEGER":
-                _option["otype"] = int
-            elif _option["otype"] == "FLOAT":
-                _option["otype"] = float
-            return ExponentialBetweenParam(**_option)
-        if param_type == "UNIFORM_BETWEEN":
-            _option = {
-                "left": options.pop("LEFT"),
-                "right": options.pop("RIGHT"),
-                "otype": options.pop("TYPE", float),
-            }
-            if _option["otype"] == "INTEGER":
-                _option["otype"] = int
-            elif _option["otype"] == "FLOAT":
-                _option["otype"] = float
-            return UniformBetweenParam(**_option)
-        raise ValueError
-
-
-@dataclass
-class BooleanParam(RandomizedParam):
-
-    def from_random(self, r):
-        return r > 0.5
-
-
-@dataclass
-class UniformBetweenParam(RandomizedParam):
-    left: Any
-    right: Any
-    otype: type
-
-    def from_random(self, r):
-        return self.otype(r * (self.right - self.left) + self.left)
-
-
-@dataclass
-class ExponentialBetweenParam(RandomizedParam):
-    left: Any
-    right: Any
-    otype: type
-
-    def from_random(self, r):
-        log_right = np.log(self.right)
-        log_left = np.log(self.left)
-        return self.otype(np.exp(r * (log_right - log_left) + log_left))
-
-
-@dataclass(init=False)
-class RandomizedChoices(RandomizedParam):
-    choice: Tuple[Enum]
-
-    def __init__(self, *args: Enum):
-        self.choice = args
-
-    def from_random(self, r):
-        nr_choices = len(self.choice)
-        return list(self.choice)[-1 if r == 1 else int(r * nr_choices)]
 
 
 @dataclass
@@ -108,7 +35,7 @@ class RandomizedConfig(abc.ABC):
         params = {}
         model_r = {}
         for k, v in vars(self).items():
-            if isinstance(v, RandomizedParam):
+            if isinstance(v, Parametric):
                 params[k] = v
             elif isinstance(v, RandomizedDispatcher):
                 dispatchers[k] = v
@@ -131,7 +58,7 @@ class RandomizedConfig(abc.ABC):
 
         for (k, v), r in zip(params.items(), rand_space[offset]):
             model_r[k] = r
-            kwargs[k] = v.from_random(r)
+            kwargs[k] = v.from_param(r)
 
         model_c = self.__class__(**kwargs)
         for var_name, dispatcher in dispatchers.items():
