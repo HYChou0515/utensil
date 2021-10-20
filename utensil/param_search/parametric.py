@@ -38,9 +38,10 @@ class BaseParametricSeeder(abc.ABC):
                 raise ValueError(f'Reached maximum state {self.max_state}')
 
 
+# noinspection PyUnresolvedReferences
 class SimpleParametricSeeder(BaseParametricSeeder):
-    # noinspection PyUnresolvedReferences
     """A simple implementation of :class:`.BaseParametricSeeder`.
+
     >>> from scipy import stats
     >>> import numpy as np
     >>> seeds = np.array([s for s, _ in zip(SimpleParametricSeeder(
@@ -57,8 +58,8 @@ class SimpleParametricSeeder(BaseParametricSeeder):
             yield tuple(self.rng.random() for _ in range(self.size))
 
 
+# noinspection PyUnresolvedReferences
 class MoreUniformParametricSeeder(BaseParametricSeeder):
-    # noinspection PyUnresolvedReferences
     """A more uniform parametric seeder.
     For *more* uniform, it is comparing to :class:`.SimpleParametricSeeder`.
 
@@ -72,35 +73,53 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
     Variables are generated via the following algorithm.
 
     At step 1, `x_1` is from U(0, 1).
+
     At step 2 and 3, `x_2`, `x_3` is from shuffle(U(0, 0.5), U(0.5, 1)).
+
     At step 4 to 7, `x_4` ... `x_7` is from
-        shuffle(U(0, 0.25), ..., U(0.75, 1)).
+    shuffle(U(0, 0.25), ..., U(0.75, 1)).
     ...
 
     For multiple variables case, via the following algorithm.
 
     At step 1, `x_i1` is from U(0, 1) for every `i`.
+
     At step 2 and 3, `x_i2`, `x_i3` is from shuffle(U(0, 0.5), U(0.5, 1)).
-        Return shuffle(`x_i2`) in step 2 and shuffle(`x_i3`) in step 3.
+    Return shuffle(`x_i2`) in step 2 and shuffle(`x_i3`) in step 3.
+
     At step 4 to 7, `x_i4` ... `x_i7` is from
-        shuffle(U(0, 0.25), ..., U(0.75, 1)).
-        Return shuffle(`x_ij`) in step j.
+    shuffle(U(0, 0.25), ..., U(0.75, 1)).
+    Return shuffle(`x_ij`) in step j.
     ...
 
     >>> from scipy import stats
     >>> import numpy as np
+
+    `seed1` and `seed2` are from `SimpleParametricSeeder`
+    and `MoreUniformParametricSeeder` repectively.
+    Each seeder generate 15 seeds.
+
     >>> seeds1 = np.array([s for s, _ in zip(SimpleParametricSeeder(
     ...     rng=np.random.default_rng(), size=1000
     ... ).seeds(), range(15))])
     >>> seeds2 = np.array([s for s, _ in zip(MoreUniformParametricSeeder(
     ...     rng=np.random.default_rng(), size=1000
     ... ).seeds(), range(15))])
+
+    We run a uniform stat test and calculate p-values
+    of the 15 seeds for 1000 times.
+
     >>> k1 = [stats.kstest(
     ...     seeds1[:,i], stats.uniform.cdf, args=(0, 1)
     ... ).pvalue for i in range(1000)]
     >>> k2 = [stats.kstest(
     ...     seeds2[:,i], stats.uniform.cdf, args=(0, 1)
     ... ).pvalue for i in range(1000)]
+
+    We should have that the max, min, median of the p-values
+    of `seed2` are larger then `seed1`. So we have more confidence
+    that in smaller sample size, `seed2` is more uniform than `seed1`.
+
     >>> assert max(k1) < max(k2)
     >>> assert min(k1) < min(k2)
     >>> assert sorted(k1)[:len(k1)//2] < sorted(k2)[:len(k2)//2]
@@ -195,9 +214,9 @@ class Parametric(abc.ABC):
         raise ValueError(f'Unsupported parametric type: "{param_type}"')
 
 
+# noinspection PyUnresolvedReferences
 @dataclass
 class BooleanParam(Parametric):
-    # noinspection PyUnresolvedReferences
     """Boolean parametric.
 
     Attributes:
@@ -207,17 +226,23 @@ class BooleanParam(Parametric):
     >>> import numpy as np
     >>> rng = np.random.default_rng(0)
 
+    Should not be rejected as a binominal distribution B(N, p=0.5)
+
     >>> boolean_param = BooleanParam(0.5)
     >>> positives = [boolean_param.from_param(r) for r in rng.random(1000)]
     >>> assert stats.binomtest(
     ...    sum(positives), len(positives), 0.5
     ... ).pvalue >= 0.05
 
+    Should not be rejected as a binominal distribution B(N, p=0.8)
+
     >>> boolean_param = BooleanParam(0.8)
     >>> positives = [boolean_param.from_param(r) for r in rng.random(1000)]
     >>> assert stats.binomtest(
     ...     sum(positives), len(positives), 0.8
     ... ).pvalue >= 0.05
+
+    Only take input in range [0, 1)
 
     >>> boolean_param = BooleanParam(0.8)
     >>> boolean_param.from_param(1)
@@ -231,9 +256,9 @@ class BooleanParam(Parametric):
         return r < self.prob
 
 
+# noinspection PyUnresolvedReferences
 @dataclass
 class UniformBetweenParam(Parametric):
-    # noinspection PyUnresolvedReferences
     """Uniform parametric between a given interval.
 
     Attributes:
@@ -245,11 +270,15 @@ class UniformBetweenParam(Parametric):
     >>> import numpy as np
     >>> rng = np.random.default_rng(0)
 
+    Should not be rejected as a continuous uniform distribution U(-4, 2)
+
     >>> param = UniformBetweenParam(-4, 2, dtype=float)
     >>> vals = [param.from_param(r) for r in rng.random(1000)]
     >>> assert stats.kstest(
     ...     vals, stats.uniform.cdf, args=(-4, 6)
     ... ).pvalue >= 0.05
+
+    Should not be rejected as a discrete uniform distribution U(-3, 9)
 
     >>> param = UniformBetweenParam(-3, 10, dtype=int)
     >>> vals = [param.from_param(r) for r in rng.random(1000)]
@@ -258,17 +287,19 @@ class UniformBetweenParam(Parametric):
     >>> assert stats.chisquare(counts).pvalue >= 0.05
 
     dtype only support int and float
+
     >>> UniformBetweenParam(0, 8, dtype=dict)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
-
     >>> param = UniformBetweenParam(0, 8, dtype=int)
     >>> param.dtype = dict
     >>> param.from_param(0.4)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
+
+    Only take input in range [0, 1)
 
     >>> param = UniformBetweenParam(0, 1, dtype=float)
     >>> param.from_param(1)
@@ -293,9 +324,9 @@ class UniformBetweenParam(Parametric):
         raise ValueError(f'Not supporting this type: {self.dtype.__name__}')
 
 
+# noinspection PyUnresolvedReferences
 @dataclass
 class ExponentialBetweenParam(Parametric):
-    # noinspection PyUnresolvedReferences
     """Exponential parametric between a given interval.
 
     Exponential parametric is uniformly distributed in log scale.
@@ -309,6 +340,8 @@ class ExponentialBetweenParam(Parametric):
     >>> import numpy as np
     >>> rng = np.random.default_rng(0)
 
+    The logarithm should not be rejected as a binominal distribution.
+
     >>> param = ExponentialBetweenParam(0.01, 1024, dtype=float)
     >>> vals = [np.log(param.from_param(r)) for r in rng.random(10000)]
     >>> assert stats.kstest(
@@ -317,17 +350,19 @@ class ExponentialBetweenParam(Parametric):
     ... ).pvalue >= 0.05
 
     dtype only support int and float
+
     >>> ExponentialBetweenParam(3, 8, dtype=dict)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
-
     >>> param = ExponentialBetweenParam(3, 8, dtype=int)
     >>> param.dtype = dict
     >>> param.from_param(0.4)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
+
+    Only take input in range [0, 1)
 
     >>> param = ExponentialBetweenParam(3, 12, dtype=float)
     >>> param.from_param(1)
@@ -356,9 +391,9 @@ class ExponentialBetweenParam(Parametric):
         raise ValueError(f'Not supporting this type: {self.dtype.__name__}')
 
 
+# noinspection PyUnresolvedReferences
 @dataclass(init=False)
 class ChoicesParam(Parametric):
-    # noinspection PyUnresolvedReferences
     """Uniformly select a choice within given choices.
 
     >>> from scipy import stats
@@ -366,11 +401,15 @@ class ChoicesParam(Parametric):
     >>> rng = np.random.default_rng(0)
     >>> import string
 
+    Should not be rejected as a discrete uniform distribution between choices.
+
     >>> param = ChoicesParam(*string.ascii_lowercase)
     >>> vals = [param.from_param(r) for r in rng.random(1000)]
     >>> counts = [vals.count(c) for c in string.ascii_lowercase]
     >>> assert sum(counts) == 1000
     >>> assert stats.chisquare(counts).pvalue >= 0.05
+
+    Only take input in range [0, 1)
 
     >>> param.from_param(1)
     Traceback (most recent call last):

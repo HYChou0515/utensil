@@ -123,6 +123,7 @@ class Model:
         model.
 
         *Should be overridden by subclass for implementation.*
+
         >>> Model().train(Dataset(
         ...     Target(np.random.randint(2, size=3)),
         ...     Features(np.random.random(size=(3, 4)))
@@ -146,6 +147,7 @@ class Model:
         :class:`.Target` on a given :class:`.Features`.
 
         *Should be overridden by subclass for implementation.*
+
         >>> Model().predict(Features(np.random.random(size=(3, 4))))
         Traceback (most recent call last):
           ...

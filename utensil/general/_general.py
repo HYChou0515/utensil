@@ -12,13 +12,11 @@ def chunks(iterable, n):
     [1, 2]
     [3, 4]
     [5]
-
     >>> for chunk in chunks(range(5), 2):
     ...     print(chunk)
     [0, 1]
     [2, 3]
     [4]
-
     >>> for chunk in chunks(range(5), 0):
     ...     print(chunk)
 
@@ -50,6 +48,7 @@ def warn_left_keys(params: Dict[str, Any]):
     >>> import warnings
 
     `config` is not well-defined, should be `last_name` instead of `lastname`.
+
     >>> config = {'first_name': 'Tom', 'lastname': 'Smith'}
     >>> with warnings.catch_warnings(record=True) as w:
     ...     parse_config(config)
