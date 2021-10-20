@@ -1,0 +1,23 @@
+name: view doc
+on:
+  push:
+jobs:
+  artifact-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: setup utensil
+        uses: ./.github/actions/setup
+      - name: install sphinx-toolbox
+        run: poetry run pip install sphinx-toolbox
+      - name: create doc
+        run: poetry run sphinx-apidoc -fF -o _docs -t docsrc utensil
+      - name: make html
+        run: poetry run make -C _docs html
+      - name: copy built documentations into docs
+        run: cp -a _docs/_build/html/* docs/
+      - name: Archive doc artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: doc
+          path: docs
