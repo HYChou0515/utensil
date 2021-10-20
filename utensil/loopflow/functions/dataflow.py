@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Union
 import requests
 import urllib3
 
-import utensil.param_search.parametric
+from utensil import param_search
 from utensil import get_logger
 from utensil.general import warn_left_keys
 from utensil.loopflow.functions.basic import MISSING
@@ -736,7 +736,7 @@ class Predict(NodeProcessFunction):
         return model.predict(features)
 
 
-class ParameterSearch(NodeProcessFunction):
+class RandomParameterSearch(NodeProcessFunction):
     """Random search the model parameters.
 
     See more in :class:`utensil.param_search`.
@@ -751,10 +751,7 @@ class ParameterSearch(NodeProcessFunction):
     def __init__(self, init_state=0, seed: int = 0, search_map: Dict = None):
         super().__init__()
 
-        self.state = init_state
-        self._nr_randomized_params = 0
-        self._rng = np.random.default_rng(seed)
-        self._seed_gen = self._generate_seed()
+        nr_randomized_params = 0
         self._search_map = {}
         search_map = {} if search_map is None else search_map
         for param_name, search_method in search_map.items():
@@ -763,37 +760,16 @@ class ParameterSearch(NodeProcessFunction):
                     raise ValueError
                 search_type, search_option = search_method.popitem()
                 self._search_map[param_name] = (
-                    utensil.param_search.parametric.Parametric.
-                    create_randomized_param(search_type, search_option))
-                self._nr_randomized_params += 1
+                    param_search.Parametric.create_randomized_param(
+                        search_type, search_option))
+                nr_randomized_params += 1
             else:
                 self._search_map[param_name] = search_method
 
-    def _random_between(self, a, b, **kwargs):
-        return self._rng.random(**kwargs) * (b - a) + a
-
-    def _generate_seed(self):
-        rand_space = []
-        while True:
-            base = 2**int(np.log2(self.state + 1))
-            offset = self.state + 1 - base
-            if offset == 0 or len(rand_space) == 0:
-                linspace = np.linspace(0, 1, base + 1)
-                rand_space = np.array([
-                    self._random_between(
-                        linspace[i],
-                        linspace[i + 1],
-                        size=self._nr_randomized_params,
-                    ) for i in range(base)
-                ])
-
-                for i in range(self._nr_randomized_params):
-                    self._rng.shuffle(rand_space[:, i])
-
-            model_r = tuple(rand_space[offset])
-
-            yield self.state, model_r
-            self.state += 1
+        self._seeds = param_search.MoreUniformParametricSeeder(
+            state=init_state,
+            size=nr_randomized_params,
+            rng=np.random.default_rng(seed)).seeds()
 
     def main(self):
         """
@@ -801,14 +777,11 @@ class ParameterSearch(NodeProcessFunction):
         Returns:
             Next randomly generated parameters.
         """
-        state, r_list = next(self._seed_gen)
-        if len(r_list) != self._nr_randomized_params:
-            raise ValueError
-        r = iter(r_list)
+        seeds = iter(next(self._seeds))
         params = {}
         for k, v in self._search_map.items():
-            if isinstance(v, utensil.param_search.parametric.Parametric):
-                params[k] = v.from_param(next(r))
+            if isinstance(v, param_search.Parametric):
+                params[k] = v.from_param(next(seeds))
             else:
                 params[k] = v
         return params

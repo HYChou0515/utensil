@@ -3,7 +3,7 @@ __all__ = [
     'LessThan', 'GreaterThan', 'Feature', 'Features', 'Target', 'Dataset',
     'Model', 'SklearnModel', 'LoadData', 'FilterRows', 'SamplingRows',
     'MakeDataset', 'GetTarget', 'GetFeature', 'MergeFeatures',
-    'LinearNormalize', 'MakeModel', 'Train', 'Predict', 'ParameterSearch',
+    'LinearNormalize', 'MakeModel', 'Train', 'Predict', 'RandomParameterSearch',
     'Score', 'ChangeTypeTo'
 ]
 from .basic import (MISSING, Add, Default, Dummy, Equal, GreaterEqual,
@@ -11,5 +11,5 @@ from .basic import (MISSING, Add, Default, Dummy, Equal, GreaterEqual,
 from .dataflow import (ChangeTypeTo, Dataset, Feature, Features, FilterRows,
                        GetFeature, GetTarget, LinearNormalize, LoadData,
                        MakeDataset, MakeModel, MergeFeatures, Model,
-                       ParameterSearch, Predict, SamplingRows, Score,
+                       RandomParameterSearch, Predict, SamplingRows, Score,
                        SklearnModel, Target, Train)
