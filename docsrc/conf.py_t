@@ -44,19 +44,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.napoleon',
     'sphinx_toolbox.more_autodoc.autonamedtuple',
-    'sphinx.ext.doctest',
 ]
-
-doctest_global_setup = '''
-try:
-    import pandas as pd
-    import scipy as sp
-    import numpy as np
-except ImportError:
-    pd = None
-    sp = None
-    np = None
-'''
 
 autodoc_member_order = 'bysource'
 
