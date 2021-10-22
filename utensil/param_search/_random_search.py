@@ -58,7 +58,7 @@ class RandomizedConfig(abc.ABC):
 
         for (k, v), r in zip(params.items(), rand_space[offset]):
             model_r[k] = r
-            kwargs[k] = v.from_param(r)
+            kwargs[k] = v(r)
 
         model_c = self.__class__(**kwargs)
         for var_name, dispatcher in dispatchers.items():

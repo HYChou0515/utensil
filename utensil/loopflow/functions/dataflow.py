@@ -762,7 +762,7 @@ class RandomParameterSearch(NodeProcessFunction):
                     raise ValueError
                 search_type, search_option = search_method.popitem()
                 self._search_map[param_name] = (
-                    param_search.Parametric.create_randomized_param(
+                    param_search.Parametric.create_param(
                         search_type, search_option))
                 nr_randomized_params += 1
             else:
@@ -771,7 +771,7 @@ class RandomParameterSearch(NodeProcessFunction):
         self._seeds = param_search.MoreUniformParametricSeeder(
             state=init_state,
             size=nr_randomized_params,
-            rng=np.random.default_rng(seed)).seeds()
+            rng=np.random.default_rng(seed))()
 
     def main(self):
         """
@@ -783,7 +783,7 @@ class RandomParameterSearch(NodeProcessFunction):
         params = {}
         for k, v in self._search_map.items():
             if isinstance(v, param_search.Parametric):
-                params[k] = v.from_param(next(seeds))
+                params[k] = v(next(seeds))
             else:
                 params[k] = v
         return params

@@ -11,6 +11,12 @@ from utensil.general import warn_left_keys
 
 
 class BaseParametricSeeder(abc.ABC):
+    """Parametric seeder is a parameter generator.
+
+    It generates a tuple of values all in range [0, 1) at a time.
+
+    Typically it is used as the input of :class:`.Parametric`.
+    """
 
     def __init__(self, state=0, size=1, rng=None, max_state=10**10):
         self._state = state
@@ -23,11 +29,11 @@ class BaseParametricSeeder(abc.ABC):
         return self._state
 
     @abc.abstractmethod
-    def _seeds(self) -> Generator[Tuple[float], None, None]:
+    def _call(self) -> Generator[Tuple[float], None, None]:
         raise NotImplementedError
 
-    def seeds(self) -> Generator[Tuple[float], None, None]:
-        for rs in self._seeds():
+    def __call__(self) -> Generator[Tuple[float], None, None]:
+        for rs in self._call():
             for r in rs:
                 if not 0 <= r < 1:
                     raise ValueError(
@@ -46,14 +52,14 @@ class SimpleParametricSeeder(BaseParametricSeeder):
     >>> import numpy as np
     >>> seeds = np.array([s for s, _ in zip(SimpleParametricSeeder(
     ...     rng=np.random.default_rng(0), size=3
-    ... ).seeds(), range(1000))])
+    ... )(), range(1000))])
     >>> k1 = [stats.kstest(
     ...     seeds[:,i], stats.uniform.cdf, args=(0, 1)
     ... ).pvalue for i in range(3)]
     >>> assert min(k1) > 0.05
     """
 
-    def _seeds(self) -> Generator[Tuple[float], None, None]:
+    def _call(self) -> Generator[Tuple[float], None, None]:
         while True:
             yield tuple(self.rng.random() for _ in range(self.size))
 
@@ -101,10 +107,10 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
 
     >>> seeds1 = np.array([s for s, _ in zip(SimpleParametricSeeder(
     ...     rng=np.random.default_rng(), size=1000
-    ... ).seeds(), range(15))])
+    ... )(), range(15))])
     >>> seeds2 = np.array([s for s, _ in zip(MoreUniformParametricSeeder(
     ...     rng=np.random.default_rng(), size=1000
-    ... ).seeds(), range(15))])
+    ... )(), range(15))])
 
     We run a uniform stat test and calculate p-values
     of the 15 seeds for 1000 times.
@@ -134,7 +140,7 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
             return self.rng.random(size=self.size) * (b - a) + a
         raise TypeError(f'Non expected type of rng: {type(self.rng).__name__}')
 
-    def _seeds(self) -> Generator[Tuple[float], None, None]:
+    def _call(self) -> Generator[Tuple[float], None, None]:
         import numpy as np
         rand_space = []
         while True:
@@ -158,18 +164,25 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
 
 
 class Parametric(abc.ABC):
+    """Parametric is a single-variable parametric function.
+
+    The parameter is restrict to [0, 1) to enable any parameter
+    generated in this range can be used.
+    Typically :class:`.BaseParametricSeeder` is intended to
+    generated this kind of parameter.
+    """
 
     @abc.abstractmethod
-    def _from_param(self, r):
+    def _call(self, r):
         raise NotImplementedError
 
-    def from_param(self, r):
+    def __call__(self, r):
         if not 0 <= r < 1:
             raise ValueError(f'Accept param in range [0, 1), got {r}')
-        return self._from_param(r)
+        return self._call(r)
 
     @classmethod
-    def create_randomized_param(cls, param_type, options) -> Parametric:
+    def create_param(cls, param_type, options) -> Parametric:
         if param_type == "BOOLEAN":
             _option = {
                 "prob": options.pop("PROB"),
@@ -229,7 +242,7 @@ class BooleanParam(Parametric):
     Should not be rejected as a binominal distribution B(N, p=0.5)
 
     >>> boolean_param = BooleanParam(0.5)
-    >>> positives = [boolean_param.from_param(r) for r in rng.random(1000)]
+    >>> positives = [boolean_param(r) for r in rng.random(1000)]
     >>> assert stats.binomtest(
     ...    sum(positives), len(positives), 0.5
     ... ).pvalue >= 0.05
@@ -237,7 +250,7 @@ class BooleanParam(Parametric):
     Should not be rejected as a binominal distribution B(N, p=0.8)
 
     >>> boolean_param = BooleanParam(0.8)
-    >>> positives = [boolean_param.from_param(r) for r in rng.random(1000)]
+    >>> positives = [boolean_param(r) for r in rng.random(1000)]
     >>> assert stats.binomtest(
     ...     sum(positives), len(positives), 0.8
     ... ).pvalue >= 0.05
@@ -245,14 +258,14 @@ class BooleanParam(Parametric):
     Only take input in range [0, 1)
 
     >>> boolean_param = BooleanParam(0.8)
-    >>> boolean_param.from_param(1)
+    >>> boolean_param(1)
     Traceback (most recent call last):
     ...
     ValueError: Accept param in range [0, 1), got 1
     """
     prob: float = 0.5
 
-    def _from_param(self, r):
+    def _call(self, r):
         return r < self.prob
 
 
@@ -273,7 +286,7 @@ class UniformBetweenParam(Parametric):
     Should not be rejected as a continuous uniform distribution U(-4, 2)
 
     >>> param = UniformBetweenParam(-4, 2, dtype=float)
-    >>> vals = [param.from_param(r) for r in rng.random(1000)]
+    >>> vals = [param(r) for r in rng.random(1000)]
     >>> assert stats.kstest(
     ...     vals, stats.uniform.cdf, args=(-4, 6)
     ... ).pvalue >= 0.05
@@ -281,7 +294,7 @@ class UniformBetweenParam(Parametric):
     Should not be rejected as a discrete uniform distribution U(-3, 9)
 
     >>> param = UniformBetweenParam(-3, 10, dtype=int)
-    >>> vals = [param.from_param(r) for r in rng.random(1000)]
+    >>> vals = [param(r) for r in rng.random(1000)]
     >>> counts = [vals.count(i) for i in range(-3, 10)]
     >>> assert sum(counts) == 1000
     >>> assert stats.chisquare(counts).pvalue >= 0.05
@@ -294,7 +307,7 @@ class UniformBetweenParam(Parametric):
     ValueError: Not supporting this type: dict
     >>> param = UniformBetweenParam(0, 8, dtype=int)
     >>> param.dtype = dict
-    >>> param.from_param(0.4)
+    >>> param(0.4)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
@@ -302,7 +315,7 @@ class UniformBetweenParam(Parametric):
     Only take input in range [0, 1)
 
     >>> param = UniformBetweenParam(0, 1, dtype=float)
-    >>> param.from_param(1)
+    >>> param(1)
     Traceback (most recent call last):
     ...
     ValueError: Accept param in range [0, 1), got 1
@@ -315,7 +328,7 @@ class UniformBetweenParam(Parametric):
         if self.dtype not in (int, float):
             raise ValueError(f'Not supporting this type: {self.dtype.__name__}')
 
-    def _from_param(self, r):
+    def _call(self, r):
         ret = r * (self.right - self.left) + self.left
         if self.dtype is float:
             return ret
@@ -343,7 +356,7 @@ class ExponentialBetweenParam(Parametric):
     The logarithm should not be rejected as a binominal distribution.
 
     >>> param = ExponentialBetweenParam(0.01, 1024, dtype=float)
-    >>> vals = [np.log(param.from_param(r)) for r in rng.random(10000)]
+    >>> vals = [np.log(param(r)) for r in rng.random(10000)]
     >>> assert stats.kstest(
     ...     vals, stats.uniform.cdf,
     ...     args=(np.log(0.01), np.log(1024)-np.log(0.01))
@@ -357,7 +370,7 @@ class ExponentialBetweenParam(Parametric):
     ValueError: Not supporting this type: dict
     >>> param = ExponentialBetweenParam(3, 8, dtype=int)
     >>> param.dtype = dict
-    >>> param.from_param(0.4)
+    >>> param(0.4)
     Traceback (most recent call last):
     ...
     ValueError: Not supporting this type: dict
@@ -365,7 +378,7 @@ class ExponentialBetweenParam(Parametric):
     Only take input in range [0, 1)
 
     >>> param = ExponentialBetweenParam(3, 12, dtype=float)
-    >>> param.from_param(1)
+    >>> param(1)
     Traceback (most recent call last):
     ...
     ValueError: Accept param in range [0, 1), got 1
@@ -380,7 +393,7 @@ class ExponentialBetweenParam(Parametric):
         if self.dtype not in (int, float):
             raise ValueError(f'Not supporting this type: {self.dtype.__name__}')
 
-    def _from_param(self, r):
+    def _call(self, r):
         log_right = math.log(self.right)
         log_left = math.log(self.left)
         ret = math.exp(r * (log_right - log_left) + log_left)
@@ -404,14 +417,14 @@ class ChoicesParam(Parametric):
     Should not be rejected as a discrete uniform distribution between choices.
 
     >>> param = ChoicesParam(*string.ascii_lowercase)
-    >>> vals = [param.from_param(r) for r in rng.random(1000)]
+    >>> vals = [param(r) for r in rng.random(1000)]
     >>> counts = [vals.count(c) for c in string.ascii_lowercase]
     >>> assert sum(counts) == 1000
     >>> assert stats.chisquare(counts).pvalue >= 0.05
 
     Only take input in range [0, 1)
 
-    >>> param.from_param(1)
+    >>> param(1)
     Traceback (most recent call last):
     ...
     ValueError: Accept param in range [0, 1), got 1
@@ -421,6 +434,6 @@ class ChoicesParam(Parametric):
     def __init__(self, *args: Any):
         self.choice = args
 
-    def _from_param(self, r):
+    def _call(self, r):
         nr_choices = len(self.choice)
         return list(self.choice)[int(r * nr_choices)]
