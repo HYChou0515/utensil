@@ -29,7 +29,7 @@ class TestBaseParametricSeeder(ut.TestCase):
         bad_seeder = BadParametricSeeder()
         with pytest.raises(
                 ValueError,
-                match=r'Returned param should be in range \[0, 1\), got 1'):
+                match=r'Returned param should be in range \[0, 1\], got 2'):
             next(bad_seeder())
 
 

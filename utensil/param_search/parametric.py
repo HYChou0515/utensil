@@ -20,7 +20,7 @@ class BaseParametricSeeder(abc.ABC):
     Typically it is used as the input of :class:`.Parametric`.
     """
 
-    def __init__(self, *args, state=0, size=1, max_state=10**10, **kwargs):
+    def __init__(self, state=0, size=1, max_state=10**10, **kwargs):
         self._state = state
         self.size = size
         self.max_state = max_state
@@ -209,18 +209,43 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
 
 class GridParametricSeeder(BaseParametricSeeder):
 
-    def __init__(self, state=0, size=1, max_state=10**10, shuffle=False):
+    def __init__(self,
+                 state=0,
+                 size=1,
+                 max_state=10**10,
+                 shuffle=False,
+                 random_state=None):
         """
         Parameters:
-            shuffle(bool, random or numpy random generator):
+            shuffle(bool):
                 Whether to shuffle the same level grids.
-                If `False`, output with tuple ascending order.
-                If `True`, uses default random generator.
-                Otherwise, ``shuffle`` is used as it is a random number
-                generator.
+            random_state(random, numpy.random.Generator or a valid seed):
+                Only matter when `shuffle` is True.
+                If :mod:`random` or :class:`numpy.random.Generator`,
+                it is used to do the random shuffling.
+                Otherwise, it is set as the seed of
+                :meth:`numpy.random.default_rng` or :mod:`random`
+                if numpy cannot be imported.
+
         """
         super().__init__(state, size, max_state)
         self.shuffle = shuffle
+        if self.shuffle:
+            try:
+                import numpy as np
+            except ImportError:
+                np = None
+            if np and isinstance(random_state, np.random.Generator):
+                self.rng = random_state
+            elif random_state is random:
+                self.rng = random_state
+            elif np:
+                self.rng = np.random.default_rng(random_state)
+            else:
+                random.seed(random_state)
+                self.rng = random
+        else:
+            self.rng = None
 
     @staticmethod
     def _next_grid(grids: Tuple[float]) -> Iterable[float]:
@@ -237,14 +262,9 @@ class GridParametricSeeder(BaseParametricSeeder):
         while True:
             grid_points = itertools.product(*((grids,) * self.size))
 
-            if self.shuffle is False:
-                pass
-            elif self.shuffle is True:
-                # TODO: use a default rng
-                raise NotImplementedError
-            else:
-                # TODO: use shuffle as a rng
-                raise NotImplementedError
+            if self.shuffle:
+                grid_points = list(grid_points)
+                self.rng.shuffle(grid_points)
 
             for grid_point in grid_points:
                 if grid_point in searched:
