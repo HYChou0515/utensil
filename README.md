@@ -19,7 +19,7 @@ machine learning, data mining, and information analysis, etc.
 ## Main Functions
 
 ### Machine Learning
-* parameter searching: ``utensil.random_search``
+* parameter searching: ``utensil.param_search``
 * directed cyclic/asyclic graph work flow: ``utensil.loopflow``
 
 ### Utilities

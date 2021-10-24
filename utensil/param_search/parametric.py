@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import itertools
 import math
 import random
 from collections import Counter, OrderedDict
@@ -14,14 +15,13 @@ from utensil.general import warn_left_keys
 class BaseParametricSeeder(abc.ABC):
     """Parametric seeder is a parameter generator.
 
-    It generates a tuple of values all in range [0, 1) at a time.
+    It generates a tuple of values all in range [0, 1] at a time.
 
     Typically it is used as the input of :class:`.Parametric`.
     """
 
-    def __init__(self, state=0, size=1, rng=None, max_state=10**10):
+    def __init__(self, *args, state=0, size=1, max_state=10**10, **kwargs):
         self._state = state
-        self.rng = random if rng is None else rng
         self.size = size
         self.max_state = max_state
 
@@ -36,9 +36,9 @@ class BaseParametricSeeder(abc.ABC):
     def __call__(self) -> Generator[Tuple[float], None, None]:
         for rs in self._call():
             for r in rs:
-                if not 0 <= r < 1:
+                if not 0 <= r <= 1:
                     raise ValueError(
-                        f'Returned param should be in range [0, 1), got {r}')
+                        f'Returned param should be in range [0, 1], got {r}')
             yield rs
             self._state += 1
             if self.state >= self.max_state:
@@ -74,6 +74,10 @@ class SimpleUniformParametricSeeder(BaseParametricSeeder):
     ValueError: Reached maximum state 2
 
     """
+
+    def __init__(self, state=0, size=1, max_state=10**10, rng=None):
+        super().__init__(state, size, max_state)
+        self.rng = random if rng is None else rng
 
     def _call(self) -> Generator[Tuple[float], None, None]:
         while True:
@@ -167,6 +171,10 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
     TypeError: Non expected type of rng: int
     """
 
+    def __init__(self, state=0, size=1, max_state=10**10, rng=None):
+        super().__init__(state, size, max_state)
+        self.rng = random if rng is None else rng
+
     def _random_between(self, a, b):
         import numpy as np
         if self.rng is random:
@@ -199,10 +207,58 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
             yield model_r
 
 
+class GridParametricSeeder(BaseParametricSeeder):
+
+    def __init__(self, state=0, size=1, max_state=10**10, shuffle=False):
+        """
+        Parameters:
+            shuffle(bool, random or numpy random generator):
+                Whether to shuffle the same level grids.
+                If `False`, output with tuple ascending order.
+                If `True`, uses default random generator.
+                Otherwise, ``shuffle`` is used as it is a random number
+                generator.
+        """
+        super().__init__(state, size, max_state)
+        self.shuffle = shuffle
+
+    @staticmethod
+    def _next_grid(grids: Tuple[float]) -> Iterable[float]:
+        for i in range(len(grids) * 2 - 1):
+            if i % 2 == 0:
+                yield grids[i // 2]
+            else:
+                yield (grids[i // 2] + grids[(i + 1) // 2]) / 2
+
+    def _call(self) -> Generator[Tuple[float], None, None]:
+        grids = (0.0, 1.0)
+        searched = set()
+
+        while True:
+            grid_points = itertools.product(*((grids,) * self.size))
+
+            if self.shuffle is False:
+                pass
+            elif self.shuffle is True:
+                # TODO: use a default rng
+                raise NotImplementedError
+            else:
+                # TODO: use shuffle as a rng
+                raise NotImplementedError
+
+            for grid_point in grid_points:
+                if grid_point in searched:
+                    continue
+                searched.add(grid_point)
+                yield grid_point
+
+            grids = tuple(self._next_grid(grids))
+
+
 class Parametric(abc.ABC):
     """Parametric is a single-variable parametric function.
 
-    The parameter is restrict to [0, 1) to enable any parameter
+    The parameter is restrict to [0, 1] to enable any parameter
     generated in this range can be used.
     Typically :class:`.BaseParametricSeeder` is intended to
     generated this kind of parameter.
@@ -213,8 +269,8 @@ class Parametric(abc.ABC):
         raise NotImplementedError
 
     def __call__(self, r):
-        if not 0 <= r < 1:
-            raise ValueError(f'Accept param in range [0, 1), got {r}')
+        if not 0 <= r <= 1:
+            raise ValueError(f'Accept param in range [0, 1], got {r}')
         return self._call(r)
 
     @classmethod
@@ -288,13 +344,13 @@ class BooleanParam(Parametric):
     ...     sum(positives), len(positives), 0.8
     ... ).pvalue >= 0.05
 
-    Only take input in range [0, 1)
+    Only take input in range [0, 1]
 
     >>> boolean_param = BooleanParam(0.8)
-    >>> boolean_param(1)
+    >>> boolean_param(2)
     Traceback (most recent call last):
     ...
-    ValueError: Accept param in range [0, 1), got 1
+    ValueError: Accept param in range [0, 1], got 2
 
     Attributes:
         prob: the probability of being `True`.
@@ -343,13 +399,13 @@ class UniformBetweenParam(Parametric):
     ...
     ValueError: Not supporting this type: dict
 
-    Only take input in range [0, 1)
+    Only take input in range [0, 1]
 
     >>> param = UniformBetweenParam(0, 1, dtype=float)
-    >>> param(1)
+    >>> param(2)
     Traceback (most recent call last):
     ...
-    ValueError: Accept param in range [0, 1), got 1
+    ValueError: Accept param in range [0, 1], got 2
 
     Attributes:
         left: lower bound.
@@ -426,13 +482,13 @@ class ExponentialBetweenParam(Parametric):
     ...
     ValueError: Not supporting this type: dict
 
-    Only take input in range [0, 1)
+    Only take input in range [0, 1]
 
     >>> param = ExponentialBetweenParam(3, 12, dtype=float)
-    >>> param(1)
+    >>> param(2)
     Traceback (most recent call last):
     ...
-    ValueError: Accept param in range [0, 1), got 1
+    ValueError: Accept param in range [0, 1], got 2
 
     Attributes:
         left: lower bound
@@ -478,12 +534,12 @@ class ChoicesParam(Parametric):
     >>> assert sum(counts) == 1000
     >>> assert stats.chisquare(counts).pvalue >= 0.05
 
-    Only take input in range [0, 1)
+    Only take input in range [0, 1]
 
-    >>> param(1)
+    >>> param(2)
     Traceback (most recent call last):
     ...
-    ValueError: Accept param in range [0, 1), got 1
+    ValueError: Accept param in range [0, 1], got 2
 
     Attributes:
         choice(tuple(any)): some options to be chosen from.
@@ -846,3 +902,10 @@ class RandomSearch(ParameterSearch):
         # for random search, there is no need to update function value
         # because it is not an iterative method.
         pass
+
+
+class GridSearch(ParameterSearch):
+
+    def __init__(self, search_map: SearchMap):
+        super().__init__()
+        self._search_map = search_map
