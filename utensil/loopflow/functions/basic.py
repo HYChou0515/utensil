@@ -44,18 +44,21 @@ class Default(NodeProcessFunction):
 
     Return a default value if triggered before getting anything.
 
-    Attributes:
-        default: the default value.
-
     >>> default = Default('my_default')
 
     This will return the input.
+
     >>> default.main('my_input')
     'my_input'
 
     This will return the default value.
+
     >>> default.main()
     'my_default'
+
+    Attributes:
+        default: the default value.
+
     """
 
     def __init__(self, default):
@@ -71,14 +74,14 @@ class Default(NodeProcessFunction):
 class Add(NodeProcessFunction):
     """Add a predefined constant, i.e., ``n+a``.
 
-    Attributes:
-        a: the constant value to be added.
-
     >>> p = Add(3)
     >>> p.main(5)
     8
     >>> p.main(9)
     12
+
+    Attributes:
+        a: the constant value to be added.
     """
 
     def __init__(self, a):
@@ -109,13 +112,13 @@ Attributes:
 class LessEqual(NodeProcessFunction):
     """Check is less than or equal to a constant, i.e., ``b <= a``.
 
-    Attributes:
-        a: the constant value to be compared with.
-
     >>> LessEqual(3).main(3)
     ConditionValue(c=True, v=3)
     >>> LessEqual(5).main(10)
     ConditionValue(c=False, v=10)
+
+    Attributes:
+        a: the constant value to be compared with.
     """
 
     def __init__(self, a):
@@ -138,13 +141,13 @@ class LessEqual(NodeProcessFunction):
 class Equal(NodeProcessFunction):
     """Check is equal to a constant, i.e., ``b == a``.
 
-    Attributes:
-        a: the constant value to be compared with.
-
     >>> Equal(3).main(3)
     ConditionValue(c=True, v=3)
     >>> Equal(5).main(10)
     ConditionValue(c=False, v=10)
+
+    Attributes:
+        a: the constant value to be compared with.
     """
 
     def __init__(self, a):
@@ -167,13 +170,13 @@ class Equal(NodeProcessFunction):
 class GreaterEqual(NodeProcessFunction):
     """Check is greater than or equal to a constant, i.e., ``b >= a``.
 
-    Attributes:
-        a: the constant value to be compared with.
-
     >>> GreaterEqual(3).main(3)
     ConditionValue(c=True, v=3)
     >>> GreaterEqual(15).main(10)
     ConditionValue(c=False, v=10)
+
+    Attributes:
+        a: the constant value to be compared with.
     """
 
     def __init__(self, a):
@@ -196,13 +199,13 @@ class GreaterEqual(NodeProcessFunction):
 class LessThan(NodeProcessFunction):
     """Check is less than a constant, i.e., ``b < a``.
 
-    Attributes:
-        a: the constant value to be compared with.
-
     >>> LessThan(3).main(3)
     ConditionValue(c=False, v=3)
     >>> LessThan(15).main(10)
     ConditionValue(c=True, v=10)
+
+    Attributes:
+        a: the constant value to be compared with.
     """
 
     def __init__(self, a):
@@ -225,13 +228,13 @@ class LessThan(NodeProcessFunction):
 class GreaterThan(NodeProcessFunction):
     """Check is greater than a constant, i.e., ``b > a``.
 
-    Attributes:
-        a: the constant value to be compared with.
-
     >>> GreaterThan(3).main(3)
     ConditionValue(c=False, v=3)
     >>> GreaterThan(5).main(10)
     ConditionValue(c=True, v=10)
+
+    Attributes:
+        a: the constant value to be compared with.
     """
 
     def __init__(self, a):
