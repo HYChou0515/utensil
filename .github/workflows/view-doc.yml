@@ -1,6 +1,6 @@
 name: view doc
 on:
-  push:
+  workflow_dispatch:
 jobs:
   artifact-doc:
     runs-on: ubuntu-latest
