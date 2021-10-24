@@ -266,8 +266,11 @@ def test_MakeModel_raiseValueError_when_nonSupportedMethod():
 
 
 def test_Predict(heart_scale):
+    import warnings
     model = xgboost.XGBClassifier(n_estimators=3, max_depth=3)
-    model = model.fit(heart_scale.features, heart_scale.target)
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always", category=UserWarning)
+        model = model.fit(heart_scale.features, heart_scale.target)
     model = dataflow.SklearnModel(model)
     prediction = model.predict(heart_scale.features)
     assert sum(prediction == heart_scale.target) / prediction.shape[0] > 0.7

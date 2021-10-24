@@ -1,12 +1,9 @@
 __all__ = [
-    'ModelScore', 'RandomizedConfig', 'RandomizedDispatcher', 'RandomSearch',
-    'SeededConfig', 'ChoicesParam', 'Parametric', 'BooleanParam',
-    'UniformBetweenParam', 'ExponentialBetweenParam', 'BaseParametricSeeder',
-    'SimpleParametricSeeder', 'MoreUniformParametricSeeder'
+    'ChoicesParam', 'Parametric', 'BooleanParam', 'UniformBetweenParam',
+    'ExponentialBetweenParam', 'BaseParametricSeeder',
+    'SimpleUniformParametricSeeder', 'MoreUniformParametricSeeder'
 ]
-from ._random_search import (ModelScore, RandomizedConfig, RandomizedDispatcher,
-                             RandomSearch, SeededConfig)
-from .parametric import (BaseParametricSeeder, SimpleParametricSeeder,
-                         MoreUniformParametricSeeder, BooleanParam,
-                         ChoicesParam, ExponentialBetweenParam, Parametric,
+from .parametric import (BaseParametricSeeder, BooleanParam, ChoicesParam,
+                         ExponentialBetweenParam, MoreUniformParametricSeeder,
+                         Parametric, SimpleUniformParametricSeeder,
                          UniformBetweenParam)

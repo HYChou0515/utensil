@@ -20,8 +20,7 @@ from typing import Any, Dict, List, Union
 import requests
 import urllib3
 
-from utensil import param_search
-from utensil import get_logger
+from utensil import get_logger, param_search
 from utensil.general import warn_left_keys
 from utensil.loopflow.functions.basic import MISSING
 from utensil.loopflow.loopflow import NodeProcessFunction

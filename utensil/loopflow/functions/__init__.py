@@ -10,6 +10,6 @@ from .basic import (MISSING, Add, Default, Dummy, Equal, GreaterEqual,
                     GreaterThan, LessEqual, LessThan)
 from .dataflow import (ChangeTypeTo, Dataset, Feature, Features, FilterRows,
                        GetFeature, GetTarget, LinearNormalize, LoadData,
-                       MakeDataset, MakeModel, MergeFeatures, Model,
-                       RandomParameterSearch, Predict, SamplingRows, Score,
-                       SklearnModel, Target, Train)
+                       MakeDataset, MakeModel, MergeFeatures, Model, Predict,
+                       RandomParameterSearch, SamplingRows, Score, SklearnModel,
+                       Target, Train)
