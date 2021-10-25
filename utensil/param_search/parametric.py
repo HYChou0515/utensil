@@ -6,6 +6,7 @@ import math
 import random
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import (Any, Callable, Generator, Iterable, MutableMapping,
                     Optional, Tuple, Union)
 
@@ -208,15 +209,148 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
 
 
 class GridParametricSeeder(BaseParametricSeeder):
+    """Parametric seeder for grid search.
 
-    def __init__(self,
-                 state=0,
-                 size=1,
-                 max_state=10**10,
-                 shuffle=False,
-                 random_state=None):
+    This seeder generates finer and finer grids.
+    For 1-dimensional case,
+
+    #. 0, 1
+    #. 1/2
+    #. 1/4, 3/4
+    #. 1/8, 3/8, 5/8, 7/8
+    #. ...
+
+    >>> seeder = GridParametricSeeder()
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (0.0,)
+    (1.0,)
+    (0.5,)
+    (0.25,)
+    (0.75,)
+    (0.125,)
+    (0.375,)
+    (0.625,)
+    (0.875,)
+    (0.0625,)
+
+    For 2-dimensional case,
+
+    #. (0, 0), (0, 1), (1, 0), (1, 1)
+    #. (0, 1/2), (1/2, 0), (1/2, 1/2), (1/2, 1), (1, 1/2)
+    #. ...
+
+    >>> seeder = GridParametricSeeder(size=2)
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (0.0, 0.0)
+    (0.0, 1.0)
+    (1.0, 0.0)
+    (1.0, 1.0)
+    (0.0, 0.5)
+    (0.5, 0.0)
+    (0.5, 0.5)
+    (0.5, 1.0)
+    (1.0, 0.5)
+    (0.0, 0.25)
+
+    A same level output can be shuffled by setting ``shuffle=True``.
+
+    >>> seeder = GridParametricSeeder(size=2, shuffle=True, random_state=0)
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (1.0, 0.0)
+    (0.0, 0.0)
+    (0.0, 1.0)
+    (1.0, 1.0)
+    (0.5, 0.5)
+    (1.0, 0.5)
+    (0.5, 0.0)
+    (0.5, 1.0)
+    (0.0, 0.5)
+    (0.5, 0.25)
+
+    Use `nr_points` to control the resolution of each dimension.
+
+    >>> seeder = GridParametricSeeder(nr_points=[2, 4])
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (0.0, 0.0)
+    (0.0, 0.3333333333333333)
+    (0.0, 0.6666666666666666)
+    (0.0, 1.0)
+    (1.0, 0.0)
+    (1.0, 0.3333333333333333)
+    (1.0, 0.6666666666666666)
+    (1.0, 1.0)
+    (0.0, 0.16666666666666666)
+    (0.0, 0.5)
+
+    `random_state` can be :class:`numpy.random.Generator`.
+
+    >>> import numpy as np
+    >>> seeder = GridParametricSeeder(size=2, shuffle=True,
+    ...     random_state=np.random.default_rng(1)
+    ... )
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (0.0, 0.0)
+    ...
+    (0.0, 0.75)
+
+    `random_state` can also be :mod:`random`.
+    >>> import random
+    >>> random.seed(0)
+    >>> seeder = GridParametricSeeder(size=2, shuffle=True,
+    ...     random_state=random
+    ... )
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (1.0, 0.0)
+    ...
+    (0.5, 0.75)
+
+    `nr_points` should only contain values at least 2.
+
+    >>> seeder = GridParametricSeeder(nr_points=[1])
+    Traceback (most recent call last):
+    ...
+    ValueError: Values in nr_points should be at least 2, got 1
+
+    `size` should be same as the length of `nr_points`.
+
+    >>> seeder = GridParametricSeeder(nr_points=[2, 3], size=1)
+    Traceback (most recent call last):
+    ...
+    ValueError: size=1 inconsistent to length of nr_points=2
+
+    """
+
+    def __init__(
+        self,
+        state=0,
+        size=None,
+        nr_points=None,
+        max_state=10**10,
+        shuffle=False,
+        random_state=None,
+    ):
         """
         Parameters:
+            size(int, default to length of nr_points or 1 if it is not set):
+                Size of dimensions.
+            nr_points(list of int, default to 2s with length `size`):
+                The initial number of points of each dimension.
+                Every number should be at least 2, representing (0, 1).
+                If 3, then (0, 1/2, 1).
+                If 4, then (0, 1/3, 2/3, 1).
+                And so on.
             shuffle(bool):
                 Whether to shuffle the same level grids.
             random_state(random, numpy.random.Generator or a valid seed):
@@ -228,7 +362,23 @@ class GridParametricSeeder(BaseParametricSeeder):
                 if numpy cannot be imported.
 
         """
-        super().__init__(state, size, max_state)
+        if nr_points is None:
+            if size is None:
+                size = 1
+            nr_points = [2] * size
+        else:
+            for nr_point in nr_points:
+                if nr_point < 2:
+                    raise ValueError(f'Values in nr_points '
+                                     f'should be at least 2, '
+                                     f'got {nr_point}')
+            if size is None:
+                size = len(nr_points)
+            elif size != len(nr_points):
+                raise ValueError(f'size={size} inconsistent to length of '
+                                 f'nr_points={len(nr_points)}')
+        super().__init__(state=state, size=size, max_state=max_state)
+        self.nr_points = nr_points
         self.shuffle = shuffle
         if self.shuffle:
             try:
@@ -248,19 +398,22 @@ class GridParametricSeeder(BaseParametricSeeder):
             self.rng = None
 
     @staticmethod
-    def _next_grid(grids: Tuple[float]) -> Iterable[float]:
-        for i in range(len(grids) * 2 - 1):
+    def _next_grid(grid: Tuple[float]) -> Iterable[float]:
+        for i in range(len(grid) * 2 - 1):
             if i % 2 == 0:
-                yield grids[i // 2]
+                yield grid[i // 2]
             else:
-                yield (grids[i // 2] + grids[(i + 1) // 2]) / 2
+                yield (grid[i // 2] + grid[(i + 1) // 2]) / 2
 
     def _call(self) -> Generator[Tuple[float], None, None]:
-        grids = (0.0, 1.0)
+        grids = tuple(
+            (Fraction(), *(Fraction(i, nr_point - 1)
+                           for i in range(1, nr_point - 1)), Fraction(1))
+            for nr_point in self.nr_points)
         searched = set()
 
         while True:
-            grid_points = itertools.product(*((grids,) * self.size))
+            grid_points = itertools.product(*grids)
 
             if self.shuffle:
                 grid_points = list(grid_points)
@@ -270,9 +423,9 @@ class GridParametricSeeder(BaseParametricSeeder):
                 if grid_point in searched:
                     continue
                 searched.add(grid_point)
-                yield grid_point
+                yield tuple(float(g) for g in grid_point)
 
-            grids = tuple(self._next_grid(grids))
+            grids = tuple(tuple(self._next_grid(grid)) for grid in grids)
 
 
 class Parametric(abc.ABC):
