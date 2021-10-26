@@ -5,7 +5,7 @@ import itertools
 import math
 import random
 from collections import Counter, OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import (Any, Callable, Generator, Iterable, MutableMapping,
                     Optional, Tuple, Union)
@@ -428,6 +428,7 @@ class GridParametricSeeder(BaseParametricSeeder):
             grids = tuple(tuple(self._next_grid(grid)) for grid in grids)
 
 
+@dataclass
 class Parametric(abc.ABC):
     """Parametric is a single-variable parametric function.
 
@@ -436,6 +437,8 @@ class Parametric(abc.ABC):
     Typically :class:`.BaseParametricSeeder` is intended to
     generated this kind of parameter.
     """
+
+    resolution: int = field(default=1, init=False)
 
     @abc.abstractmethod
     def _call(self, r):
@@ -528,6 +531,7 @@ class BooleanParam(Parametric):
     Attributes:
         prob: the probability of being `True`.
     """
+    resolution = 1
     prob: float = 0.5
 
     def _call(self, r):
@@ -585,6 +589,7 @@ class UniformBetweenParam(Parametric):
         right: upper bound.
         dtype: data type.
     """
+    resolution = 1
     left: Any
     right: Any
     dtype: type
@@ -668,6 +673,7 @@ class ExponentialBetweenParam(Parametric):
         right: upper bound
         dtype: data type
     """
+    resolution = 1
     left: Any
     right: Any
     dtype: type
@@ -719,8 +725,10 @@ class ChoicesParam(Parametric):
     """
     choice: Tuple[Any]
 
-    def __init__(self, *args: Any):
+    def __init__(self, *args: Any, resolution=1):
+        super().__init__()
         self.choice = args
+        self.resolution = resolution
 
     def _call(self, r):
         nr_choices = len(self.choice)
