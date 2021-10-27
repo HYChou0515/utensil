@@ -257,6 +257,23 @@ class GridParametricSeeder(BaseParametricSeeder):
     (1.0, 0.5)
     (0.0, 0.25)
 
+    Use left_ends/right_ends to control if 0/1 is generated.
+
+    >>> seeder = GridParametricSeeder(size=2, right_ends=[False, True])
+    >>> seeds = seeder()
+    >>> for s, _ in zip(seeds, range(10)):
+    ...     print(s)
+    (0.0, 0.0)
+    (0.0, 1.0)
+    (0.0, 0.5)
+    (0.5, 0.0)
+    (0.5, 0.5)
+    (0.5, 1.0)
+    (0.0, 0.25)
+    (0.0, 0.75)
+    (0.25, 0.0)
+    (0.25, 0.25)
+
     A same level output can be shuffled by setting ``shuffle=True``.
 
     >>> seeder = GridParametricSeeder(size=2, shuffle=True, random_state=0)
@@ -331,6 +348,15 @@ class GridParametricSeeder(BaseParametricSeeder):
     ...
     ValueError: size=1 inconsistent to length of resolutions=2
 
+    >>> seeder = GridParametricSeeder(size=1, left_ends=[True, False])
+    Traceback (most recent call last):
+    ...
+    ValueError: size=1 is inconsistent to length of left_ends=2
+
+    >>> seeder = GridParametricSeeder(size=1, right_ends=[True, False])
+    Traceback (most recent call last):
+    ...
+    ValueError: size=1 is inconsistent to length of right_ends=2
     """
 
     def __init__(
@@ -564,6 +590,22 @@ class BooleanParam(Parametric):
     Traceback (most recent call last):
     ...
     ValueError: Accept param in range [0, 1], got 2
+
+    If left_end is False, 0 is not acceptable.
+
+    >>> boolean_param = BooleanParam(0.3, left_end=False)
+    >>> boolean_param(0)
+    Traceback (most recent call last):
+    ...
+    ValueError: 0 is not acceptable if left_end is set False
+
+    Likewise, if right_end is False, 1 is not acceptable.
+
+    >>> boolean_param = BooleanParam(0.3, right_end=False)
+    >>> boolean_param(1)
+    Traceback (most recent call last):
+    ...
+    ValueError: 1 is not acceptable if right_end is set False
 
     Attributes:
         prob: the probability of being `True`.
@@ -807,6 +849,12 @@ class SearchMap(OrderedDict, MutableMapping[str, Union[Parametric, Any]]):
     >>> smap((0.3, 0.5))
     OrderedDict([('A', 0.3), ('B', 18), ('C', 15.0)])
 
+    When seeds is None, return None.
+    This is partically useful when seeds generate None when it comes to end.
+    And we want SearchMap to propagate None to its caller.
+
+    >>> assert smap(None) is None
+
     Number of seeds should match number of parametrics in search map.
 
     >>> smap((0.3, 0.5, 0.8))
@@ -977,9 +1025,13 @@ class ParameterSearch(abc.ABC):
         """
         seeds = self.parametric_seeder()
         while True:
+            # If there is no seed anymore,
+            # hence `next(seeds, None)` returns None,
+            # just return None
             params = self.search_map(next(seeds, None))
             if params is None:
                 return
+
             # The pattern is next_1 -> send_1 -> next_2 -> send_2 -> ...
             # Except for next_1, in caller's perspective,
             # every next and send have to return and get something.
@@ -1172,6 +1224,18 @@ class GridSearch(ParameterSearch):
     >>> maximized = search.auto_search(obj, max_iter=100)
     >>> assert maximized[0]['x'] == 3.5625
     >>> assert maximized[1] == 0.8011730359549043
+
+    Assign your own seeder to grid search.
+
+    >>> class ShortSeeder(BaseParametricSeeder):
+    ...     def _call(self) -> Generator[Tuple[float], None, None]:
+    ...         yield from [(1/3,), (1 / 2,), (2/3,)]
+    >>> seeder = ShortSeeder()
+    >>> search = GridSearch(smap, seeder=seeder)
+    >>> history = search.auto_search(obj, max_iter=100, output='history')
+    >>> len(history)
+    3
+
     """
 
     @property
