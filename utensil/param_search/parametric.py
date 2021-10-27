@@ -5,10 +5,11 @@ import itertools
 import math
 import random
 from collections import Counter, OrderedDict
-from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import (Any, Callable, Generator, Iterable, MutableMapping,
                     Optional, Tuple, Union)
+
+import attr
 
 from utensil.general import warn_left_keys
 
@@ -273,9 +274,9 @@ class GridParametricSeeder(BaseParametricSeeder):
     (0.0, 0.5)
     (0.5, 0.25)
 
-    Use `nr_points` to control the resolution of each dimension.
+    Use `resolutions` to control the resolution of each dimension.
 
-    >>> seeder = GridParametricSeeder(nr_points=[2, 4])
+    >>> seeder = GridParametricSeeder(resolutions=[2, 4])
     >>> seeds = seeder()
     >>> for s, _ in zip(seeds, range(10)):
     ...     print(s)
@@ -316,19 +317,19 @@ class GridParametricSeeder(BaseParametricSeeder):
     ...
     (0.5, 0.75)
 
-    `nr_points` should only contain values at least 2.
+    `resolutions` should only contain values at least 2.
 
-    >>> seeder = GridParametricSeeder(nr_points=[1])
+    >>> seeder = GridParametricSeeder(resolutions=[1])
     Traceback (most recent call last):
     ...
-    ValueError: Values in nr_points should be at least 2, got 1
+    ValueError: Values in resolutions should be at least 2, got 1
 
-    `size` should be same as the length of `nr_points`.
+    `size` should be same as the length of `resolutions`.
 
-    >>> seeder = GridParametricSeeder(nr_points=[2, 3], size=1)
+    >>> seeder = GridParametricSeeder(resolutions=[2, 3], size=1)
     Traceback (most recent call last):
     ...
-    ValueError: size=1 inconsistent to length of nr_points=2
+    ValueError: size=1 inconsistent to length of resolutions=2
 
     """
 
@@ -336,21 +337,27 @@ class GridParametricSeeder(BaseParametricSeeder):
         self,
         state=0,
         size=None,
-        nr_points=None,
+        resolutions=None,
+        left_ends=None,
+        right_ends=None,
         max_state=10**10,
         shuffle=False,
         random_state=None,
     ):
         """
         Parameters:
-            size(int, default to length of nr_points or 1 if it is not set):
+            size(int, default to length of resolutions or 1 if it is not set):
                 Size of dimensions.
-            nr_points(list of int, default to 2s with length `size`):
+            resolutions(list of int, default to 2s with length `size`):
                 The initial number of points of each dimension.
                 Every number should be at least 2, representing (0, 1).
                 If 3, then (0, 1/2, 1).
                 If 4, then (0, 1/3, 2/3, 1).
                 And so on.
+            left_ends(list of bool, default to True's with length `size`):
+                To generate 0 or not.
+            right_ends(list of bool, default to True's with length `size`):
+                To generate 1 or not.
             shuffle(bool):
                 Whether to shuffle the same level grids.
             random_state(random, numpy.random.Generator or a valid seed):
@@ -362,23 +369,40 @@ class GridParametricSeeder(BaseParametricSeeder):
                 if numpy cannot be imported.
 
         """
-        if nr_points is None:
+        if resolutions is None:
             if size is None:
                 size = 1
-            nr_points = [2] * size
+            resolutions = [2] * size
         else:
-            for nr_point in nr_points:
-                if nr_point < 2:
-                    raise ValueError(f'Values in nr_points '
+            for resolution in resolutions:
+                if resolution < 2:
+                    raise ValueError(f'Values in resolutions '
                                      f'should be at least 2, '
-                                     f'got {nr_point}')
+                                     f'got {resolution}')
             if size is None:
-                size = len(nr_points)
-            elif size != len(nr_points):
+                size = len(resolutions)
+            elif size != len(resolutions):
                 raise ValueError(f'size={size} inconsistent to length of '
-                                 f'nr_points={len(nr_points)}')
+                                 f'resolutions={len(resolutions)}')
         super().__init__(state=state, size=size, max_state=max_state)
-        self.nr_points = nr_points
+
+        if left_ends is None:
+            self.left_ends = [True] * size
+        else:
+            if size != len(left_ends):
+                raise ValueError(f'size={size} is inconsistent to length of '
+                                 f'left_ends={len(left_ends)}')
+            self.left_ends = left_ends
+
+        if right_ends is None:
+            self.right_ends = [True] * size
+        else:
+            if size != len(right_ends):
+                raise ValueError(f'size={size} is inconsistent to length of '
+                                 f'right_ends={len(right_ends)}')
+            self.right_ends = right_ends
+
+        self.resolutions = resolutions
         self.shuffle = shuffle
         if self.shuffle:
             try:
@@ -407,9 +431,9 @@ class GridParametricSeeder(BaseParametricSeeder):
 
     def _call(self) -> Generator[Tuple[float], None, None]:
         grids = tuple(
-            (Fraction(), *(Fraction(i, nr_point - 1)
-                           for i in range(1, nr_point - 1)), Fraction(1))
-            for nr_point in self.nr_points)
+            (Fraction(), *(Fraction(i, resolution - 1)
+                           for i in range(1, resolution - 1)), Fraction(1))
+            for resolution in self.resolutions)
         searched = set()
 
         while True:
@@ -423,12 +447,19 @@ class GridParametricSeeder(BaseParametricSeeder):
                 if grid_point in searched:
                     continue
                 searched.add(grid_point)
-                yield tuple(float(g) for g in grid_point)
+                for left_end, right_end, g in zip(self.left_ends,
+                                                  self.right_ends, grid_point):
+                    if not left_end and g == 0:
+                        break
+                    if not right_end and g == 1:
+                        break
+                else:
+                    yield tuple(float(g) for g in grid_point)
 
             grids = tuple(tuple(self._next_grid(grid)) for grid in grids)
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class Parametric(abc.ABC):
     """Parametric is a single-variable parametric function.
 
@@ -438,7 +469,9 @@ class Parametric(abc.ABC):
     generated this kind of parameter.
     """
 
-    resolution: int = field(default=1, init=False)
+    resolution: int = 2
+    left_end: bool = True
+    right_end: bool = True
 
     @abc.abstractmethod
     def _call(self, r):
@@ -447,6 +480,10 @@ class Parametric(abc.ABC):
     def __call__(self, r):
         if not 0 <= r <= 1:
             raise ValueError(f'Accept param in range [0, 1], got {r}')
+        if r == 0 and not self.left_end:
+            raise ValueError('0 is not acceptable if left_end is set False')
+        if r == 1 and not self.right_end:
+            raise ValueError('1 is not acceptable if right_end is set False')
         return self._call(r)
 
     @classmethod
@@ -496,7 +533,7 @@ class Parametric(abc.ABC):
 
 
 # noinspection PyUnresolvedReferences
-@dataclass
+@attr.s(auto_attribs=True)
 class BooleanParam(Parametric):
     """Boolean parametric.
 
@@ -531,15 +568,17 @@ class BooleanParam(Parametric):
     Attributes:
         prob: the probability of being `True`.
     """
-    resolution = 1
     prob: float = 0.5
+    resolution: int = 2
+    left_end: bool = True
+    right_end: bool = True
 
     def _call(self, r):
         return r < self.prob
 
 
 # noinspection PyUnresolvedReferences
-@dataclass
+@attr.s(auto_attribs=True)
 class UniformBetweenParam(Parametric):
     """Uniform parametric between a given interval.
 
@@ -589,12 +628,14 @@ class UniformBetweenParam(Parametric):
         right: upper bound.
         dtype: data type.
     """
-    resolution = 1
     left: Any
     right: Any
     dtype: type
+    resolution: int = 2
+    left_end: bool = True
+    right_end: bool = True
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if self.dtype not in (int, float):
             raise ValueError(f'Not supporting this type: {self.dtype.__name__}')
 
@@ -608,7 +649,7 @@ class UniformBetweenParam(Parametric):
 
 
 # noinspection PyUnresolvedReferences
-@dataclass
+@attr.s(auto_attribs=True)
 class ExponentialBetweenParam(Parametric):
     r"""Exponential parametric between a given interval.
 
@@ -673,12 +714,14 @@ class ExponentialBetweenParam(Parametric):
         right: upper bound
         dtype: data type
     """
-    resolution = 1
     left: Any
     right: Any
     dtype: type
+    resolution: int = 2
+    left_end: bool = True
+    right_end: bool = True
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if self.left <= 0 or self.right <= 0:
             raise ValueError('bounded value should be positive')
         if self.dtype not in (int, float):
@@ -696,7 +739,7 @@ class ExponentialBetweenParam(Parametric):
 
 
 # noinspection PyUnresolvedReferences
-@dataclass(init=False)
+@attr.s(auto_attribs=True, init=False, kw_only=True)
 class ChoicesParam(Parametric):
     """Uniformly select a choice within given choices.
 
@@ -724,11 +767,15 @@ class ChoicesParam(Parametric):
         choice(tuple(any)): some options to be chosen from.
     """
     choice: Tuple[Any]
+    resolution: int = 2
+    left_end: bool = True
+    right_end: bool = True
 
-    def __init__(self, *args: Any, resolution=1):
-        super().__init__()
+    def __init__(self, *args: Any, resolution=2, left_end=True, right_end=True):
+        super().__init__(resolution=resolution,
+                         left_end=left_end,
+                         right_end=right_end)
         self.choice = args
-        self.resolution = resolution
 
     def _call(self, r):
         nr_choices = len(self.choice)
@@ -806,6 +853,24 @@ class SearchMap(OrderedDict, MutableMapping[str, Union[Parametric, Any]]):
             if isinstance(parametric, Parametric):
                 n += 1
         return n
+
+    @property
+    def resolutions(self) -> Iterable[int]:
+        for parametric in self.values():
+            if isinstance(parametric, Parametric):
+                yield parametric.resolution
+
+    @property
+    def left_ends(self) -> Iterable[bool]:
+        for parametric in self.values():
+            if isinstance(parametric, Parametric):
+                yield parametric.left_end
+
+    @property
+    def right_ends(self) -> Iterable[bool]:
+        for parametric in self.values():
+            if isinstance(parametric, Parametric):
+                yield parametric.right_end
 
 
 class ParameterSearch(abc.ABC):
@@ -1086,7 +1151,73 @@ class RandomSearch(ParameterSearch):
 
 
 class GridSearch(ParameterSearch):
+    """GridSearch is a grid parameter search algorithm.
 
-    def __init__(self, search_map: SearchMap):
+    This inherits from :class:`.ParameterSearch`,
+    and uses grid parametric seeder
+    to test the objective function's value.
+
+    To quick start, you can try
+
+    >>> import math
+    >>> def obj(x):
+    ...     return (1-x)*(3-x)*(4-x)*math.log(x)
+
+    Start searching the maximized value and its parameter.
+
+    >>> smap = SearchMap({
+    ...     'x': UniformBetweenParam(0, 6, float, left_end=False)
+    ... })
+    >>> search = GridSearch(smap)
+    >>> maximized = search.auto_search(obj, max_iter=100)
+    >>> assert maximized[0]['x'] == 3.5625
+    >>> assert maximized[1] == 0.8011730359549043
+    """
+
+    @property
+    def search_map(self) -> SearchMap:
+        return self._search_map
+
+    @property
+    def parametric_seeder(self) -> BaseParametricSeeder:
+        return self._seeder
+
+    @property
+    def ready_to_stop(self) -> bool:
+        return self.to_stop
+
+    def update_function_value(self, val: float):
+        # for grid search, there is no need to update function value
+        # because it is not an iterative method.
+        pass
+
+    def __init__(self,
+                 search_map: SearchMap,
+                 shuffle=False,
+                 seeder: Optional[BaseParametricSeeder] = None):
+        """
+        Parameters:
+            shuffle(False, Generator, random, None, or other valid random seed):
+                If `False` (default), no shuffle in grid search seeder.
+                If instance of :class:`numpy.random.Generator` or `random`,
+                use it as the random number generator.
+                If None or other valid random seeds,
+                use :meth:`numpy.random.default_rng(None)` as the
+                random generator if `numpy` exists. :mod:`random` is used
+                otherwise.
+
+                Do not have effect if seeder is not None.
+        """
         super().__init__()
         self._search_map = search_map
+        if seeder is None:
+            self._seeder = GridParametricSeeder(
+                resolutions=tuple(self._search_map.resolutions),
+                left_ends=tuple(self._search_map.left_ends),
+                right_ends=tuple(self._search_map.right_ends),
+                shuffle=shuffle is False,
+                random_state=None if shuffle is False else shuffle)
+        else:
+            self._seeder = seeder
+
+        self.to_stop = False
