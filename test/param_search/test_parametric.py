@@ -29,7 +29,7 @@ class TestBaseParametricSeeder(ut.TestCase):
         bad_seeder = BadParametricSeeder()
         with pytest.raises(
                 ValueError,
-                match=r'Returned param should be in range \[0, 1\), got 1'):
+                match=r'Returned param should be in range \[0, 1\], got 2'):
             next(bad_seeder())
 
 
@@ -156,3 +156,46 @@ class TestRandomSearch(ut.TestCase):
         maximized = search.auto_search(obj, max_iter=100)
         assert maximized == (OrderedDict([('x', 3.5777211694986377)]),
                              0.8016234110091472)
+
+
+class TestGridSearchSeeder(ut.TestCase):
+
+    @pytest.mark.skipif(condition=LOOPFLOW_INSTALLED,
+                        reason="test behavior when loopflow not installed")
+    def test_grid_search_seeder_without_numpy(self):
+        seeder = parametric.GridParametricSeeder(size=2,
+                                                 shuffle=True,
+                                                 random_state=0)
+        expects = [
+            (1.0, 0.0),
+            (0.0, 0.0),
+            (0.0, 1.0),
+            (1.0, 1.0),
+            (0.0, 0.5),
+            (0.5, 1.0),
+            (0.5, 0.0),
+            (1.0, 0.5),
+            (0.5, 0.5),
+            (0.5, 0.75),
+        ]
+        for seeds, expected in zip(seeder(), expects):
+            self.assertEqual(expected, seeds)
+
+
+def test_short_seeder_for_search():
+
+    class ShortSeeder(parametric.BaseParametricSeeder):
+
+        def _call(self) -> Generator[Tuple[float], None, None]:
+            yield from [(1,), (1 / 2,), (0,)]
+
+    import math
+
+    def obj(x):
+        return (1 - x) * (3 - x) * (4 - x) * math.log(x)
+
+    smap = parametric.SearchMap(
+        {'x': parametric.UniformBetweenParam(1, 6, float)})
+    search = parametric.RandomSearch(smap, seeder=ShortSeeder())
+    history = search.auto_search(obj, max_iter=100, output='history')
+    assert len(history) == 3

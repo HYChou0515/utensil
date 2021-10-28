@@ -32,7 +32,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 name = "attrs"
 version = "21.2.0"
 description = "Classes Without Boilerplate"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -852,7 +852,7 @@ loopflow = ["PyYAML", "pandas", "xgboost", "scikit-learn", "scipy"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.4,<3.10"
-content-hash = "54c9b50a2015d7977a3fc2fe89207cdeda8c5e038d65d4aa1acc6aa1cdca1d4d"
+content-hash = "586a658d94100b6afcc7519783444c3cdfea635e46feeb03d342f1896f0469ae"
 
 [metadata.files]
 alabaster = [
