@@ -32,6 +32,16 @@ class TestBaseParametricSeeder(ut.TestCase):
                 match=r'Returned param should be in range \[0, 1\], got 2'):
             next(bad_seeder())
 
+    def test_state_larger_than_number_of_seeds(self):
+
+        class ShortSeeder(parametric.BaseParametricSeeder):
+
+            def _call(self) -> Generator[Tuple[float], None, None]:
+                yield 0.1, 0.2, 0.3
+
+        seeder = ShortSeeder(state=5)
+        self.assertTrue(next(seeder(), None) is None)
+
 
 class TestParametric(ut.TestCase):
 

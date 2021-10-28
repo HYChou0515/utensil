@@ -23,26 +23,37 @@ class BaseParametricSeeder(abc.ABC):
     """
 
     def __init__(self, state=0, size=1, max_state=10**10, **kwargs):
-        self._state = state
+        self.__state = 0  # prevent edit outside this class accidentally
+        self._init_state = state
         self.size = size
         self.max_state = max_state
 
     @property
     def state(self):
-        return self._state
+        return self.__state
 
     @abc.abstractmethod
     def _call(self) -> Generator[Tuple[float], None, None]:
         raise NotImplementedError
 
     def __call__(self) -> Generator[Tuple[float], None, None]:
-        for rs in self._call():
+        seeds = self._call()
+
+        for self.__state in range(self._init_state):
+            if next(seeds, None) is None:
+                return
+
+        self.__state = self._init_state
+
+        for rs in seeds:
             for r in rs:
                 if not 0 <= r <= 1:
                     raise ValueError(
                         f'Returned param should be in range [0, 1], got {r}')
+            # add state before yield
+            # so after the nth yield, the state is n.
+            self.__state += 1
             yield rs
-            self._state += 1
             if self.state >= self.max_state:
                 raise ValueError(f'Reached maximum state {self.max_state}')
 
@@ -74,6 +85,19 @@ class SimpleUniformParametricSeeder(BaseParametricSeeder):
     Traceback (most recent call last):
     ...
     ValueError: Reached maximum state 2
+
+    state and seed can be used to get a static value.
+
+    >>> seeder1 = SimpleUniformParametricSeeder(
+    ...     rng=np.random.default_rng(0), size=5
+    ... )()
+    >>> seeder2 = SimpleUniformParametricSeeder(
+    ...     rng=np.random.default_rng(0), state=3, size=5
+    ... )()
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> assert next(seeder1) == next(seeder2)
 
     """
 
@@ -171,6 +195,19 @@ class MoreUniformParametricSeeder(BaseParametricSeeder):
     Traceback (most recent call last):
     ...
     TypeError: Non expected type of rng: int
+
+    state and seed can be used to get a static value.
+
+    >>> seeder1 = MoreUniformParametricSeeder(
+    ...     rng=np.random.default_rng(0), size=5
+    ... )()
+    >>> seeder2 = MoreUniformParametricSeeder(
+    ...     rng=np.random.default_rng(0), state=3, size=5
+    ... )()
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> assert next(seeder1) == next(seeder2)
     """
 
     def __init__(self, state=0, size=1, max_state=10**10, rng=None):
@@ -357,6 +394,19 @@ class GridParametricSeeder(BaseParametricSeeder):
     Traceback (most recent call last):
     ...
     ValueError: size=1 is inconsistent to length of right_ends=2
+
+    state and seed can be used to get a static value.
+
+    >>> seeder1 = GridParametricSeeder(
+    ...     size=5, shuffle=True, random_state=3
+    ... )()
+    >>> seeder2 = GridParametricSeeder(
+    ...     size=5, shuffle=True, random_state=3, state=3
+    ... )()
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> _ = next(seeder1)
+    >>> assert next(seeder1) == next(seeder2)
     """
 
     def __init__(
