@@ -23,34 +23,34 @@ if platform == 'darwin':
 
 
 class BaseNode(Process):
-    pass
+    """A base class for Node"""
 
 
-class BaseNodeProcess(Process):
-    pass
+class BaseNodeWorker(Process):
+    """A base class for NodeWorker"""
 
 
-class NodeProcessFunction:
+class NodeTask:
 
     @classmethod
-    def parse(cls, o) -> List[NodeProcessFunction]:
-        proc_map = _NODE_PROCESS_MAPPING
+    def parse(cls, o) -> List[NodeTask]:
+        task_map = _NODE_TASK_MAPPING
 
         def _parse_1(_o):
             if isinstance(_o, str):
-                return proc_map[_o]()
+                return task_map[_o]()
             if isinstance(_o, dict):
                 if len(_o) != 1:
                     raise RuntimeError("E3")
                 name, params = _o.popitem()
                 logger.debug(name, params)
                 if isinstance(params, list):
-                    return proc_map[name](*params)  # noqa
+                    return task_map[name](*params)  # noqa
                 if isinstance(params, dict):
                     params = {k.lower(): v for k, v in params.items()}
-                    return proc_map[name](**params)  # noqa
-                print(proc_map[name])
-                return proc_map[name](params)  # noqa
+                    return task_map[name](**params)  # noqa
+                print(task_map[name])
+                return task_map[name](params)  # noqa
             raise RuntimeError("E4")
 
         if not isinstance(o, list):
@@ -70,58 +70,55 @@ class NodeProcessFunction:
 
 
 @dataclass
-class NodeProcessMeta:
+class NodeMeta:
     node_name: str
-    triggerings: List[Node]
-    children: List[Node]
-    process_funcs: List[NodeProcessFunction]
+    callees: List[Node]
+    receivers: List[Node]
+    tasks: List[NodeTask]
     export: Tuple[str]
     result_q: SimpleQueue
     end_q: SimpleQueue
 
 
-class NodeProcessBuilder:
+class NodeWorkerBuilder:
 
     def __init__(self):
-        self.meta: Optional[NodeProcessMeta] = None
+        self.meta: Optional[NodeMeta] = None
 
     def build(self, *args, **kwargs):
         if self.meta is None:
             raise RuntimeError("E12")
         kwargs = {k.lower(): v for k, v in kwargs.items()}
-        proc = NodeProcess(self.meta, *args, **kwargs)
-        return proc
+        worker = NodeWorker(self.meta, *args, **kwargs)
+        return worker
 
 
-class NodeProcess(BaseNodeProcess):
+class NodeWorker(BaseNodeWorker):
 
-    def __init__(self, meta: NodeProcessMeta, *args, **kwargs):
+    def __init__(self, meta: NodeMeta, *args, **kwargs):
         super().__init__()
-        self.meta: NodeProcessMeta = meta
+        self.meta: NodeMeta = meta
         self.args = args
         self.kwargs = kwargs
 
     def run(self) -> None:
         logger.debug('Node {} started', self.meta.node_name)
         try:
-            ret = self.meta.process_funcs[0](*self.args, **self.kwargs)
-            for proc_func in self.meta.process_funcs[1:]:
-                ret = proc_func(ret)
+            ret = self.meta.tasks[0](*self.args, **self.kwargs)
+            for task in self.meta.tasks[1:]:
+                ret = task(ret)
             if "PRINT" in self.meta.export:
                 print(f"{self.meta.node_name}: {ret}")
             if "RETURN" in self.meta.export:
                 self.meta.result_q.put((self.meta.node_name, ret))
-            for triggering in self.meta.triggerings:
-                triggering.trigger(ret, self.meta.node_name)
-            for child in self.meta.children:
-                child.push(ret, self.meta.node_name)
+            for callee in self.meta.callees:
+                callee.triggered_by(ret, self.meta.node_name)
+            for receiver in self.meta.receivers:
+                receiver.receive(ret, self.meta.node_name)
         except Exception as err:
             logger.exception(err)
             self.meta.end_q.put(object())
             raise err
-
-
-DEFAULT_FLOW = object()
 
 
 class _Operator(str, Enum):
@@ -233,7 +230,6 @@ class Triggers(Parents):
 SWITCHON = "SWITCHON"
 
 
-@dataclass
 class TriggerToken:
     pass
 
@@ -244,21 +240,21 @@ class Node(BaseNode):
         self,
         name: str,
         end: bool,
-        proc_funcs: List[NodeProcessFunction],
+        tasks: List[NodeTask],
         end_q: SimpleQueue,
         result_q: SimpleQueue,
-        triggers: Union[None, Triggers] = None,
-        parents: Union[None, Parents] = None,
+        callers: Union[None, Triggers] = None,
+        senders: Union[None, Parents] = None,
         export: Union[None, str, List[str]] = None,
     ):
         super().__init__()
         self.name = name
-        self.proc_funcs = proc_funcs
+        self.tasks = tasks
         self.end = end
-        self.triggers = Triggers() if triggers is None else triggers
-        self.parents = Parents() if parents is None else parents
-        self.children = []
-        self.triggerings = []
+        self.callers = Triggers() if callers is None else callers
+        self.senders = Parents() if senders is None else senders
+        self.receivers = []
+        self.callees = []
         self.end_q = end_q
         self.result_q = result_q
         if export is None:
@@ -270,11 +266,12 @@ class Node(BaseNode):
         else:
             raise RuntimeError("E24")
 
-        self._tqs: Dict[str, Queue] = {
-            k: Queue() for k in self.triggers.parent_keys
+        self._caller_qs: Dict[str, Queue] = {
+            k: Queue() for k in self.callers.parent_keys
         }
-        self._qs: Dict[str,
-                       Queue] = {k: Queue() for k in self.parents.parent_keys}
+        self._sender_qs: Dict[str, Queue] = {
+            k: Queue() for k in self.senders.parent_keys
+        }
 
     @staticmethod
     def _getitem(_p, _attr):
@@ -283,8 +280,8 @@ class Node(BaseNode):
             return _p[_attr]
         return _p.__getattribute__(_attr)
 
-    def push(self, param, caller_name):
-        for parent_key, parent_spec in self.parents.node_map[caller_name]:
+    def receive(self, param, sender_name):
+        for parent_key, parent_spec in self.senders.node_map[sender_name]:
             c = param
             for attr in parent_spec.flow_condition:
                 c = self._getitem(c, attr)
@@ -293,40 +290,40 @@ class Node(BaseNode):
                 v = self._getitem(v, attr)
 
             if len(parent_spec.flows) == 0:
-                self._qs[parent_key].put(v)
+                self._sender_qs[parent_key].put(v)
             for flow in parent_spec.flows:
                 if str(c) == flow:
-                    self._qs[parent_key].put(v)
+                    self._sender_qs[parent_key].put(v)
                     break  # only need to put one
 
-    def trigger(self, param, caller_name):
+    def triggered_by(self, param, caller_name):
         # triggered by unexpected caller is
         # currently considered fine, e.g. SWITCHON
-        if caller_name not in self.triggers.node_map:
+        if caller_name not in self.callers.node_map:
             return
-        for parent_key, parent_spec in self.triggers.node_map[caller_name]:
+        for parent_key, parent_spec in self.callers.node_map[caller_name]:
             c = param
             for attr in parent_spec.flow_condition:
                 c = self._getitem(c, attr)
             if len(parent_spec.flows) == 0:
-                self._tqs[parent_key].put(TriggerToken())
+                self._caller_qs[parent_key].put(TriggerToken())
             for flow in parent_spec.flows:
                 if str(c) == flow:
-                    self._tqs[parent_key].put(TriggerToken())
+                    self._caller_qs[parent_key].put(TriggerToken())
                     break  # only need to put one
 
     def run(self) -> None:
-        meta = NodeProcessMeta(
+        meta = NodeMeta(
             self.name,
-            self.triggerings,
-            self.children,
-            self.proc_funcs,
+            self.callees,
+            self.receivers,
+            self.tasks,
             self.export,
             self.result_q,
             self.end_q,
         )
-        process_builder = NodeProcessBuilder()
-        process_builder.meta = meta
+        worker_builder = NodeWorkerBuilder()
+        worker_builder.meta = meta
 
         def check_queues(_q_vals, qs: Dict[str, Queue]):
             _ok = True
@@ -341,50 +338,50 @@ class Node(BaseNode):
             return _ok, _q_vals
 
         inputs = {}
-        triggered = {}
-        procs = []
+        called = {}
+        workers = []
         while self.end_q.empty():
-            triggers_ok, triggered = check_queues(triggered, self._tqs)
-            parents_ok, inputs = check_queues(inputs, self._qs)
+            callers_ok, called = check_queues(called, self._caller_qs)
+            senders_ok, inputs = check_queues(inputs, self._sender_qs)
 
-            # if there's no triggers defined, use parents as triggers
-            if len(self._tqs) == 0:
-                triggers_ok = parents_ok
+            # if there's no callers defined, use senders as callers
+            if len(self._caller_qs) == 0:
+                callers_ok = senders_ok
 
-            # if not getting triggered, sleep and try again
-            if not triggers_ok:
+            # if not getting called, sleep and try again
+            if not callers_ok:
                 time.sleep(0.1)
                 continue
 
-            # if getting triggered, reset triggers but not inputs
-            triggered = {}
+            # if getting called, reset called but not inputs
+            called = {}
 
-            # if triggers ok but parents not ok, use whatever it have
+            # if callers ok but senders not ok, use whatever it have
             args = [
                 inputs.pop(i)
-                for i in range(len(self.parents.args))
+                for i in range(len(self.senders.args))
                 if i in inputs
             ]
             kwargs = {
                 k: inputs.pop(k)
-                for k in self.parents.kwargs.keys()
+                for k in self.senders.kwargs.keys()
                 if k in inputs
             }
-            procs.append(process_builder.build(*args, **kwargs))
-            procs[-1].start()
+            workers.append(worker_builder.build(*args, **kwargs))
+            workers[-1].start()
 
             if self.end:
-                for proc in procs:
-                    proc.join()
+                for worker in workers:
+                    worker.join()
                 self.end_q.put(object())
 
-            procs = [proc for proc in procs if proc.is_alive()]
+            workers = [worker for worker in workers if worker.is_alive()]
 
         while True:
-            for proc in procs:
-                if proc.is_alive():
-                    proc.kill()
-                    logger.debug("killing proc {}", proc.name)
+            for worker in workers:
+                if worker.is_alive():
+                    worker.kill()
+                    logger.debug("killing worker {}", worker.name)
                     break
             else:
                 break
@@ -395,18 +392,18 @@ class Node(BaseNode):
             raise RuntimeError("E21")
         if not isinstance(o, dict):
             raise RuntimeError("E5")
-        proc_funcs = None
-        triggers = None
+        tasks = None
+        callers = None
         end = False
-        parents = None
+        senders = None
         export = None
         for k, v in o.items():
             if k == "PROCESS":
-                proc_funcs = NodeProcessFunction.parse(v)
+                tasks = NodeTask.parse(v)
             elif k == "TRIGGERS":
-                triggers = Triggers.parse(v)
+                callers = Triggers.parse(v)
             elif k == "PARENTS":
-                parents = Parents.parse(v)
+                senders = Parents.parse(v)
             elif k == "END":
                 end = bool(v)
             elif k == "EXPORT":
@@ -415,12 +412,12 @@ class Node(BaseNode):
                 raise RuntimeError(f"E13: {k}")
         return cls(
             name=name,
-            triggers=triggers,
+            callers=callers,
             end=end,
-            proc_funcs=proc_funcs,
+            tasks=tasks,
             end_q=end_q,
             result_q=result_q,
-            parents=parents,
+            senders=senders,
             export=export,
         )
 
@@ -430,19 +427,19 @@ class Flow:
     def __init__(self, nodes: List[Node], result_q: SimpleQueue):
         self.nodes = {}
         self.result_q = result_q
-        self.processes: List[Process] = []
+        self.processes: List[Node] = []
         for node in nodes:
             if node.name in self.nodes:
                 raise RuntimeError("E6")
             self.nodes[node.name] = node
 
         for node in nodes:
-            for name in node.triggers.node_map.keys():
+            for name in node.callers.node_map.keys():
                 if name == SWITCHON:
                     continue
-                self.nodes[name].triggerings.append(node)
-            for name in node.parents.node_map.keys():
-                self.nodes[name].children.append(node)
+                self.nodes[name].callees.append(node)
+            for name in node.senders.node_map.keys():
+                self.nodes[name].receivers.append(node)
 
     @classmethod
     def parse(cls, o):
@@ -467,7 +464,7 @@ class Flow:
             self.processes.append(node)
             node.start()
         for node in self.nodes.values():
-            node.trigger(TriggerToken(), SWITCHON)
+            node.triggered_by(TriggerToken(), SWITCHON)
         for proc in self.processes:
             proc.join()
         results = []
@@ -476,47 +473,46 @@ class Flow:
         return results
 
 
-_NODE_PROCESS_MAPPING: Dict[str, Type[NodeProcessFunction]] = {}
+_NODE_TASK_MAPPING: Dict[str, Type[NodeTask]] = {}
 
 
 def camel_to_snake(s):
     return re.sub(r"(?<!^)(?=[A-Z])", "_", s)
 
 
-def default_node_process_function_name(c: Type[NodeProcessFunction]):
+def default_node_task_name(c: Type[NodeTask]):
     return camel_to_snake(c.__name__).upper()
 
 
-def reset_node_process_functions():
-    while len(_NODE_PROCESS_MAPPING) > 0:
-        _NODE_PROCESS_MAPPING.popitem()
+def reset_node_tasks():
+    while len(_NODE_TASK_MAPPING) > 0:
+        _NODE_TASK_MAPPING.popitem()
 
 
-def register_node_process_functions(
-    proc_funcs: List[Type[NodeProcessFunction]] = None,
-    proc_func_map: Dict[str, Type[NodeProcessFunction]] = None,
-    proc_func_module: ModuleType = None,
+def register_node_tasks(
+    tasks: List[Type[NodeTask]] = None,
+    task_map: Dict[str, Type[NodeTask]] = None,
+    task_module: ModuleType = None,
     raise_on_exist: bool = True,
 ):
-    proc_funcs = [] if proc_funcs is None else proc_funcs
-    proc_func_map = {} if proc_func_map is None else proc_func_map
+    tasks = [] if tasks is None else tasks
+    task_map = {} if task_map is None else task_map
 
-    def _check_before_update(_name, _proc_func):
-        if _name in _NODE_PROCESS_MAPPING and raise_on_exist:
+    def _check_before_update(_name, _task):
+        if _name in _NODE_TASK_MAPPING and raise_on_exist:
             raise RuntimeError(f"E25 {_name}")
-        _NODE_PROCESS_MAPPING[_name] = _proc_func
+        _NODE_TASK_MAPPING[_name] = _task
 
-    for proc_func in proc_funcs:
-        name = default_node_process_function_name(proc_func)
-        _check_before_update(name, proc_func)
+    for task in tasks:
+        name = default_node_task_name(task)
+        _check_before_update(name, task)
 
-    if proc_func_module is not None:
-        for proc_func in proc_func_module.__dict__.values():
-            if (isinstance(proc_func, type) and
-                    proc_func is not NodeProcessFunction and
-                    issubclass(proc_func, NodeProcessFunction)):
-                name = default_node_process_function_name(proc_func)
-                _check_before_update(name, proc_func)
+    if task_module is not None:
+        for task in task_module.__dict__.values():
+            if (isinstance(task, type) and task is not NodeTask and
+                    issubclass(task, NodeTask)):
+                name = default_node_task_name(task)
+                _check_before_update(name, task)
 
-    for name, proc_func in proc_func_map.items():
-        _check_before_update(name, proc_func)
+    for name, task in task_map.items():
+        _check_before_update(name, task)

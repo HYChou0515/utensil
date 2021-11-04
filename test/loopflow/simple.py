@@ -1,7 +1,7 @@
-from utensil.loopflow.loopflow import NodeProcessFunction
+from utensil.loopflow.loopflow import NodeTask
 
 
-class Constant(NodeProcessFunction):
+class Constant(NodeTask):
 
     def __init__(self, value):
         super().__init__()
@@ -11,7 +11,7 @@ class Constant(NodeProcessFunction):
         return self.value
 
 
-class AddValue(NodeProcessFunction):
+class AddValue(NodeTask):
 
     def __init__(self, value):
         super().__init__()
@@ -21,13 +21,13 @@ class AddValue(NodeProcessFunction):
         return a + self.value
 
 
-class Add(NodeProcessFunction):
+class Add(NodeTask):
 
     def main(self, a, b):
         return a + b
 
 
-class TimeValue(NodeProcessFunction):
+class TimeValue(NodeTask):
 
     def __init__(self, value):
         super().__init__()
@@ -37,25 +37,25 @@ class TimeValue(NodeProcessFunction):
         return a * self.value
 
 
-class ListAddSum(NodeProcessFunction):
+class ListAddSum(NodeTask):
 
     def main(self, add, *args):
         return sum([a + add for a in args])
 
 
-class Sum(NodeProcessFunction):
+class Sum(NodeTask):
 
     def main(self, l):
         return sum(l)
 
 
-class Divide(NodeProcessFunction):
+class Divide(NodeTask):
 
     def main(self, a, b):
         return a / b
 
 
-class Pickle(NodeProcessFunction):
+class Pickle(NodeTask):
 
     def __init__(self, path):
         super().__init__()

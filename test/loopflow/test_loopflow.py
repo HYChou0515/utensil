@@ -27,15 +27,14 @@ class TestSimpleFlow(ut.TestCase):
     )
     def test_end_to_end(self):
         from utensil.loopflow.functions import basic
-        from utensil.loopflow.loopflow import (Flow,
-                                               register_node_process_functions,
-                                               reset_node_process_functions)
+        from utensil.loopflow.loopflow import (Flow, register_node_tasks,
+                                               reset_node_tasks)
 
         from . import simple
 
-        reset_node_process_functions()
-        register_node_process_functions(proc_func_module=simple)
-        register_node_process_functions(proc_funcs=[basic.GreaterThan])
+        reset_node_tasks()
+        register_node_tasks(task_module=simple)
+        register_node_tasks(tasks=[basic.GreaterThan])
 
         if os.path.isfile("simple.output"):
             warnings.warn("simple.output deleted")
@@ -68,12 +67,11 @@ class TestCovtypeFlow(ut.TestCase):
     )
     def test_end_to_end(self):
         from utensil.loopflow.functions import basic, dataflow
-        from utensil.loopflow.loopflow import (Flow,
-                                               register_node_process_functions,
-                                               reset_node_process_functions)
-        reset_node_process_functions()
-        register_node_process_functions(proc_func_module=basic)
-        register_node_process_functions(proc_func_module=dataflow)
+        from utensil.loopflow.loopflow import (Flow, register_node_tasks,
+                                               reset_node_tasks)
+        reset_node_tasks()
+        register_node_tasks(task_module=basic)
+        register_node_tasks(task_module=dataflow)
 
         flow_path = os.path.join(FIXTURE_BASE, "covtype.flow")
         flow = Flow.parse_yaml(flow_path)

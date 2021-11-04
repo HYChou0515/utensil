@@ -12,7 +12,7 @@ Example:
 from collections import namedtuple
 from typing import Any
 
-from utensil.loopflow.loopflow import NodeProcessFunction
+from utensil.loopflow.loopflow import NodeTask
 
 
 class _MISSING:
@@ -26,7 +26,7 @@ Used to indicate a missing value.
 """
 
 
-class Dummy(NodeProcessFunction):
+class Dummy(NodeTask):
     """Identical function.
 
     Returns whatever it get.
@@ -39,7 +39,7 @@ class Dummy(NodeProcessFunction):
         return a
 
 
-class Default(NodeProcessFunction):
+class Default(NodeTask):
     """Implements a default behavior.
 
     Return a default value if triggered before getting anything.
@@ -71,7 +71,7 @@ class Default(NodeProcessFunction):
         return o
 
 
-class Add(NodeProcessFunction):
+class Add(NodeTask):
     """Add a predefined constant, i.e., ``n+a``.
 
     >>> p = Add(3)
@@ -109,7 +109,7 @@ Attributes:
 """
 
 
-class LessEqual(NodeProcessFunction):
+class LessEqual(NodeTask):
     """Check is less than or equal to a constant, i.e., ``b <= a``.
 
     >>> LessEqual(3).main(3)
@@ -138,7 +138,7 @@ class LessEqual(NodeProcessFunction):
         return ConditionValue(b <= self.a, b)
 
 
-class Equal(NodeProcessFunction):
+class Equal(NodeTask):
     """Check is equal to a constant, i.e., ``b == a``.
 
     >>> Equal(3).main(3)
@@ -167,7 +167,7 @@ class Equal(NodeProcessFunction):
         return ConditionValue(b == self.a, b)
 
 
-class GreaterEqual(NodeProcessFunction):
+class GreaterEqual(NodeTask):
     """Check is greater than or equal to a constant, i.e., ``b >= a``.
 
     >>> GreaterEqual(3).main(3)
@@ -196,7 +196,7 @@ class GreaterEqual(NodeProcessFunction):
         return ConditionValue(b >= self.a, b)
 
 
-class LessThan(NodeProcessFunction):
+class LessThan(NodeTask):
     """Check is less than a constant, i.e., ``b < a``.
 
     >>> LessThan(3).main(3)
@@ -225,7 +225,7 @@ class LessThan(NodeProcessFunction):
         return ConditionValue(b < self.a, b)
 
 
-class GreaterThan(NodeProcessFunction):
+class GreaterThan(NodeTask):
     """Check is greater than a constant, i.e., ``b > a``.
 
     >>> GreaterThan(3).main(3)
