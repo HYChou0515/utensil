@@ -1,4 +1,5 @@
 import os
+import sys
 import string
 from test.fixtures import FIXTURE_BASE
 
@@ -12,6 +13,9 @@ try:
 
     from utensil.loopflow.functions import dataflow
 except ImportError:
+    pytestmark = pytest.mark.skip
+
+if sys.platform == "darwin":
     pytestmark = pytest.mark.skip
 
 

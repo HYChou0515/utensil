@@ -1,4 +1,5 @@
 import os
+import sys
 import unittest as ut
 import warnings
 from test.fixtures import FIXTURE_BASE
@@ -19,6 +20,10 @@ class TestSimpleFlow(ut.TestCase):
         condition=not LOOPFLOW_INSTALLED,
         reason="loopflow not installed",
         raises=ImportError,
+    )
+    @pytest.mark.skipif(
+        condition=sys.platform == "darwin",
+        reason="skipped for macos, may cause seg fault",
     )
     def test_end_to_end(self):
         from utensil.loopflow.functions import basic
@@ -56,6 +61,10 @@ class TestCovtypeFlow(ut.TestCase):
         condition=not LOOPFLOW_INSTALLED,
         reason="loopflow not installed",
         raises=ImportError,
+    )
+    @pytest.mark.skipif(
+        condition=sys.platform == "darwin",
+        reason="skipped for macos, may cause seg fault",
     )
     def test_end_to_end(self):
         from utensil.loopflow.functions import basic, dataflow
