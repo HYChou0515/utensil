@@ -10,7 +10,7 @@ jobs:
         poetry-version: [1.1.10]
         install-loopflow: ["-E loopflow", ""]
         install-loguru: ["-E loguru", ""]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macOS-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -25,6 +25,10 @@ jobs:
         run: poetry install ${{ matrix.install-loopflow }} ${{ matrix.install-loguru }}
       - name: run test
         run: |
+          if [ "${{ matrix.os }}" == "macOS-latest" ]; then
+            export OBJC_DISABLE_INITIALIZE_FORK_SAFETY="YES"
+            brew install libomp
+          fi
           export LOOPFLOW_INSTALLED=$(if [ "${{ matrix.install-loopflow }}" == "" ]; then echo "0"; else echo "1"; fi)
           if [ "$LOOPFLOW_INSTALLED" == "1" ]; then
             poetry run pytest utensil test

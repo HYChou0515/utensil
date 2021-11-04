@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import itertools
+from sys import platform
 import re
 import time
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from multiprocessing import Process, Queue, SimpleQueue
+from multiprocessing import Process, Queue, SimpleQueue, set_start_method
 from queue import Empty
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -16,6 +17,9 @@ from utensil import get_logger
 from utensil.general import open_utf8
 
 logger = get_logger(__name__)
+
+if platform == 'darwin':
+    set_start_method("fork")
 
 
 class BaseNode(Process):
