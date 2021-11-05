@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import itertools
-from sys import platform
+import itertools as it
 import re
 import time
 from abc import abstractmethod
@@ -10,6 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from multiprocessing import Process, Queue, SimpleQueue, set_start_method
 from queue import Empty
+from sys import platform
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
@@ -130,14 +130,14 @@ class _Operator(str, Enum):
 
 
 @dataclass(frozen=True)
-class ParentSpecifier:
+class ParentSpecifierToken:
     node_name: str
     flow_condition: Tuple[str]
     flows: Tuple[Any]
     flow_use: Tuple[str]
 
     @classmethod
-    def parse(cls, s):
+    def parse_one(cls, s):
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
         if not re.fullmatch(
                 rf"\w+"  # node_name
@@ -162,40 +162,42 @@ class ParentSpecifier:
         return cls(node_name, tuple(flow_condition), tuple(flows),
                    tuple(flow_use))
 
-
-class ParentSpecifiers(tuple):
+    @classmethod
+    def parse_many_token(cls, tokens: str) -> Tuple[ParentSpecifierToken]:
+        tokens = tokens.split(_Operator.OR)
+        return tuple(cls.parse_one(s.strip()) for s in tokens)
 
     @classmethod
-    def parse(cls, list_str: Union[str, List[str]]):
-        if isinstance(list_str, str):
-            list_str = [list_str]
-        return cls(
-            tuple(
-                ParentSpecifier.parse(spec.strip())
-                for spec in s.split(_Operator.OR))
-            for s in list_str)
+    def parse_many_list(
+            cls, lists: Union[str, List[str]]) -> Tuple[ParentSpecifierToken]:
+        if isinstance(lists, str):
+            lists = [lists]
+        return tuple(
+            it.chain.from_iterable(cls.parse_many_token(s) for s in lists))
+
+
+ParentSpecifier = Tuple[ParentSpecifierToken]
 
 
 class Parents:
 
     def __init__(self, args=None, kwargs=None):
-        args: List[ParentSpecifiers] = ([] if args is None else [
-            ParentSpecifiers.parse(name) for name in args
+        args: List[ParentSpecifier] = ([] if args is None else [
+            ParentSpecifierToken.parse_many_list(name) for name in args
         ])
-        kwargs: Dict[str, ParentSpecifiers] = ({} if kwargs is None else {
-            k: ParentSpecifiers.parse(name) for k, name in kwargs.items()
+        kwargs: Dict[str, ParentSpecifier] = ({} if kwargs is None else {
+            k: ParentSpecifierToken.parse_many_list(name)
+            for k, name in kwargs.items()
         })
-        self.node_map: Dict[str,
-                            List[Tuple[Union[int, str],
-                                       ParentSpecifier]]] = defaultdict(list)
+        self.node_map: Dict[str, List[Tuple[Union[
+            int, str], ParentSpecifierToken]]] = defaultdict(list)
         self.parent_keys = set()
-        for k, parent_specs in itertools.chain(enumerate(args), kwargs.items()):
+        for k, parent_specs in it.chain(enumerate(args), kwargs.items()):
             if k in self.parent_keys:
                 raise RuntimeError("E19")
             self.parent_keys.add(k)
-            for specs in parent_specs:
-                for spec in specs:
-                    self.node_map[spec.node_name].append((k, spec))
+            for spec_token in parent_specs:
+                self.node_map[spec_token.node_name].append((k, spec_token))
 
 
 class Senders(Parents):
