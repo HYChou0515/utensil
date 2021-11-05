@@ -14,11 +14,11 @@ from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from utensil import get_logger
-from utensil.general import open_utf8
+from utensil.general import open_utf8, warn_left_keys
 
 logger = get_logger(__name__)
 
-if platform == 'darwin':
+if platform == "darwin":
     set_start_method("fork")
 
 
@@ -102,7 +102,7 @@ class NodeWorker(BaseNodeWorker):
         self.kwargs = kwargs
 
     def run(self) -> None:
-        logger.debug('Node {} started', self.meta.node_name)
+        logger.debug("Node {} started", self.meta.node_name)
         try:
             ret = self.meta.tasks[0](*self.args, **self.kwargs)
             for task in self.meta.tasks[1:]:
@@ -179,22 +179,26 @@ class ParentSpecifiers(tuple):
 class Parents:
 
     def __init__(self, args=None, kwargs=None):
-        self.args: List[ParentSpecifiers] = ([] if args is None else [
+        args: List[ParentSpecifiers] = ([] if args is None else [
             ParentSpecifiers.parse(name) for name in args
         ])
-        self.kwargs: Dict[str, ParentSpecifiers] = ({} if kwargs is None else {
+        kwargs: Dict[str, ParentSpecifiers] = ({} if kwargs is None else {
             k: ParentSpecifiers.parse(name) for k, name in kwargs.items()
         })
-        self.node_map = defaultdict(list)
+        self.node_map: Dict[str,
+                            List[Tuple[Union[int, str],
+                                       ParentSpecifier]]] = defaultdict(list)
         self.parent_keys = set()
-        for k, parent_specs in itertools.chain(enumerate(self.args),
-                                               self.kwargs.items()):
+        for k, parent_specs in itertools.chain(enumerate(args), kwargs.items()):
             if k in self.parent_keys:
                 raise RuntimeError("E19")
             self.parent_keys.add(k)
             for specs in parent_specs:
                 for spec in specs:
                     self.node_map[spec.node_name].append((k, spec))
+
+
+class Senders(Parents):
 
     @classmethod
     def parse(cls, o):
@@ -216,7 +220,7 @@ class Parents:
         raise RuntimeError("E2")
 
 
-class Triggers(Parents):
+class Callers(Parents):
 
     @classmethod
     def parse(cls, o):
@@ -243,16 +247,16 @@ class Node(BaseNode):
         tasks: List[NodeTask],
         end_q: SimpleQueue,
         result_q: SimpleQueue,
-        callers: Union[None, Triggers] = None,
-        senders: Union[None, Parents] = None,
+        callers: Union[None, Callers] = None,
+        senders: Union[None, Senders] = None,
         export: Union[None, str, List[str]] = None,
     ):
         super().__init__()
         self.name = name
         self.tasks = tasks
         self.end = end
-        self.callers = Triggers() if callers is None else callers
-        self.senders = Parents() if senders is None else senders
+        self.callers = Callers() if callers is None else callers
+        self.senders = Senders() if senders is None else senders
         self.receivers = []
         self.callees = []
         self.end_q = end_q
@@ -357,16 +361,21 @@ class Node(BaseNode):
             called = {}
 
             # if callers ok but senders not ok, use whatever it have
+
+            # args are the values with ordered integer keys in inputs
             args = [
                 inputs.pop(i)
-                for i in range(len(self.senders.args))
-                if i in inputs
+                for i in sorted(i for i in self.senders.parent_keys
+                                if isinstance(i, int) and i in inputs)
             ]
+            # kwargs are the values with string keys in inputs
             kwargs = {
                 k: inputs.pop(k)
-                for k in self.senders.kwargs.keys()
-                if k in inputs
+                for k in (k for k in self.senders.parent_keys
+                          if isinstance(k, str) and k in inputs)
             }
+            warn_left_keys(inputs)
+
             workers.append(worker_builder.build(*args, **kwargs))
             workers[-1].start()
 
@@ -401,9 +410,9 @@ class Node(BaseNode):
             if k == "PROCESS":
                 tasks = NodeTask.parse(v)
             elif k == "TRIGGERS":
-                callers = Triggers.parse(v)
+                callers = Callers.parse(v)
             elif k == "PARENTS":
-                senders = Parents.parse(v)
+                senders = Senders.parse(v)
             elif k == "END":
                 end = bool(v)
             elif k == "EXPORT":
