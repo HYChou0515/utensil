@@ -309,6 +309,8 @@ class Node(BaseNode):
                     break  # only need to put one
 
     def triggered_by(self, param, caller_name):
+        # param is used for checking condition
+
         # triggered by unexpected caller is
         # currently considered fine, e.g. SWITCHON
         if caller_name not in self.callers.node_map:
