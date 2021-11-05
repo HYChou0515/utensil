@@ -123,7 +123,7 @@ class NodeWorker(BaseNodeWorker):
 
 class _Operator(str, Enum):
     OR = "|"
-    FLOW = "/"
+    FLOW_IF = "/"
     FLOW_OR = ","
     SUB = "."
     FLOW_USE = "="
@@ -132,34 +132,40 @@ class _Operator(str, Enum):
 @dataclass(frozen=True)
 class ParentSpecifierToken:
     node_name: str
-    flow_condition: Tuple[str]
-    flows: Tuple[Any]
+    node_property: Tuple[str]
+    flow_if: Tuple[Any]
     flow_use: Tuple[str]
 
     @classmethod
     def parse_one(cls, s):
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
+        # means:
+        # Under A1, if BC.DEF_123 is ABC or DEFG then use BCD.EDFG
         if not re.fullmatch(
                 rf"\w+"  # node_name
                 rf"({_Operator.SUB}\w+)*"  # flow condition
-                rf"({_Operator.FLOW}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
+                rf"({_Operator.FLOW_IF}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
                 rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?",  # flow use
                 s,
         ):
             raise RuntimeError("E18")
         s, _, flow_use = s.partition(_Operator.FLOW_USE)
         flow_use = flow_use.split(_Operator.SUB) if flow_use else []
-        s, _, flows = s.partition(_Operator.FLOW)
-        flows = flows.split(_Operator.FLOW_OR) if flows else []
-        node_name, *flow_condition = s.split(_Operator.SUB)
+        s, _, flow_if = s.partition(_Operator.FLOW_IF)
+        flow_if = flow_if.split(_Operator.FLOW_OR) if flow_if else []
+        node_name, *node_property = s.split(_Operator.SUB)
 
-        # A.B.C is alias to A.B.C=B.C
-        # A.B.C/True is not
-        # A.B.C=D is not
-        if len(flow_use) == 0 and len(flows) == 0:
-            flow_use = flow_condition
+        # Originally, A.B.C is not using anything.
+        # For convenience, we make
+        # A.B.C alias to A.B.C=B.C
+        # But for the followings, we let them be as they are.
+        # So,
+        # A.B.C/True is not alias to that
+        # and A.B.C=D is not, either
+        if len(flow_use) == 0 and len(flow_if) == 0:
+            flow_use = node_property
 
-        return cls(node_name, tuple(flow_condition), tuple(flows),
+        return cls(node_name, tuple(node_property), tuple(flow_if),
                    tuple(flow_use))
 
     @classmethod
@@ -289,15 +295,15 @@ class Node(BaseNode):
     def receive(self, param, sender_name):
         for parent_key, parent_spec in self.senders.node_map[sender_name]:
             c = param
-            for attr in parent_spec.flow_condition:
+            for attr in parent_spec.node_property:
                 c = self._getitem(c, attr)
             v = param
             for attr in parent_spec.flow_use:
                 v = self._getitem(v, attr)
 
-            if len(parent_spec.flows) == 0:
+            if len(parent_spec.flow_if) == 0:
                 self._sender_qs[parent_key].put(v)
-            for flow in parent_spec.flows:
+            for flow in parent_spec.flow_if:
                 if str(c) == flow:
                     self._sender_qs[parent_key].put(v)
                     break  # only need to put one
@@ -309,11 +315,11 @@ class Node(BaseNode):
             return
         for parent_key, parent_spec in self.callers.node_map[caller_name]:
             c = param
-            for attr in parent_spec.flow_condition:
+            for attr in parent_spec.node_property:
                 c = self._getitem(c, attr)
-            if len(parent_spec.flows) == 0:
+            if len(parent_spec.flow_if) == 0:
                 self._caller_qs[parent_key].put(TriggerToken())
-            for flow in parent_spec.flows:
+            for flow in parent_spec.flow_if:
                 if str(c) == flow:
                     self._caller_qs[parent_key].put(TriggerToken())
                     break  # only need to put one
