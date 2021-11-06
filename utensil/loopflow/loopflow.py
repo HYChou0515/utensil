@@ -22,6 +22,27 @@ if platform == "darwin":
     set_start_method("fork")
 
 
+class _SyntaxToken(str, Enum):
+    # Flow tokens
+    FLOW = "FLOW"
+    # Node tokens
+    SENDERS = "PARENTS"
+    CALLERS = "TRIGGERS"
+    TASK = "PROCESS"
+    EXPORT = "EXPORT"
+    END = "END"
+    # Special tokens
+    SWITCHON = "SWITCHON"
+
+
+_S = _SyntaxToken
+
+
+class _ExportOperator(str, Enum):
+    PRINT = "PRINT"
+    RETURN = "RETURN"
+
+
 class BaseNode(Process):
     """A base class for Node"""
 
@@ -111,9 +132,9 @@ class NodeWorker(BaseNodeWorker):
             ret = self.meta.tasks[0](*self.args, **self.kwargs)
             for task in self.meta.tasks[1:]:
                 ret = task(ret)
-            if "PRINT" in self.meta.export:
+            if _ExportOperator.PRINT in self.meta.export:
                 print(f"{self.meta.node_name}: {ret}")
-            if "RETURN" in self.meta.export:
+            if _ExportOperator.RETURN in self.meta.export:
                 self.meta.result_q.put((self.meta.node_name, ret))
             for callee in self.meta.callees:
                 callee.triggered_by(ret, self.meta.node_name)
@@ -252,9 +273,6 @@ class Callers(Parents):
             f"Callers support parsed by only str and list, got '{o}'")
 
 
-SWITCHON = "SWITCHON"
-
-
 class TriggerToken:
     pass
 
@@ -282,8 +300,7 @@ class Node(BaseNode):
         self.callees = []
         self.end_q = end_q
         self.result_q = result_q
-        if export is None:
-            self.export = tuple()
+        self.export = tuple() if export is None else export
 
         self._caller_qs: Dict[str, Queue] = {
             k: Queue() for k in self.callers.parent_keys
@@ -414,7 +431,7 @@ class Node(BaseNode):
 
     @classmethod
     def parse(cls, name, o, end_q: SimpleQueue, result_q: SimpleQueue):
-        if name == SWITCHON:
+        if name == _S.SWITCHON:
             raise SyntaxError(
                 "SWITCHON is a reserved name, got a Node using it as its name")
         if not isinstance(o, dict):
@@ -425,15 +442,15 @@ class Node(BaseNode):
         senders = None
         export = None
         for k, v in o.items():
-            if k == "PROCESS":
+            if k == _S.TASK:
                 tasks = NodeTask.parse(v)
-            elif k == "TRIGGERS":
+            elif k == _S.CALLERS:
                 callers = Callers.parse(v)
-            elif k == "PARENTS":
+            elif k == _S.SENDERS:
                 senders = Senders.parse(v)
-            elif k == "END":
+            elif k == _S.END:
                 end = bool(v)
-            elif k == "EXPORT":
+            elif k == _S.EXPORT:
                 if isinstance(v, str):
                     export = (v,)
                 elif isinstance(v, list):
@@ -468,7 +485,7 @@ class Flow:
 
         for node in nodes:
             for name in node.callers.node_map.keys():
-                if name == SWITCHON:
+                if name == _S.SWITCHON:
                     continue
                 self.nodes[name].callees.append(node)
             for name in node.senders.node_map.keys():
@@ -490,14 +507,14 @@ class Flow:
         with open_utf8(flow_path, "r") as f:
             main_dscp = yaml.safe_load(f)
 
-        return cls.parse(main_dscp["FLOW"])
+        return cls.parse(main_dscp[_S.FLOW])
 
     def start(self):
         for node in self.nodes.values():
             self.processes.append(node)
             node.start()
         for node in self.nodes.values():
-            node.triggered_by(TriggerToken(), SWITCHON)
+            node.triggered_by(TriggerToken(), _S.SWITCHON)
         for proc in self.processes:
             proc.join()
         results = []
