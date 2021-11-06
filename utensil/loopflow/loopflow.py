@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import itertools as it
 import re
 import time
@@ -51,7 +52,7 @@ class BaseNodeWorker(Process):
     """A base class for NodeWorker"""
 
 
-class NodeTask:
+class NodeTask(abc.ABC):
 
     @classmethod
     def parse(cls, o) -> List[NodeTask]:
@@ -72,10 +73,9 @@ class NodeTask:
                 if isinstance(params, dict):
                     params = {k.lower(): v for k, v in params.items()}
                     return task_map[name](**params)  # noqa
-                print(task_map[name])
                 return task_map[name](params)  # noqa
             raise SyntaxError(
-                f"Task item support parsed by only str and dict, got {o}")
+                f"Task item support parsed by only str and dict, got {_o}")
 
         if not isinstance(o, list):
             o = [o]
@@ -151,6 +151,7 @@ class _Operator(str, Enum):
     FLOW_IF = "/"
     FLOW_OR = ","
     SUB = "."
+    REGEX_SUB = r"\."
     FLOW_USE = "="
 
 
@@ -167,11 +168,14 @@ class ParentSpecifierToken:
         # means:
         # Under A1, if BC.DEF_123 is ABC or DEFG then use BCD.EDFG
         regex = (
-            rf"\w+"  # node_name
-            rf"({_Operator.SUB}\w+)*"  # flow condition
-            rf"({_Operator.FLOW_IF}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
-            rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?"  # flow use
-        )
+            # node_name
+            rf"\w+"
+            # flow condition
+            rf"({_Operator.REGEX_SUB}\w+)*"
+            # flows
+            rf"({_Operator.FLOW_IF}\w+({_Operator.FLOW_OR}\w+)*)?"
+            # flow use
+            rf"({_Operator.FLOW_USE}\w+({_Operator.REGEX_SUB}\w+)*)?")
         if not re.fullmatch(regex, s):
             raise SyntaxError(
                 f"Each ParentSpecifierToken should match regex={regex}, got {s}"
