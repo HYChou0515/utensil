@@ -26,9 +26,9 @@ class _SyntaxToken(str, Enum):
     # Flow tokens
     FLOW = "FLOW"
     # Node tokens
-    SENDERS = "PARENTS"
-    CALLERS = "TRIGGERS"
-    TASK = "PROCESS"
+    SENDERS = "SENDERS"
+    CALLERS = "CALLERS"
+    TASK = "TASK"
     EXPORT = "EXPORT"
     END = "END"
     # Special tokens

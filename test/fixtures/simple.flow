@@ -1,57 +1,57 @@
 FLOW:
   CONSTANT_1:
-    PROCESS:
+    TASK:
       CONSTANT:
         VALUE: 3
-    TRIGGERS: SWITCHON | IF_1.C/False=V
+    CALLERS: SWITCHON | IF_1.C/False=V
   CONSTANT_2:
-    PROCESS:
+    TASK:
       CONSTANT:
         VALUE: 2
-    TRIGGERS: SWITCHON | IF_1.C/False=V
+    CALLERS: SWITCHON | IF_1.C/False=V
   ADD_1:
-    PROCESS:
+    TASK:
       ADD_VALUE:
         VALUE: 5
-    PARENTS:
+    SENDERS:
       A: CONSTANT_1
   ADD:
-    PROCESS:
+    TASK:
       ADD
-    PARENTS:
+    SENDERS:
       A: ADD_1
       B: CONSTANT_2 | IF_1.C/False=V
   TIMES_1:
-    PROCESS:
+    TASK:
       TIME_VALUE:
         VALUE: 3
-    PARENTS:
+    SENDERS:
       A: CONSTANT_1
   SUM:
-    PROCESS:
+    TASK:
       LIST_ADD_SUM
-    PARENTS:
+    SENDERS:
       - CONSTANT_1
       - CONSTANT_2
       - ADD_1
       - ADD
       - ADD: TIMES_1
   IF_1:
-    PROCESS:
+    TASK:
       GREATER_THAN: 200
-    PARENTS: SUM
+    SENDERS: SUM
 
   DIVIDE:
-    PROCESS:
+    TASK:
       DIVIDE
-    PARENTS:
+    SENDERS:
       A: IF_1.C/True=V
       B: CONSTANT_2
 
   OUTPUT:
-    PROCESS:
+    TASK:
       PICKLE:
         PATH: ./simple.output
-    PARENTS:
+    SENDERS:
       OBJ: DIVIDE
     END: true
