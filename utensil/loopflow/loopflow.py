@@ -351,6 +351,14 @@ class Node(BaseNode):
                     break  # only need to put one
 
     def run(self) -> None:
+        try:
+            self.main()
+        except Exception as err:
+            logger.exception(err)
+            self.end_q.put(object())
+            raise err
+
+    def main(self) -> None:
         meta = NodeMeta(
             self.name,
             self.callees,
@@ -474,9 +482,11 @@ class Node(BaseNode):
 
 class Flow:
 
-    def __init__(self, nodes: List[Node], result_q: SimpleQueue):
+    def __init__(self, nodes: List[Node], result_q: SimpleQueue,
+                 end_q: SimpleQueue):
         self.nodes = {}
         self.result_q = result_q
+        self.end_q = end_q
         self.processes: List[Node] = []
         for node in nodes:
             if node.name in self.nodes:
@@ -498,7 +508,7 @@ class Flow:
         end_q = SimpleQueue()
         result_q = SimpleQueue()
         nodes = [Node.parse(k, v, end_q, result_q) for k, v in o.items()]
-        return cls(nodes, result_q)
+        return cls(nodes, result_q, end_q)
 
     @classmethod
     def parse_yaml(cls, flow_path):
@@ -510,11 +520,17 @@ class Flow:
         return cls.parse(main_dscp[_S.FLOW])
 
     def start(self):
-        for node in self.nodes.values():
-            self.processes.append(node)
-            node.start()
-        for node in self.nodes.values():
-            node.triggered_by(TriggerToken(), _S.SWITCHON)
+        try:
+            for node in self.nodes.values():
+                self.processes.append(node)
+                node.start()
+            for node in self.nodes.values():
+                node.triggered_by(TriggerToken(), _S.SWITCHON)
+        except Exception as err:
+            logger.exception(err)
+            self.end_q.put(object())
+            raise err
+
         for proc in self.processes:
             proc.join()
         results = []
