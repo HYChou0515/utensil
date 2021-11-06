@@ -41,7 +41,9 @@ class NodeTask:
                 return task_map[_o]()
             if isinstance(_o, dict):
                 if len(_o) != 1:
-                    raise RuntimeError("E3")
+                    raise SyntaxError(
+                        "Task specified by a dict should have exactly"
+                        f" a pair of key and value, got {_o}")
                 name, params = _o.popitem()
                 logger.debug(name, params)
                 if isinstance(params, list):
@@ -51,7 +53,8 @@ class NodeTask:
                     return task_map[name](**params)  # noqa
                 print(task_map[name])
                 return task_map[name](params)  # noqa
-            raise RuntimeError("E4")
+            raise SyntaxError(
+                f"Task item support parsed by only str and dict, got {o}")
 
         if not isinstance(o, list):
             o = [o]
@@ -87,7 +90,8 @@ class NodeWorkerBuilder:
 
     def build(self, *args, **kwargs):
         if self.meta is None:
-            raise RuntimeError("E12")
+            raise RuntimeError(
+                "meta should be defined before build a node worker")
         kwargs = {k.lower(): v for k, v in kwargs.items()}
         worker = NodeWorker(self.meta, *args, **kwargs)
         return worker
@@ -141,14 +145,16 @@ class ParentSpecifierToken:
         # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
         # means:
         # Under A1, if BC.DEF_123 is ABC or DEFG then use BCD.EDFG
-        if not re.fullmatch(
-                rf"\w+"  # node_name
-                rf"({_Operator.SUB}\w+)*"  # flow condition
-                rf"({_Operator.FLOW_IF}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
-                rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?",  # flow use
-                s,
-        ):
-            raise RuntimeError("E18")
+        regex = (
+            rf"\w+"  # node_name
+            rf"({_Operator.SUB}\w+)*"  # flow condition
+            rf"({_Operator.FLOW_IF}\w+({_Operator.FLOW_OR}\w+)*)?"  # flows
+            rf"({_Operator.FLOW_USE}\w+({_Operator.SUB}\w+)*)?"  # flow use
+        )
+        if not re.fullmatch(regex, s):
+            raise SyntaxError(
+                f"Each ParentSpecifierToken should match regex={regex}, got {s}"
+            )
         s, _, flow_use = s.partition(_Operator.FLOW_USE)
         flow_use = flow_use.split(_Operator.SUB) if flow_use else []
         s, _, flow_if = s.partition(_Operator.FLOW_IF)
@@ -200,7 +206,10 @@ class Parents:
         self.parent_keys = set()
         for k, parent_specs in it.chain(enumerate(args), kwargs.items()):
             if k in self.parent_keys:
-                raise RuntimeError("E19")
+                raise SyntaxError(
+                    "Parent key represents where the param passed from a"
+                    " parent goes to, so it must be unique. Got multiple"
+                    f" '{k}'")
             self.parent_keys.add(k)
             for spec_token in parent_specs:
                 self.node_map[spec_token.node_name].append((k, spec_token))
@@ -221,11 +230,14 @@ class Senders(Parents):
                 elif isinstance(item, dict):
                     kwargs = {**item, **kwargs}
                 else:
-                    raise RuntimeError("E1")
+                    raise SyntaxError(
+                        "Senders do not support parsed by list of list, got"
+                        f" '{item}' in a list")
             return cls(args, kwargs)
         if isinstance(o, str):
             return cls([o], {})
-        raise RuntimeError("E2")
+        raise SyntaxError(
+            f"Senders support parsed by only dict, list and str, got '{o}'")
 
 
 class Callers(Parents):
@@ -236,7 +248,8 @@ class Callers(Parents):
             return cls([o], {})
         if isinstance(o, list):
             return cls(o, {})
-        raise RuntimeError("E20")
+        raise SyntaxError(
+            f"Callers support parsed by only str and list, got '{o}'")
 
 
 SWITCHON = "SWITCHON"
@@ -271,12 +284,6 @@ class Node(BaseNode):
         self.result_q = result_q
         if export is None:
             self.export = tuple()
-        elif isinstance(export, str):
-            self.export = (export,)
-        elif isinstance(export, list):
-            self.export = tuple(export)
-        else:
-            raise RuntimeError("E24")
 
         self._caller_qs: Dict[str, Queue] = {
             k: Queue() for k in self.callers.parent_keys
@@ -408,9 +415,10 @@ class Node(BaseNode):
     @classmethod
     def parse(cls, name, o, end_q: SimpleQueue, result_q: SimpleQueue):
         if name == SWITCHON:
-            raise RuntimeError("E21")
+            raise SyntaxError(
+                "SWITCHON is a reserved name, got a Node using it as its name")
         if not isinstance(o, dict):
-            raise RuntimeError("E5")
+            raise SyntaxError(f"Node support parsed by dict only, got {o}")
         tasks = None
         callers = None
         end = False
@@ -426,9 +434,15 @@ class Node(BaseNode):
             elif k == "END":
                 end = bool(v)
             elif k == "EXPORT":
-                export = v
+                if isinstance(v, str):
+                    export = (v,)
+                elif isinstance(v, list):
+                    export = tuple(v)
+                else:
+                    raise SyntaxError(
+                        f"export support parsed by only str and list, got {v}")
             else:
-                raise RuntimeError(f"E13: {k}")
+                raise SyntaxError(f"Unexpected Node member {k}")
         return cls(
             name=name,
             callers=callers,
@@ -449,7 +463,7 @@ class Flow:
         self.processes: List[Node] = []
         for node in nodes:
             if node.name in self.nodes:
-                raise RuntimeError("E6")
+                raise SyntaxError(f"Duplicated node name defined: {node.name}")
             self.nodes[node.name] = node
 
         for node in nodes:
@@ -463,7 +477,7 @@ class Flow:
     @classmethod
     def parse(cls, o):
         if not isinstance(o, dict):
-            raise RuntimeError("E7")
+            raise SyntaxError(f"Flow only support parsed by dict, got {o}")
         end_q = SimpleQueue()
         result_q = SimpleQueue()
         nodes = [Node.parse(k, v, end_q, result_q) for k, v in o.items()]
@@ -519,7 +533,7 @@ def register_node_tasks(
 
     def _check_before_update(_name, _task):
         if _name in _NODE_TASK_MAPPING and raise_on_exist:
-            raise RuntimeError(f"E25 {_name}")
+            raise ValueError(f"task name '{_name}' has already been registered")
         _NODE_TASK_MAPPING[_name] = _task
 
     for task in tasks:
