@@ -23,7 +23,7 @@ import urllib3
 from utensil import get_logger, param_search
 from utensil.general import warn_left_keys
 from utensil.loopflow.functions.basic import MISSING
-from utensil.loopflow.loopflow import NodeProcessFunction
+from utensil.loopflow.loopflow import NodeTask
 
 try:
     import numpy as np
@@ -216,7 +216,7 @@ class SklearnModel(Model):
         return Target(self._model.predict(features))
 
 
-class LoadData(NodeProcessFunction):
+class LoadData(NodeTask):
     """Load a dataset from an URL.
 
     URL can be a path. Data format can be ``SVMLIGHT``.
@@ -283,7 +283,7 @@ class LoadData(NodeProcessFunction):
         return Dataset(Target(target), Features(features))
 
 
-class FilterRows(NodeProcessFunction):
+class FilterRows(NodeTask):
     """Filter rows of :class:`.Dataset`.
 
     Filter rows of dataset by the value of its :class:`.Target`.
@@ -321,7 +321,7 @@ class FilterRows(NodeProcessFunction):
         return dataset
 
 
-class SamplingRows(NodeProcessFunction):
+class SamplingRows(NodeTask):
     """Sampling rows of a dataset.
 
     This method samples a dataset to a specific number of rows or to a ratio.
@@ -466,7 +466,7 @@ class SamplingRows(NodeProcessFunction):
         return Dataset(Target(new_target), Features(new_features))
 
 
-class MakeDataset(NodeProcessFunction):
+class MakeDataset(NodeTask):
     """Make a dataset using `target` and `features`."""
 
     def main(self, target: Target, features: Features) -> Dataset:
@@ -482,7 +482,7 @@ class MakeDataset(NodeProcessFunction):
         return Dataset(target, features)
 
 
-class GetTarget(NodeProcessFunction):
+class GetTarget(NodeTask):
     """Get `target` from a `dataset`."""
 
     def main(self, dataset: Dataset) -> Target:
@@ -497,7 +497,7 @@ class GetTarget(NodeProcessFunction):
         return dataset.target
 
 
-class GetFeature(NodeProcessFunction):
+class GetFeature(NodeTask):
     """Get `feature` from a `dataset` with a given name.
 
     Attributes:
@@ -521,7 +521,7 @@ class GetFeature(NodeProcessFunction):
         return Feature(dataset.features.loc[:, self.feature])
 
 
-class MergeFeatures(NodeProcessFunction):
+class MergeFeatures(NodeTask):
     """Merge a list of `feature` to `features`."""
 
     def main(self, *features: Feature) -> Features:
@@ -556,7 +556,7 @@ def _get_min(arr):
     return np.min(arr)
 
 
-class LinearNormalize(NodeProcessFunction):
+class LinearNormalize(NodeTask):
     """Perform linear normalization of a 1d array.
 
     Linearly maps the given array from range ``(u1, l1)`` to ``(u2, l2)``.
@@ -610,7 +610,7 @@ class LinearNormalize(NodeProcessFunction):
         return arr1d * (hito - loto) / (hifrom - lofrom) + loto
 
 
-class MakeModel(NodeProcessFunction):
+class MakeModel(NodeTask):
     """Make an untrained model.
 
     Attributes:
@@ -700,7 +700,7 @@ class MakeModel(NodeProcessFunction):
         raise ValueError(f'method "{self.method}" cannot be recognized')
 
 
-class Train(NodeProcessFunction):
+class Train(NodeTask):
     """Train a model."""
 
     def main(self, model: Model, dataset: Dataset) -> Model:
@@ -718,7 +718,7 @@ class Train(NodeProcessFunction):
         return model
 
 
-class Predict(NodeProcessFunction):
+class Predict(NodeTask):
     """Predict a target."""
 
     def main(self, model: Model, features: Features) -> Target:
@@ -737,7 +737,7 @@ class Predict(NodeProcessFunction):
         return model.predict(features)
 
 
-class RandomParameterSearch(NodeProcessFunction):
+class RandomParameterSearch(NodeTask):
     """Random search the model parameters.
 
     See more in :class:`utensil.param_search`.
@@ -788,7 +788,7 @@ class RandomParameterSearch(NodeProcessFunction):
         return params
 
 
-class Score(NodeProcessFunction):
+class Score(NodeTask):
     """Calculate scores of a model, based on its prediction and a ground truth.
 
     Attributes:
@@ -900,7 +900,7 @@ class Score(NodeProcessFunction):
         return ret
 
 
-class ChangeTypeTo(NodeProcessFunction):
+class ChangeTypeTo(NodeTask):
     """Change the type of a given `arr`.
 
     Attributes:
