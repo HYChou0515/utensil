@@ -12,36 +12,92 @@ from multiprocessing import Process, Queue, SimpleQueue, set_start_method
 from queue import Empty
 from sys import platform
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, TextIO, Tuple, Type, Union
 
 from utensil import get_logger
 from utensil.general import open_utf8, warn_left_keys
 
 logger = get_logger(__name__)
 
+# In macOS, we use fork to start a new process,
+# instead of the default "spawn".
+# This is an issue as spawn is more efficient.
+# However, I don't know how to make it work.
+# Please refer to https://github.com/HYChou0515/utensil/issues/22
 if platform == "darwin":
     set_start_method("fork")
 
 
 class _SyntaxToken(str, Enum):
+    """Syntax token used in flow definition."""
+
     # Flow tokens
     FLOW = "FLOW"
+    """
+    Used to define a flow object.
+    """
     # Node tokens
     SENDERS = "SENDERS"
+    """
+    Used to define a senders object.
+    """
     CALLERS = "CALLERS"
+    """
+    Used to define a callers object.
+    """
     TASK = "TASK"
+    """
+    Used to define a task object.
+    """
     EXPORT = "EXPORT"
+    """
+    Used to define how to export.
+    """
     END = "END"
+    """
+    Used to define whether a node is an end of flow.
+    """
     # Special tokens
     SWITCHON = "SWITCHON"
+    """
+    A special token to indicate a starting point.
+    """
 
 
 _S = _SyntaxToken
+"""Just an abbreviation for local usage."""
 
 
 class _ExportOperator(str, Enum):
+    """Identifier for export operator.
+
+    PRINT: print out node status after finishing tasks
+
+    RETURN: put return value from tasks as a flow return value
+
+    """
+
     PRINT = "PRINT"
     RETURN = "RETURN"
+
+
+class TriggerToken:
+    """A token for a Caller to trigger its Callee.
+
+    Because the return value of a Caller is only used for checking
+    the constraints, we don't need to pass it to its Callee.
+    Instead, `TriggerToken` is passed.
+    """
+
+
+class EndOfFlowToken:
+    """A token for to broadcast the end of flow.
+
+    It is put into the end queue to notify all nodes to stop their
+    workers and themselves.
+    Most of the cases, EndOfFlowToken is put by a Node labeled end-of-flow
+    or a NodeWorker occurs unexpected exception.
+    """
 
 
 class BaseNode(Process):
@@ -53,6 +109,92 @@ class BaseNodeWorker(Process):
 
 
 class NodeTask(abc.ABC):
+    """Task for a node to execute.
+
+    Essentially, it is a configurable function.
+    `__init__` is used for configuration, and a node is executing
+    the `__call__`.
+
+    A derived class should at least implement the `main` and a node is using
+    `__call__`, a wrapper of `main`.
+
+    Parameters passed from the node's parents are passed to `main` of the
+    first task of the node. The second task's `main` is taking the first one's
+    result, and so on.
+
+    A derived class can override the `__init__` to define how this task
+    can be configured.
+
+    Parsing
+    =======
+    To parse an object to a executable `NodeTask`,
+    we must define an derived class and register it in the global task map.
+
+    As a subclass of `NodeTask`, we define `MyTask` as
+
+    >>> class MyTask(NodeTask):
+    ...     def __init__(self, a=3, b=5, c=10):
+    ...         self.a = a
+    ...         self.b = b
+    ...         self.c = c
+    ...     def main(self):
+    ...         return self.a, self.b, self.c
+
+    and have it registered.
+
+    >>> reset_node_tasks()
+    >>> register_node_tasks(tasks=[MyTask])
+
+    To parse an object to a `NodeTask`, the object must be
+    one of the following types:
+
+    1. `str`
+
+    >>> obj = 'MY_TASK'
+    >>> tasks = NodeTask.parse(obj)
+    >>> tasks[0]()
+    (3, 5, 10)
+
+    2. `dict` with exactly one item, where the item is of type
+
+        1. `list`
+
+        >>> obj = {'MY_TASK': ['FOO', 'BAR']}
+        >>> tasks = NodeTask.parse(obj)
+        >>> tasks[0]()
+        ('FOO', 'BAR', 10)
+
+        2. `dict`
+
+        >>> obj = {'MY_TASK': {'a': 'FOO', 'c': 'BAR'}}
+        >>> tasks = NodeTask.parse(obj)
+        >>> tasks[0]()
+        ('FOO', 5, 'BAR')
+
+        3. `str`
+
+        >>> obj = {'MY_TASK': 'FOO'}
+        >>> tasks = NodeTask.parse(obj)
+        >>> tasks[0]()
+        ('FOO', 5, 10)
+
+    `NodeTask.parse` is trying to parse a list of `NodeTask`,
+    so it also accepts a list of valid object described above,
+    and returns a list of `NodeTask`.
+    This list of objects can specify different `NodeTask`.
+
+    >>> class SimpleTask(NodeTask):
+    ...     def main(self):
+    ...         return 'faz'
+    >>> register_node_tasks(tasks=[SimpleTask])
+    >>> obj = [{'MY_TASK': {'b': 'foo'}}, 'SIMPLE_TASK']
+    >>> tasks = NodeTask.parse(obj)
+    >>> tasks[0]()
+    (3, 'foo', 10)
+    >>> tasks[1]()
+    'faz'
+
+    """
 
     @classmethod
     def parse(cls, o) -> List[NodeTask]:
@@ -84,9 +226,13 @@ class NodeTask(abc.ABC):
 
     @abstractmethod
     def main(self, *args, **kwargs):
+        """This method should be overridden by its derived class."""
         raise NotImplementedError
 
     def __call__(self, *args, **kwargs):
+        """A wrapper of `main` to be called by a node worker."""
+
+        # use the required parameters only.
         params = [
             kwargs.pop(k) for k in self.main.__code__.co_varnames if k in kwargs
         ]
@@ -95,6 +241,8 @@ class NodeTask(abc.ABC):
 
 @dataclass
 class NodeMeta:
+    """Shared information between a `Node` and a `NodeWorker`."""
+
     node_name: str
     callees: List[Node]
     receivers: List[Node]
@@ -105,6 +253,16 @@ class NodeMeta:
 
 
 class NodeWorkerBuilder:
+    """For a `Node` to build up a `NodeWorker`.
+
+    A `NodeMeta` should be defined before building a worker.
+
+    >>> NodeWorkerBuilder().build()
+    Traceback (most recent call last):
+    ...
+    RuntimeError: meta should be defined before build a node worker
+
+    """
 
     def __init__(self):
         self.meta: Optional[NodeMeta] = None
@@ -119,6 +277,45 @@ class NodeWorkerBuilder:
 
 
 class NodeWorker(BaseNodeWorker):
+    """A worker started by a node for executing some specific tasks.
+
+    When a node is ready (either its senders or callers are ready),
+    it starts a worker, with parameters from its senders, to execute
+    some specific tasks. The worker has a shorter life time than a `Node`,
+    meaning it is terminated after finished the tasks.
+
+    The parameters from its senders will be passed to the first task.
+    The output of the first task is passed to the second task, and so on.
+
+    If a node is marked with export PRINT, the node's name and its final
+    return value (the output of the last task) is printed.
+    If a node is marked with export RETURN, the final return value is
+    put into the result queue, as the final result of the flow.
+
+    A worker is also responsible for calling the node's callees and
+    send its final return value to the node's receivers.
+
+    >>> import multiprocessing
+    >>> class MyTask(NodeTask):
+    ...     def __init__(self, a=3, b=5, c=10):
+    ...         self.a = a
+    ...         self.b = b
+    ...         self.c = c
+    ...     def main(self, m, n=1):
+    ...         return m*self.a + n*self.b + self.c
+    >>> end_q = multiprocessing.SimpleQueue()
+    >>> result_q = multiprocessing.SimpleQueue()
+    >>> meta = NodeMeta("foo", [], [],
+    ...                 [MyTask(5), MyTask(), MyTask(10, 20, 30)],
+    ...                 ("PRINT", "RETURN"), result_q, end_q)
+    >>> worker = NodeWorker(meta, 7, 13)
+    >>> worker.run()  # use worker.start() to start a new process in real case
+    foo: 3500
+    >>> result_q.get()
+    ('foo', 3500)
+    >>> end_q.empty()
+    True
+    """
 
     def __init__(self, meta: NodeMeta, *args, **kwargs):
         super().__init__()
@@ -142,11 +339,13 @@ class NodeWorker(BaseNodeWorker):
                 receiver.receive(ret, self.meta.node_name)
         except Exception as err:
             logger.exception(err)
-            self.meta.end_q.put(object())
+            self.meta.end_q.put(EndOfFlowToken())
             raise err
 
 
 class _Operator(str, Enum):
+    """Operators for `ParentSpecifierToken`."""
+
     OR = "|"
     FLOW_IF = "/"
     FLOW_OR = ","
@@ -157,16 +356,161 @@ class _Operator(str, Enum):
 
 @dataclass(frozen=True)
 class ParentSpecifierToken:
+    r"""An atomic element to specify how and when a parent should be used.
+
+    The `how` means which attribute of the parent node is passed to its child.
+    The `when` means under what condition the parent node is passing its
+    output to its child.
+    The `atomic` means it is the minimal building block for a full
+    specification defined a node's several parents should be used.
+
+    Note that to make a valid ParentSpecifierToken to work on attributes,
+    the attributes should only be lower cases.
+
+    In the following example, 'MY_TASK.BAR' can be retreived,
+    'MY_TASK.BAZ' cannot.
+
+    .. highlight:: python
+    .. code-block:: python
+
+        class Foo:
+            def __init__(self):
+                self.bar = 3  # do this
+                self.Baz = 5  # don't do this
+
+        class MyTask(NodeTask):
+            def main(self):
+                return Foo()
+
+    A token accpets the following regular expression.
+
+    >>> print(r'\w+(\.\w+)*(/\w+(,\w+)*)?(=\w+(\.\w+)*)?')
+    \w+(\.\w+)*(/\w+(,\w+)*)?(=\w+(\.\w+)*)?
+
+    A simplest token looks like
+
+    >>> s = 'FOO'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.node_name
+    'FOO'
+
+    Retrieving a specific attribute from the ouptut of a node
+
+    >>> s = 'FOO.BAR'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.attrs_to_return
+    ('BAR',)
+
+    Flow to its child only if satisfying a specific condition.
+    E.g., only if the output of FOO equals to BAZ,
+    its child gets the output of FOO.
+
+    >>> s = 'FOO/BAZ'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.flow_constraints
+    ('BAZ',)
+
+    To use a specific attribute to check if it satisfies a
+    specific condition.
+    E.g., only if BAR in the output of FOO equals to BAZ,
+    its child gets the output of FOO.
+    Note that it is the whole output of FOO that passed to its child,
+    not BAR.
+
+    >>> s = 'FOO.BAR/BAZ'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.attrs_for_constraints
+    ('BAR',)
+    >>> token.flow_constraints
+    ('BAZ',)
+    >>> token.attrs_to_return  # the whole output is passed
+    ()
+
+    To pass a specific attributer if the output of a node satisfies
+    a condition.
+    E.g., only if the output of FOO equals to BAZ,
+    its child gets FOO.QUX
+
+    >>> s = 'FOO/BAZ=QUX'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.attrs_to_return
+    ('QUX',)
+
+    Combine the syntax above together, some simple but useful `if` logic
+    can be constructed.
+    The following example shows the output of `FRUIT`, or simply `FRUIT`,
+    is passing `FRUIT.GRAPE` to its child if `FRUIT.COLOR==purple`.
+
+    >>> s = 'FRUIT.COLOR/purple=GRAPE'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.node_name
+    'FRUIT'
+    >>> token.attrs_for_constraints
+    ('COLOR',)
+    >>> token.flow_constraints
+    ('purple',)
+    >>> token.attrs_to_return
+    ('GRAPE',)
+
+    To test if a attribute matches any of given constraints,
+    use `,` to join those constraints.
+    The following example shows the output of `FRUIT`, or simply `FRUIT`,
+    is passing `FRUIT.GRAPE` to its child
+    if `FRUIT.COLOR==purple` or `FRUIT.COLOR==green`.
+
+    >>> s = 'FRUIT.COLOR/purple,green=GRAPE'
+    >>> token = ParentSpecifierToken.parse_one(s)
+    >>> token.node_name
+    'FRUIT'
+    >>> token.attrs_for_constraints
+    ('COLOR',)
+    >>> token.flow_constraints
+    ('purple', 'green')
+    >>> token.attrs_to_return
+    ('GRAPE',)
+
+    To define a tuple of tokens, use "|" to join those tokens,
+    and parse it using `parse_many_tokens`.
+
+    >>> s = 'FOO.BAR/BAZ=QUX | FUX/BOO'
+    >>> tokens = ParentSpecifierToken.parse_many_tokens(s)
+    >>> tokens[0].node_name
+    'FOO'
+    >>> tokens[1].node_name
+    'FUX'
+
+    To pass in a list of strings with each string defines a tuple of tokens,
+    use `parse_list`.
+
+    >>> s_list = ['FOO/BAR | FUX', 'BAZ.QUX']
+    >>> tokens = ParentSpecifierToken.parse_list(s_list)
+    >>> [token.node_name for token in tokens]
+    ['FOO', 'FUX', 'BAZ']
+
+    .. todo::
+        Though currently a list of tokens is equivalent to
+        a string of tokens join by "|".
+        it has an oppurtunity to represent a logical-and,
+        rather than a logical-or, i.e., "|".
+        So that `['A|B', 'C', 'D|E|F']` represents
+        "(A or B) and C and (D or E or F)".
+    """
+
     node_name: str
-    node_property: Tuple[str]
-    flow_if: Tuple[Any]
-    flow_use: Tuple[str]
+    attrs_for_constraints: Tuple[str]
+    flow_constraints: Tuple[Any]
+    attrs_to_return: Tuple[str]
 
     @classmethod
     def parse_one(cls, s):
-        # s should be like A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
-        # means:
-        # Under A1, if BC.DEF_123 is ABC or DEFG then use BCD.EDFG
+        """Parse a string representing a single token.
+
+        E.g., A1.BC.DEF_123/ABC,DEFG=BCD.EDFG
+
+        means:
+
+            Under node A1, if BC.DEF_123 is ABC or DEFG then use BCD.EDFG
+        """
         regex = (
             # node_name
             rf"\w+"
@@ -180,11 +524,13 @@ class ParentSpecifierToken:
             raise SyntaxError(
                 f"Each ParentSpecifierToken should match regex={regex}, got {s}"
             )
-        s, _, flow_use = s.partition(_Operator.FLOW_USE)
-        flow_use = flow_use.split(_Operator.SUB) if flow_use else []
-        s, _, flow_if = s.partition(_Operator.FLOW_IF)
-        flow_if = flow_if.split(_Operator.FLOW_OR) if flow_if else []
-        node_name, *node_property = s.split(_Operator.SUB)
+        s, _, attrs_to_return = s.partition(_Operator.FLOW_USE)
+        attrs_to_return = (attrs_to_return.split(_Operator.SUB)
+                           if attrs_to_return else [])
+        s, _, flow_constraints = s.partition(_Operator.FLOW_IF)
+        flow_constraints = (flow_constraints.split(_Operator.FLOW_OR)
+                            if flow_constraints else [])
+        node_name, *attrs_for_constraints = s.split(_Operator.SUB)
 
         # Originally, A.B.C is not using anything.
         # For convenience, we make
@@ -193,37 +539,66 @@ class ParentSpecifierToken:
         # So,
         # A.B.C/True is not alias to that
         # and A.B.C=D is not, either
-        if len(flow_use) == 0 and len(flow_if) == 0:
-            flow_use = node_property
+        if len(attrs_to_return) == 0 and len(flow_constraints) == 0:
+            attrs_to_return = attrs_for_constraints
 
-        return cls(node_name, tuple(node_property), tuple(flow_if),
-                   tuple(flow_use))
+        return cls(
+            node_name,
+            tuple(attrs_for_constraints),
+            tuple(flow_constraints),
+            tuple(attrs_to_return),
+        )
 
     @classmethod
-    def parse_many_token(cls, tokens: str) -> Tuple[ParentSpecifierToken]:
+    def parse_many_tokens(cls, tokens: str) -> Tuple[ParentSpecifierToken]:
+        """Parse a string representing several tokens joined by "|".
+
+        E.g., A.B/123=C | D.E
+
+        means:
+
+            Under node A, if B==123 then use C or under node D, use E.
+        """
         tokens = tokens.split(_Operator.OR)
         return tuple(cls.parse_one(s.strip()) for s in tokens)
 
     @classmethod
-    def parse_many_list(
-            cls, lists: Union[str, List[str]]) -> Tuple[ParentSpecifierToken]:
+    def parse_list(cls, lists: Union[str,
+                                     List[str]]) -> Tuple[ParentSpecifierToken]:
+        """Parse a list of strings, each string representing several tokens.
+
+        E.g. ['A.B/123=C | D.E', 'F']
+
+        means:
+
+            Under node A, if B==123 then use C, under node D, use E or use F.
+        """
         if isinstance(lists, str):
             lists = [lists]
         return tuple(
-            it.chain.from_iterable(cls.parse_many_token(s) for s in lists))
+            it.chain.from_iterable(cls.parse_many_tokens(s) for s in lists))
 
 
 ParentSpecifier = Tuple[ParentSpecifierToken]
+"""Typehint for a tuple of ParentSpecifierToken"""
 
 
 class Parents:
+    """Defines which nodes are parents.
+
+    Also defines if it is to pass something to its child,
+    what is being passed, and its child is using it as what.
+
+    A conditional flow is also supported, by `ParentSpecifierToken`,
+    i.e., to flow to it child only if some constraints are satisfied.
+    """
 
     def __init__(self, args=None, kwargs=None):
         args: List[ParentSpecifier] = ([] if args is None else [
-            ParentSpecifierToken.parse_many_list(name) for name in args
+            ParentSpecifierToken.parse_list(name) for name in args
         ])
         kwargs: Dict[str, ParentSpecifier] = ({} if kwargs is None else {
-            k: ParentSpecifierToken.parse_many_list(name)
+            k: ParentSpecifierToken.parse_list(name)
             for k, name in kwargs.items()
         })
         self.node_map: Dict[str, List[Tuple[Union[
@@ -241,6 +616,52 @@ class Parents:
 
 
 class Senders(Parents):
+    """Parents that pass something to its child.
+
+    A general scheme is like:
+    Receiver.FOO = Senders.BAR if Senders.BAZ == QUX
+
+    The `Senders.BAR if Senders.BAZ == QUX` part is defined in
+    `ParentSpecifierToken` and the `Receiver.FOO` part can either be
+    defined positionally or by keyword.
+
+    Use a node's output as the first input
+
+    >>> s = 'FOO'
+    >>> Senders.parse(s).node_map['FOO']
+    [(0, ParentSpecifierToken(...))]
+
+    Define senders positionally.
+
+    >>> s = ['FOO', 'BAR']
+    >>> senders = Senders.parse(s)
+    >>> senders.node_map['FOO']
+    [(0, ParentSpecifierToken(...))]
+    >>> senders.node_map['BAR']
+    [(1, ParentSpecifierToken(...))]
+
+    Define senders by keywords.
+
+    >>> s = {'a': 'FOO', 'b': 'BAR'}
+    >>> senders = Senders.parse(s)
+    >>> senders.node_map['FOO']
+    [('a', ParentSpecifierToken(...))]
+    >>> senders.node_map['BAR']
+    [('b', ParentSpecifierToken(...))]
+
+    To mix positional and keywords, use a list contains a dict.
+
+    >>> s = ['FOO', 'BAR', {'a': 'BAZ', 'b': 'QUX'}]
+    >>> senders = Senders.parse(s)
+    >>> senders.node_map['FOO']
+    [(0, ParentSpecifierToken(...))]
+    >>> senders.node_map['BAR']
+    [(1, ParentSpecifierToken(...))]
+    >>> senders.node_map['BAZ']
+    [('a', ParentSpecifierToken(...))]
+    >>> senders.node_map['QUX']
+    [('b', ParentSpecifierToken(...))]
+    """
 
     @classmethod
     def parse(cls, o):
@@ -266,6 +687,20 @@ class Senders(Parents):
 
 
 class Callers(Parents):
+    """Parents that triggers its child to start.
+
+    A general scheme is like:
+
+        Callee.start() if Callers.FOO == BAR
+
+    THe `Callers.FOO == BAR` part is defined in
+    `ParentSpecifierToken` and the `Callee.start` part is
+    defined in Callee's tasks.
+
+    >>> s = 'FOO'
+    >>> Callers.parse(s).node_map['FOO']
+    [(0, ParentSpecifierToken(...))]
+    """
 
     @classmethod
     def parse(cls, o):
@@ -277,11 +712,86 @@ class Callers(Parents):
             f"Callers support parsed by only str and list, got '{o}'")
 
 
-class TriggerToken:
-    pass
-
-
 class Node(BaseNode):
+    """A node, with some tasks attached, of a directed, double-linked graph.
+
+    `tasks attached` means a node has some specific tasks to do.
+    `directed` means the relationship between two nodes is like
+    parent-and-child rather than friend-and-friend.
+    `double-linked` means the child can get to its parent, and the parent
+    can also get to its child.
+
+    A node is consistently listening to its parents and has a longer
+    life time than a `NodeWorker`. If its parents are ready,
+    the node will create a `NodeWorker` to run the attached list of `NodeTask`.
+
+    A parent and its child communicate through a multiprocessing Queue.
+    A node can receives some parameters from its parens, the senders.
+    A node can be triggered by its parents, the callers,
+    or as a starting point, for which the parent is defined as
+    a special token, SWITCHON.
+    The node will check whether the constraints are satisfied to decide
+    to be triggered or not.
+    If a node is triggered, it starts immediately without waiting for all of
+    its senders passing their parameters to it.
+
+    There are one or more tasks attached to a node, and the node is running
+    them sequentially. The first task takes the parameters passed from
+    the senders, and the second task takes the output of the first task,
+    and so on.
+
+    By the time that all tasks are done, the node sends the output of the
+    final task to its receivers and callees.
+
+    A node can be parsed using a node name, a valid structure held in a dict,
+    a result queue and an end queue.
+
+    >>> from multiprocessing import SimpleQueue
+    >>> class MyTask(NodeTask):
+    ...     def __init__(self, msg):
+    ...         self.msg = msg
+    ...     def main(self):
+    ...         return self.msg
+    >>> reset_node_tasks()
+    >>> register_node_tasks(tasks=[MyTask])
+    >>> end_q = SimpleQueue()
+    >>> result_q = SimpleQueue()
+    >>> simple_node = Node.parse(
+    ...     name='HELLO', end_q=end_q, result_q=result_q, o=
+    ...     {
+    ...         'CALLERS': 'SWITCHON',
+    ...         'TASK':
+    ...         {
+    ...             'MY_TASK': 'World'
+    ...         },
+    ...         'EXPORT': ['PRINT', 'RETURN'],
+    ...         'END': True,
+    ...     }
+    ... )
+    >>> simple_node.triggered_by(TriggerToken(), _S.SWITCHON)
+    >>> simple_node.run()
+    >>> # >>> HELLO: world
+    >>> result_q.get()
+    ('HELLO', 'World')
+
+    Attributes:
+        name: the name of a node.
+            It should be unique within a flow to be used as a identifier.
+        end: defines whether the node is the end point of the flow
+            If so, the node send a termination message to all the nodes
+            in the flow to stop the flow.
+        tasks: a list of `NodeTask` to be done.
+        end_q: a node-shared message queue to decide when to stop the flow.
+            The end point of the flow sends message to this queue to notifies
+            all nodes to stop.
+        result_q: a node-shared message queue for flow to gather the results.
+            If a node is defined to export its results to the flow returns,
+            it sends its return value to this queue for the flow to gather
+            the results.
+        callers: a list of Callers.
+        senders: a list of Senders.
+        export: to export using print or to the flow returns.
+    """
 
     def __init__(
         self,
@@ -315,41 +825,68 @@ class Node(BaseNode):
 
     @staticmethod
     def _getitem(_p, _attr):
+        """Use a lower case to access an attribute of a parameter.
+        Lower cases is used because I think a case-insensitive parsing
+        is more preferable. Furthermore, it's more pythonic to have
+        a lower-case attributes in a class, so it should not affect
+        many things.
+        """
         _attr = _attr.lower()
         if isinstance(_p, dict):
             return _p[_attr]
         return _p.__getattribute__(_attr)
 
     def receive(self, param, sender_name):
+        """Called by its sender to notify this node with the sender's result."""
         for parent_key, parent_spec in self.senders.node_map[sender_name]:
+
+            # get attributes for constraints recursively
+            # this is the same to
+            # param."$attr[0]"."$attr[1]"...
             c = param
-            for attr in parent_spec.node_property:
+            for attr in parent_spec.attrs_for_constraints:
                 c = self._getitem(c, attr)
+            # get attributes to return recursively
             v = param
-            for attr in parent_spec.flow_use:
+            for attr in parent_spec.attrs_to_return:
                 v = self._getitem(v, attr)
 
-            if len(parent_spec.flow_if) == 0:
+            if len(parent_spec.flow_constraints) == 0:
+                # if there's no constraints,
+                # put the value into the sender's queue
                 self._sender_qs[parent_key].put(v)
-            for flow in parent_spec.flow_if:
+
+            # otherwise, put it only if there's any constraints satisfied.
+            for flow in parent_spec.flow_constraints:
                 if str(c) == flow:
                     self._sender_qs[parent_key].put(v)
                     break  # only need to put one
 
     def triggered_by(self, param, caller_name):
-        # param is used for checking condition
+        """Called by its caller to notify this node with the caller's result.
+        The caller's result is used for checking the constraints.
+        """
 
         # triggered by unexpected caller is
         # currently considered fine, e.g. SWITCHON
         if caller_name not in self.callers.node_map:
             return
         for parent_key, parent_spec in self.callers.node_map[caller_name]:
+
+            # get attributes for constraints recursively
+            # this is the same to
+            # param."$attr[0]"."$attr[1]"...
             c = param
-            for attr in parent_spec.node_property:
+            for attr in parent_spec.attrs_for_constraints:
                 c = self._getitem(c, attr)
-            if len(parent_spec.flow_if) == 0:
+
+            # if there's no constraints,
+            # put the TriggerToken into the sender's queue
+            if len(parent_spec.flow_constraints) == 0:
                 self._caller_qs[parent_key].put(TriggerToken())
-            for flow in parent_spec.flow_if:
+
+            # otherwise, put it only if there's any constraints satisfied.
+            for flow in parent_spec.flow_constraints:
                 if str(c) == flow:
                     self._caller_qs[parent_key].put(TriggerToken())
                     break  # only need to put one
@@ -359,7 +896,7 @@ class Node(BaseNode):
             self.main()
         except Exception as err:
             logger.exception(err)
-            self.end_q.put(object())
+            self.end_q.put(EndOfFlowToken())
             raise err
 
     def main(self) -> None:
@@ -376,6 +913,7 @@ class Node(BaseNode):
         worker_builder.meta = meta
 
         def check_queues(_q_vals, qs: Dict[str, Queue]):
+            """Used to check if the given queue is ready"""
             _ok = True
             for key, q in qs.items():
                 if key in _q_vals:
@@ -403,11 +941,7 @@ class Node(BaseNode):
                 time.sleep(0.1)
                 continue
 
-            # if getting called, reset called but not inputs
-            called = {}
-
             # if callers ok but senders not ok, use whatever it have
-
             # args are the values with ordered integer keys in inputs
             args = [
                 inputs.pop(i)
@@ -420,18 +954,25 @@ class Node(BaseNode):
                 for k in (k for k in self.senders.parent_keys
                           if isinstance(k, str) and k in inputs)
             }
-            warn_left_keys(inputs)
 
+            # reset called and inputs
+            called = {}
+            warn_left_keys(inputs)  # warn if there's left keys in inputs
+            inputs = {}
+
+            # create a worker to do the configured task
+            # collect workers in a list to kill it if needed
             workers.append(worker_builder.build(*args, **kwargs))
             workers[-1].start()
 
             if self.end:
                 for worker in workers:
                     worker.join()
-                self.end_q.put(object())
+                self.end_q.put(EndOfFlowToken())
 
             workers = [worker for worker in workers if worker.is_alive()]
 
+        # Kill all workers alive.
         while True:
             for worker in workers:
                 if worker.is_alive():
@@ -485,6 +1026,81 @@ class Node(BaseNode):
 
 
 class Flow:
+    """An entry point of a collection of Nodes.
+
+    To create an instance of `Flow`, either `__init__`,
+    `parse(dict)` or `parse_yaml(flow path or io stream)` can be used.
+
+    >>> import io
+    >>> import os
+    >>> from multiprocessing import SimpleQueue
+    >>> class MyTask(NodeTask):
+    ...     def __init__(self, msg):
+    ...         self.msg = msg
+    ...     def main(self):
+    ...         return self.msg
+    >>> reset_node_tasks()
+    >>> register_node_tasks(tasks=[MyTask])
+
+    Using `__init__`.
+
+    >>> end_q = SimpleQueue()
+    >>> result_q = SimpleQueue()
+    >>> simple_node = Node.parse(
+    ...     name='HELLO', end_q=end_q, result_q=result_q, o=
+    ...     {
+    ...         'CALLERS': 'SWITCHON',
+    ...         'TASK':
+    ...         {
+    ...             'MY_TASK': 'World'
+    ...         },
+    ...         'EXPORT': ['PRINT', 'RETURN'],
+    ...         'END': True,
+    ...     }
+    ... )
+    >>> flow_via_init = Flow([simple_node], result_q, end_q)
+
+    Using `parse`.
+
+    >>> obj = {
+    ...     'HELLO':
+    ...     {
+    ...         'CALLERS': 'SWITCHON',
+    ...         'TASK':
+    ...         {
+    ...             'MY_TASK': 'World'
+    ...         },
+    ...         'EXPORT': ['PRINT', 'RETURN'],
+    ...         'END': True,
+    ...     }
+    ... }
+    >>> flow_via_parse = Flow.parse(obj)
+
+    Using `parse_yaml`.
+
+    >>> yaml_str = os.linesep.join((
+    ...     "FLOW: ",
+    ...     "  HELLO:",
+    ...     "    CALLERS: SWITCHON",
+    ...     "    TASK:",
+    ...     "      MY_TASK: World",
+    ...     "    EXPORT:",
+    ...     "      - PRINT",
+    ...     "      - RETURN",
+    ...     "    END: True",
+    ... ))
+    >>> flow_via_yaml = Flow.parse_yaml(io.StringIO(yaml_str))
+
+    The above three definitions are equivalent and should give same results.
+
+    >>> flow_via_init.start()
+    [('HELLO', 'World')]
+    >>> flow_via_parse.start()
+    [('HELLO', 'World')]
+    >>> flow_via_yaml.start()
+    [('HELLO', 'World')]
+
+    """
 
     def __init__(self, nodes: List[Node], result_q: SimpleQueue,
                  end_q: SimpleQueue):
@@ -515,11 +1131,15 @@ class Flow:
         return cls(nodes, result_q, end_q)
 
     @classmethod
-    def parse_yaml(cls, flow_path):
+    def parse_yaml(cls, fp: Union[str, TextIO]):
+        """Parse a yaml from either a path or an io-stream."""
         import yaml
 
-        with open_utf8(flow_path, "r") as f:
-            main_dscp = yaml.safe_load(f)
+        if isinstance(fp, str):
+            with open_utf8(fp, "r") as f:
+                main_dscp = yaml.safe_load(f)
+        else:
+            main_dscp = yaml.safe_load(fp)
 
         return cls.parse(main_dscp[_S.FLOW])
 
@@ -532,7 +1152,7 @@ class Flow:
                 node.triggered_by(TriggerToken(), _S.SWITCHON)
         except Exception as err:
             logger.exception(err)
-            self.end_q.put(object())
+            self.end_q.put(EndOfFlowToken())
             raise err
 
         for proc in self.processes:
@@ -546,17 +1166,27 @@ class Flow:
 _NODE_TASK_MAPPING: Dict[str, Type[NodeTask]] = {}
 
 
-def camel_to_snake(s):
+def _camel_to_snake(s):
+    """camel case to snake case.
+
+    >>> _camel_to_snake('helloWorld')
+    'hello_World'
+
+    >>> _camel_to_snake('HelloWorld')
+    'Hello_World'
+    """
     return re.sub(r"(?<!^)(?=[A-Z])", "_", s)
 
 
 def default_node_task_name(c: Type[NodeTask]):
-    return camel_to_snake(c.__name__).upper()
+    """Defines the default name of a node task.
 
-
-def reset_node_tasks():
-    while len(_NODE_TASK_MAPPING) > 0:
-        _NODE_TASK_MAPPING.popitem()
+    >>> class HelloWorld(NodeTask, abc.ABC):
+    ...     pass
+    >>> default_node_task_name(HelloWorld)
+    'HELLO_WORLD'
+    """
+    return _camel_to_snake(c.__name__).upper()
 
 
 def register_node_tasks(
@@ -565,6 +1195,69 @@ def register_node_tasks(
     task_module: ModuleType = None,
     raise_on_exist: bool = True,
 ):
+    """Used to register tasks.
+
+    To register a task means to create a mapping from a name to a
+    specific subclass derived from `NodeTask`, i.e. `sub-NodeTask`.
+
+    Registering tasks is for `NodeTask.parse` to know which Task is used
+    when a name is found while parsing.
+
+    >>> class TaskFoo(NodeTask):
+    ...     def main(self):
+    ...         pass
+    >>> class TaskBar(NodeTask):
+    ...     def main(self):
+    ...         pass
+
+    There are three ways to register tasks,
+
+    1. using a list of `sub-NodeTask`
+
+        >>> reset_node_tasks()
+        >>> register_node_tasks(tasks=[TaskFoo, TaskBar])
+        >>> NodeTask.parse('TASK_FOO')[0].__class__.__name__
+        'TaskFoo'
+
+    2. using a dict from `str` to `sub-NodeTask`
+        This way, a non-default node task name can be defined.
+
+        >>> reset_node_tasks()
+        >>> register_node_tasks(task_map={'MyFancy_name': TaskFoo})
+        >>> NodeTask.parse('MyFancy_name')[0].__class__.__name__
+        'TaskFoo'
+
+    3. using an entire module of `sub-NodeTask`
+        To register all `sub-NodeTask` in a module.
+        Internally, every members of this module will be checked
+        if it is a subclass of `NodeTask` and register it if true.
+
+        .. highlight:: python
+        .. code-block:: python
+
+            import my_task_module
+            register_node_tasks(my_task_module)
+
+    If a name has be registered, ValueError is raised by default.
+
+    >>> reset_node_tasks()
+    >>> register_node_tasks(tasks=[TaskFoo])
+    >>> register_node_tasks(task_map={'TASK_FOO': TaskBar})
+    Traceback (most recent call last):
+    ...
+    ValueError: task name 'TASK_FOO' has already been registered
+
+    To replace the old registered one without raising any error,
+    pass in `raise_on_exist=False`.
+
+    >>> reset_node_tasks()
+    >>> register_node_tasks(tasks=[TaskFoo])
+    >>> register_node_tasks(task_map={'TASK_FOO': TaskBar},
+    ...                     raise_on_exist=False)
+    >>> NodeTask.parse('TASK_FOO')[0].__class__.__name__
+    'TaskBar'
+
+    """
     tasks = [] if tasks is None else tasks
     task_map = {} if task_map is None else task_map
 
@@ -586,3 +1279,19 @@ def register_node_tasks(
 
     for name, task in task_map.items():
         _check_before_update(name, task)
+
+
+def reset_node_tasks():
+    """Used to clear all registered node tasks.
+
+    >>> reset_node_tasks()
+    >>> _NODE_TASK_MAPPING['_foo'] = NodeTask
+    >>> len(_NODE_TASK_MAPPING)
+    1
+    >>> reset_node_tasks()
+    >>> len(_NODE_TASK_MAPPING)
+    0
+
+    """
+    while len(_NODE_TASK_MAPPING) > 0:
+        _NODE_TASK_MAPPING.popitem()
