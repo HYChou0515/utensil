@@ -91,12 +91,12 @@ class TriggerToken:
 
 
 class EndOfFlowToken:
-    """A token for to broadcast the end of flow.
+    """A token to broadcast the end-of-flow event to all nodes.
 
     It is put into the end queue to notify all nodes to stop their
     workers and themselves.
     Most of the cases, EndOfFlowToken is put by a Node labeled end-of-flow
-    or a NodeWorker occurs unexpected exception.
+    or a NodeWorker counters an unexpected exception.
     """
 
 
@@ -128,9 +128,9 @@ class NodeTask(abc.ABC):
     Parsing
     =======
     To parse an object to a executable `NodeTask`,
-    we must define an derived class and register it in the global task map.
+    a derived class must be defined and registered in the global task map.
 
-    As a subclass of `NodeTask`, we define `MyTask` as
+    As a subclass of `NodeTask`, Mytask is defined as
 
     >>> class MyTask(NodeTask):
     ...     def __init__(self, a=3, b=5, c=10):
@@ -140,7 +140,7 @@ class NodeTask(abc.ABC):
     ...     def main(self):
     ...         return self.a, self.b, self.c
 
-    and have it registered.
+    and registered.
 
     >>> reset_node_tasks()
     >>> register_node_tasks(tasks=[MyTask])
@@ -196,8 +196,21 @@ class NodeTask(abc.ABC):
 
     """
 
+    def __init__(self, *args, **kwargs):
+        """CAN be overridden for task configuration."""
+
+    @abstractmethod
+    def main(self, *args, **kwargs):
+        """MUST be overridden by its derived class."""
+        raise NotImplementedError
+
     @classmethod
     def parse(cls, o) -> List[NodeTask]:
+        """Parse a list of valid object for a list of NodeTask.
+
+        If the object is not a list, it is wrapped in a list and then
+        be parsed. So the result is still a list of NodeTask.
+        """
         task_map = _NODE_TASK_MAPPING
 
         def _parse_1(_o):
@@ -223,11 +236,6 @@ class NodeTask(abc.ABC):
             o = [o]
 
         return [_parse_1(_) for _ in o]
-
-    @abstractmethod
-    def main(self, *args, **kwargs):
-        """This method should be overridden by its derived class."""
-        raise NotImplementedError
 
     def __call__(self, *args, **kwargs):
         """A wrapper of `main` to be called by a node worker."""
