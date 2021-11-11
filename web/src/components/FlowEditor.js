@@ -18,6 +18,7 @@ import {
     Segment,
 } from 'semantic-ui-react'
 import ConditionNode from "./ConditionNode";
+import {list_node_tasks} from "../api"
 
 const FlowMenu = ({showGallery, setShowGallery}) => {
     const [activeItem, setActivaItem] = useState(null);
@@ -26,6 +27,13 @@ const FlowMenu = ({showGallery, setShowGallery}) => {
         setActivaItem(name);
         if (name === 'show-gallery')
             setShowGallery(!showGallery);
+        if (name === 'help') {
+            list_node_tasks().then((o) => console.log(o));
+        }
+        if (name === 'show-all-nodes') {
+            list_node_tasks().then((o) => console.log(o));
+        }
+
     }
 
     return (
@@ -63,6 +71,14 @@ const FlowMenu = ({showGallery, setShowGallery}) => {
             </Menu.Item>
 
             <Menu.Menu position='right'>
+
+                <Menu.Item
+                    name='show-all-nodes'
+                    active={activeItem === 'show-all-nodes'}
+                    onClick={onMenuItemCheck}
+                >
+                    <Icon name='list layout' />
+                </Menu.Item>
 
                 <Menu.Item
                     name='show-gallery'
