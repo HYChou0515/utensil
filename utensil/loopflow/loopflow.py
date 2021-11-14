@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 # This is an issue as spawn is more efficient.
 # However, I don't know how to make it work.
 # Please refer to https://github.com/HYChou0515/utensil/issues/22
-if platform == "darwin":
+if platform == "darwin" and __name__ == '__main__':
     set_start_method("fork")
 
 

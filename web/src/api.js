@@ -6,6 +6,19 @@ const instance = axios.create({
     timeout: 20000
 });
 
-export const list_node_tasks = async () => {
-    return instance.get('/node-tasks');
+const restGet = (url) => {
+    return instance.get(url);
+};
+
+const restPost = (url, data) => {
+    return instance.post(url, data);
+};
+
+export const listNodeTasks = async () => {
+    return restGet('/node-tasks');
+};
+
+
+export const getParsedFlow = async (data) => {
+    return restPost('/parse-flow', data);
 };

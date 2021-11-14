@@ -1,4 +1,4 @@
-import React, { useState, useRef, DragEvent } from 'react';
+import React, {useState, useRef, DragEvent, useCallback, useEffect} from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -6,6 +6,7 @@ import ReactFlow, {
   Controls,
   Background,
 } from 'react-flow-renderer';
+
 
 import '../dnd.css';
 import {
@@ -16,14 +17,64 @@ import {
   Container,
   List,
   Segment,
+  Modal,
+  Button,
+  Image,
+  Header,
+  Input,
+  Message,
 } from 'semantic-ui-react'
 import ConditionNode from "./ConditionNode";
-import {list_node_tasks} from "../api"
+import {getParsedFlow, listNodeTasks} from "../api"
+
+import {useDropzone} from 'react-dropzone';
+
+const OpenFlowFileUi = ({isShow, setAction}) => {
+  const [opened, setOpened] = useState(isShow);
+  useEffect(() => {
+    if (isShow !== opened)
+      setOpened(isShow);
+  }, [isShow]);
+
+  const {acceptedFiles, getRootProps, getInputProps} = useDropzone({multiple: false});
+
+  useEffect(() => {
+    setAction({action: 'confirm', kwargs: {openedFlowFile: acceptedFiles}})
+  }, [acceptedFiles]);
+
+  return (
+    <Modal
+      onClose={() => setAction({action: 'close'})}
+      open={opened==='open-flow-file'}
+    >
+      <Modal.Header>Select a File</Modal.Header>
+      <Modal.Content>
+        <Modal.Description>
+          <Container>
+            <div {...getRootProps({className: 'dropzone'})}>
+              <input {...getInputProps()} />
+              <Message
+                icon='inbox'
+                header='Drop a file here or click to select a file'
+              />
+            </div>
+          </Container>
+        </Modal.Description>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button color='black' onClick={() => setAction({action: 'close'})}>
+          Cancel
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
+};
 
 
 const FlowMenu = ({
   toggleShowGallery,
   toggleShowAllNodes,
+  toggleShowOpenFlowFile,
 }) => {
   const [activeItem, setActivaItem] = useState(null);
   const toggleActiveItem = (selectedItem) => setActivaItem(activeItem !== selectedItem ? selectedItem: '');
@@ -33,11 +84,13 @@ const FlowMenu = ({
     if (name === 'show-gallery')
       toggleShowGallery();
     if (name === 'help') {
-      list_node_tasks().then((o) => console.log(o));
+      listNodeTasks().then((o) => console.log(o));
     }
     if (name === 'show-all-nodes') {
       toggleShowAllNodes();
     }
+    if (name === 'open-flow')
+      toggleShowOpenFlowFile();
   }
 
   return (
@@ -236,15 +289,44 @@ const FlowCanvas = () => {
 
 const FlowEditor = () => {
   const [siedColumn, setSideColumn] = useState('')
-  const toggleSideColumn = (selectedColumn) => setSideColumn(siedColumn !== selectedColumn ? selectedColumn: '');
+  const toggleSideColumn = (_selected) => setSideColumn(siedColumn !== _selected ? _selected: '');
   const toggleShowGallery = () => toggleSideColumn('node-gallery');
   const toggleShowAllNodes = () => toggleSideColumn('all-nodes');
 
+  const [openedModal, setOpenedModal] = useState('');
+  const toggleModal = (_selected) => setOpenedModal(openedModal !== _selected ? _selected: '');
+
+  const [flow, setFlow] = useState();
+  const toggleShowOpenFlowFile = () => toggleModal('open-flow-file');
+  const handleSetOpenFlowAction = useCallback(({action, kwargs}) => {
+      if (action === 'close') {
+        setOpenedModal('');
+      }
+      if (action === 'confirm') {
+        const openedFile = kwargs.openedFlowFile.length === 0 ? undefined : kwargs.openedFlowFile[0];
+        if (openedFile) {
+          let formData = new FormData();
+          formData.append(
+            "file",
+            openedFile,
+            openedFile.name
+          );
+          getParsedFlow(formData).then((newFlow) => setFlow(newFlow));
+        };
+        setOpenedModal('');
+      }
+  }, []);
+
   return (
     <Container>
+      <OpenFlowFileUi
+        isShow={openedModal}
+        setAction={handleSetOpenFlowAction}
+      />
       <FlowMenu
         toggleShowGallery={toggleShowGallery}
         toggleShowAllNodes={toggleShowAllNodes}
+        toggleShowOpenFlowFile={toggleShowOpenFlowFile}
       />
       <Grid stackable columns='equal'>
         <Grid.Column width={13}>

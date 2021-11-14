@@ -13,3 +13,5 @@ htmlcov
 .python-version
 .coverage*
 coverage.xml
+mongodb/
+*.pkl

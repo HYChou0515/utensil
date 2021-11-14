@@ -19,3 +19,4 @@ repos:
     rev: v2.11.1
     hooks:
     -   id: pylint
+        exclude: ^app/
