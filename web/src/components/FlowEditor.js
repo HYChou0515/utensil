@@ -5,8 +5,9 @@ import ReactFlow, {
   removeElements,
   Controls,
   Background,
+  isNode,
 } from 'react-flow-renderer';
-
+import dagre from 'dagre';
 
 import '../dnd.css';
 import {
@@ -75,9 +76,11 @@ const FlowMenu = ({
   toggleShowGallery,
   toggleShowAllNodes,
   toggleShowOpenFlowFile,
+  setNodeLayout,
 }) => {
   const [activeItem, setActivaItem] = useState(null);
   const toggleActiveItem = (selectedItem) => setActivaItem(activeItem !== selectedItem ? selectedItem: '');
+  const [_nodeLayout, _setNodeLayout] = useState('TB');
 
   const onMenuItemCheck = (e, {name}) => {
     toggleActiveItem(name);
@@ -92,6 +95,12 @@ const FlowMenu = ({
     if (name === 'open-flow')
       toggleShowOpenFlowFile();
   }
+
+  const onSetNodeLayout = () => {
+    const newLayout = _nodeLayout === 'TB' ? 'LR' : 'TB';
+    _setNodeLayout(newLayout);
+    setNodeLayout(newLayout);
+  };
 
   return (
     <Menu icon>
@@ -128,6 +137,17 @@ const FlowMenu = ({
       </Menu.Item>
 
       <Menu.Menu position='right'>
+
+        <Menu.Item
+          name='toggle-node-layout'
+          onClick={onSetNodeLayout}
+        >
+          {
+            _nodeLayout === 'TB' ?
+              <Icon name='sitemap'/> :
+              <Icon name='sitemap' rotated='counterclockwise'/>
+          }
+        </Menu.Item>
 
         <Menu.Item
           name='show-all-nodes'
@@ -209,16 +229,6 @@ const NodeGallery = ({isShow, zIndex}) => {
   )
 };
 
-
-const initialElements = [
-  {
-    id: '1',
-    type: 'input',
-    data: { label: 'input node' },
-    position: { x: 250, y: 5 },
-  },
-];
-
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
@@ -226,13 +236,67 @@ const nodeTypes = {
   condition: ConditionNode,
 };
 
-const FlowCanvas = () => {
-  const reactFlowWrapper = useRef(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const [elements, setElements] = useState(initialElements);
-  const onConnect = (params) => setElements((els) => addEdge(params, els));
+
+const nodeWidth = 172;
+const nodeHeight = 36;
+
+const dagreGraph = new dagre.graphlib.Graph();
+dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+const getLayoutedElements = (elements, direction = 'TB') => {
+  const isHorizontal = Boolean(direction === 'LR');
+  dagreGraph.setGraph({ rankdir: direction });
+
+  elements.forEach((el) => {
+    if (isNode(el)) {
+      dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
+    } else {
+      dagreGraph.setEdge(el.source, el.target);
+    }
+  });
+
+  dagre.layout(dagreGraph);
+
+  return elements.map((el) => {
+    if (isNode(el)) {
+      const nodeWithPosition = dagreGraph.node(el.id);
+      el.targetPosition = isHorizontal ? 'left' : 'top';
+      el.sourcePosition = isHorizontal ? 'right' : 'bottom';
+
+      // unfortunately we need this little hack to pass a slightly different position
+      // to notify react flow about the change. Moreover we are shifting the dagre node position
+      // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
+      el.position = {
+        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
+        y: nodeWithPosition.y - nodeHeight / 2,
+      };
+    }
+
+    return el;
+  });
+};
+
+const FlowCanvas = ({unlayoutedElements, nodeLayout}) => {
+
+  const [elements, setElements] = useState(getLayoutedElements(unlayoutedElements == null ? [] : unlayoutedElements, nodeLayout));
+
+  useEffect(() => {
+    const layoutedElements = getLayoutedElements(unlayoutedElements == null ? [] : unlayoutedElements, nodeLayout);
+    if (elements !== layoutedElements){
+      setElements(layoutedElements);
+    }
+  }, [unlayoutedElements, nodeLayout]);
+
+  const onConnect = (params) =>
+    setElements((els) =>
+      addEdge({ ...params, type: 'smoothstep', animated: true }, els)
+    );
+
   const onElementsRemove = (elementsToRemove) =>
     setElements((els) => removeElements(elementsToRemove, els));
+
+  const reactFlowWrapper = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const onLoad = (_reactFlowInstance) =>
     setReactFlowInstance(_reactFlowInstance);
@@ -297,6 +361,8 @@ const FlowEditor = () => {
   const toggleModal = (_selected) => setOpenedModal(openedModal !== _selected ? _selected: '');
 
   const [flow, setFlow] = useState();
+  const [unlayoutElements, setUnlayoutElements] = useState([]);
+  const [nodeLayout, setNodeLayout] = useState('TB');
   const toggleShowOpenFlowFile = () => toggleModal('open-flow-file');
   const handleSetOpenFlowAction = useCallback(({action, kwargs}) => {
       if (action === 'close') {
@@ -317,6 +383,48 @@ const FlowEditor = () => {
       }
   }, []);
 
+  useEffect(() => {
+    console.log(flow);
+    const els = [];
+    //{ id: '7', type: 'output', data: { label: 'output' }, position },
+    //{ id: 'e12', source: '1', target: '2', type: edgeType, animated: true },
+    if (flow?.flow?.nodes == null)
+      return;
+    flow?.flow?.nodes.forEach((node) => {
+      els.push({
+        id: node.name,
+        type: node.end_of_flow ? 'output' : node.switchon ? 'input' : 'default',
+        data: {label: node.name},
+        position: {
+          x: Math.random() * window.innerWidth - 100,
+          y: Math.random() * window.innerHeight,
+        },
+      });
+      node.receivers.forEach((recv) => {
+        els.push({
+          id: `${node.name}-send-${recv}`,
+          source: node.name,
+          target: recv,
+          type: 'smoothstep',
+          animated: true,
+        });
+      });
+      node.callees.forEach((_callee) => {
+        const callee = _callee===':self:' ? node.name : _callee;
+        if (callee !== 'SWITCHON') {
+          els.push({
+            id: `${node.name}-call-${callee}`,
+            source: node.name,
+            target: callee,
+            type: 'smoothstep',
+            animated: true,
+          });
+        }
+      });
+    });
+    setUnlayoutElements(els);
+  }, [flow]);
+
   return (
     <Container>
       <OpenFlowFileUi
@@ -327,10 +435,14 @@ const FlowEditor = () => {
         toggleShowGallery={toggleShowGallery}
         toggleShowAllNodes={toggleShowAllNodes}
         toggleShowOpenFlowFile={toggleShowOpenFlowFile}
+        setNodeLayout={setNodeLayout}
       />
       <Grid stackable columns='equal'>
         <Grid.Column width={13}>
-          <FlowCanvas/>
+          <FlowCanvas
+            unlayoutedElements={unlayoutElements}
+            nodeLayout={nodeLayout}
+          />
         </Grid.Column>
         <Grid.Column width={1}>
           <NodeGallery zindex={1} isShow={siedColumn==='node-gallery'}/>

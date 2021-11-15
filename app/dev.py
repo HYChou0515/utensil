@@ -1,5 +1,5 @@
-import pickle
 import os
+import pickle
 
 _pkldir = os.path.dirname(__file__)
 

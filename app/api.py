@@ -1,9 +1,9 @@
-from typing import Optional
 import itertools
-from fastapi import FastAPI, File, UploadFile
+from typing import Optional
 
-from core import save_flow, parse_flow
+from core import parse_flow, save_flow
 from datatypes import TNodeTask
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from utensil.loopflow import loopflow

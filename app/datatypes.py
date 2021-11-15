@@ -22,4 +22,4 @@ TNode.update_forward_refs()
 
 
 class TFlow(BaseModel):
-    nodes: dict[str, TNode]
+    nodes: list[TNode]

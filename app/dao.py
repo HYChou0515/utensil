@@ -1,6 +1,5 @@
 import pymongo
 from bson.objectid import ObjectId
-
 from datatypes import TFlow
 
 client = pymongo.MongoClient("mongodb://localhost:27017/")
