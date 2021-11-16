@@ -1,8 +1,7 @@
 from dao import FlowDao, FlowFileDao
 from datatypes import TFlow, TNode, TNodeTask
 
-from utensil.loopflow.loopflow import (Flow, register_node_tasks,
-                                       reset_node_tasks)
+from utensil.loopflow.loopflow import Flow, register_node_tasks, reset_node_tasks
 
 
 def load_flow(file_id):

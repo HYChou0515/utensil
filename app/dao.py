@@ -1,9 +1,11 @@
 import pymongo
 from bson.objectid import ObjectId
 from datatypes import TFlow
+import os
 
-client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["loopflow-app"]
+MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017')
+client = pymongo.MongoClient(MONGODB_URL)
+db = client['loopflow-app']
 
 
 class Dao:

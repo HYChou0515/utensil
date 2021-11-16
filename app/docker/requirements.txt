@@ -1,0 +1,13 @@
+attrs
+fastapi
+loguru
+numpy
+pandas
+pymongo
+python-multipart
+PyYAML
+requests
+scikit-learn
+scipy
+uvicorn
+xgboost
