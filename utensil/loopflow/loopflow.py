@@ -8,9 +8,8 @@ from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from multiprocessing import Process, Queue, SimpleQueue, set_start_method
+from multiprocessing import Process, Queue, SimpleQueue
 from queue import Empty
-from sys import platform
 from types import ModuleType
 from typing import Any, Dict, List, Optional, TextIO, Tuple, Type, Union
 
@@ -18,14 +17,6 @@ from utensil import get_logger
 from utensil.general import open_utf8, warn_left_keys
 
 logger = get_logger(__name__)
-
-# In macOS, we use fork to start a new process,
-# instead of the default "spawn".
-# This is an issue as spawn is more efficient.
-# However, I don't know how to make it work.
-# Please refer to https://github.com/HYChou0515/utensil/issues/22
-if platform == "darwin" and __name__ == '__main__':
-    set_start_method("fork")
 
 
 class _SyntaxToken(str, Enum):
