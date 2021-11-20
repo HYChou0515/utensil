@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "utensil"
-version = "0.0.2"
+version = "0.0.3"
 description = "A useful utensil kit for machine learning."
 license = "BSD-3-Clause"
 authors = ["Chou Hung-Yi <hychou.svm@gmail.com>"]

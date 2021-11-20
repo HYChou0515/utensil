@@ -25,3 +25,27 @@ machine learning, data mining, and information analysis, etc.
 ### Utilities
 * config setting (todo)
 * process bar (todo)
+
+### Docker Compose
+
+We provide an web application for loopflow.
+
+To start a service, you can follow these steps.
+
+1. build a wheel of utensil and move it to `app/docker/`
+
+```
+poetry build
+```
+
+2. build docker images
+
+```
+docker-compose build
+```
+
+3. start the service
+
+```
+docker-compose up
+```
