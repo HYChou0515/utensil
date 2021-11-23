@@ -20,6 +20,9 @@ PyYAML = "^6.0"
 # scipy = "^1.7.2"  # use pip install
 
 [tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+yapf = "^0.31.0"
+toml = "^0.10.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
