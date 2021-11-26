@@ -1,38 +1,40 @@
 from bson.objectid import ObjectId
+from utensil import get_logger
 
 from database import DBSessionMixin
-from schema.datatypes import TFlow
-from schema.flow_job import FlowJob, FlowJobInDb
+from model import MFlow, MFlowFile, MFlowJob
+
+logger = get_logger(__file__)
 
 
 class FlowFileDao(DBSessionMixin):
 
-    def save(self, file_name: str, file_content: str):
-        file_id = self.db.flowfile.insert_one({
-            "name": file_name,
-            "content": file_content,
-        }).inserted_id
-        return str(file_id)
+    async def create(self, flow_file: MFlowFile) -> MFlowFile:
+        new_obj = await self.db.flowfile.insert_one(flow_file.dict())
+        flow_file.id = new_obj.inserted_id
+        return flow_file
 
-    def get(self, file_id):
-        return self.db.flowfile.find_one({"_id": ObjectId(file_id)})
+    async def get(self, file_id) -> MFlowFile:
+        return MFlowFile.parse_obj(await self.db.flowfile.find_one(
+            {"_id": ObjectId(file_id)}))
 
 
 class FlowDao(DBSessionMixin):
 
-    def save(self, file_id: str, flow: TFlow):
-        flow_id = self.db.flow.insert_one({
-            "file_id": ObjectId(file_id),
-            "flow": flow.dict()
-        }).inserted_id
-        return str(flow_id)
+    async def create(self, flow: MFlow) -> MFlow:
+        new_obj = await self.db.flow.insert_one(flow.dict())
+        flow.id = new_obj.inserted_id
+        return flow
 
-    def get(self, flow_id):
-        return self.db.flow.find_one({"_id": ObjectId(flow_id)})
+    async def get(self, flow_id) -> MFlow:
+        return MFlow.parse_obj(await
+                               self.db.flow.find_one({"_id": ObjectId(flow_id)}
+                                                    ))
 
 
 class FlowJobDao(DBSessionMixin):
 
-    def create(self, flow_job: FlowJob):
-        inserted_id = self.db.flowjob.insert_one(flow_job.dict()).inserted_id
-        return FlowJobInDb(**flow_job.dict(), job_id=str(inserted_id))
+    async def create(self, flow_job: MFlowJob) -> MFlowJob:
+        new_obj = await self.db.flowjob.insert_one(flow_job.dict())
+        flow_job.id = new_obj.inserted_id
+        return flow_job

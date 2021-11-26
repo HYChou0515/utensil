@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
 
-from schema.datatypes import TNodeTask
-from schema.flow_job import FlowJobCreate, FlowJobInDb
+from database import close_db, connect_db
+from model import MFlow, MFlowJob, MFlowJobCreateByFlow, MNodeTask
 from service.core import FlowJobService, FlowService
 
 app = FastAPI()
@@ -25,6 +25,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_event_handler("startup", connect_db)
+app.add_event_handler("shutdown", close_db)
 
 
 def all_tasks(task_module):
@@ -49,25 +52,25 @@ async def read_item(item_id: int, q: Optional[str] = None):
     return {"item_id": item_id, "q": q}
 
 
-@app.get("/node-tasks", response_model=list[TNodeTask])
+@app.get("/node-tasks", response_model=list[MNodeTask])
 async def query_list_node_tasks():
     return [
-        TNodeTask(name=name)
+        MNodeTask(name=name)
         for name, _ in itertools.chain(basic_tasks, dataflow_tasks)
     ]
 
 
-@app.post("/parse-flow")
+@app.post("/parse-flow", response_model=MFlow)
 async def query_parse_flow(file: UploadFile = File(...),
                            flow_service: FlowService = Depends(FlowService)):
-    file_id = flow_service.save_flow(file)
-    flow_id, tflow = flow_service.parse_flow(file_id)
-    return {"flow_id": flow_id, "flow": tflow}
+    flow_file_in_db = await flow_service.save_flow(file)
+    flow_in_db = await flow_service.parse_flow(flow_file_in_db.id)
+    return flow_in_db
 
 
-@app.post("/flow/job", response_model=FlowJobInDb)
+@app.post("/flow/job", response_model=MFlowJob)
 async def create_flow_job(
-        flow_job_create: FlowJobCreate,
+        flow_job_create: MFlowJobCreateByFlow,
         flow_job_service: FlowJobService = Depends(FlowJobService),
 ):
-    return flow_job_service.create_flow_job(flow_job_create)
+    return await flow_job_service.create_flow_job(flow_job_create)
