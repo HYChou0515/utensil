@@ -8,7 +8,7 @@ from utensil.loopflow.functions import basic, dataflow
 
 from database import close_db, connect_db
 from model import MFlow, MFlowJob, MFlowJobCreateByFlow, MNodeTask
-from service.core import FlowJobService, FlowService
+from service import FlowJobService, FlowService
 
 app = FastAPI()
 
