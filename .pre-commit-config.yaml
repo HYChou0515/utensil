@@ -4,8 +4,6 @@ repos:
     hooks:
     -   id: trailing-whitespace
     -   id: check-yaml
-    -   id: check-added-large-files
-        exclude: ^web/yarn.lock$
     -   id: check-merge-conflict
     -   id: end-of-file-fixer
         exclude: (^badges/|.svg$)
