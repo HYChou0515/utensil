@@ -15,9 +15,6 @@ COPY docker/utensil-*.whl /dist/
 RUN pip install -r /requirements.txt
 RUN pip install /dist/utensil-*.whl
 
-# Creating folders, and files for a project:
-COPY . /app
-
 # wait for some dependency
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.2.1/wait /wait
 RUN chmod +x /wait

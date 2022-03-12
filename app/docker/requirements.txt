@@ -11,3 +11,4 @@ scikit-learn
 scipy
 uvicorn
 xgboost
+motor
