@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
 
-from database import close_db, connect_db
 from model import MFlow, MFlowJob, MFlowJobCreateByFlow, MNodeTask
 from service import FlowJobService, FlowService
 
@@ -25,9 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_event_handler("startup", connect_db)
-app.add_event_handler("shutdown", close_db)
 
 
 def all_tasks(task_module):
