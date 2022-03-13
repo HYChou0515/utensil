@@ -41,7 +41,6 @@ import ReactFlow, {
 import { v4 } from "uuid";
 import dagre from "dagre";
 import "../../dnd.css";
-import ConditionNode from "../../components/ConditionNode";
 import { getParsedFlow } from "../../api";
 
 const GraphContext = createContext();
@@ -92,10 +91,6 @@ const Menu = ({
 const onDragStart = (event: DragEvent, nodeType: string) => {
   event.dataTransfer.setData("application/reactflow", nodeType);
   event.dataTransfer.effectAllowed = "move";
-};
-
-const nodeTypes = {
-  condition: ConditionNode,
 };
 
 const NodeGallery = () => {
@@ -240,7 +235,6 @@ const FlowCanvas = () => {
                 onLoad={onLoad}
                 onDrop={onDrop}
                 onDragOver={onDragOver}
-                nodeTypes={nodeTypes}
               >
                 <Background variant="dots" gap={15} size={1} />
                 <Controls />
