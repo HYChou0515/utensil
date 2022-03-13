@@ -1,8 +1,6 @@
 import React, {
   createContext,
-  DragEvent,
   useContext,
-  useEffect,
   useReducer,
   useRef,
   useState,
@@ -30,20 +28,21 @@ import {
   EuiButtonEmpty,
   EuiButton,
 } from "@elastic/eui";
-import ReactFlow, {
-  addEdge,
-  Background,
-  Controls,
-  isNode,
-  ReactFlowProvider,
-  removeElements,
-} from "react-flow-renderer";
+import * as SRD from "@projectstorm/react-diagrams";
 import { v4 } from "uuid";
 import dagre from "dagre";
-import "../../dnd.css";
 import { getParsedFlow } from "../../api";
+import * as _ from "lodash";
+import { CanvasWidget } from "@projectstorm/react-canvas-core";
+import CanvasWrapper from "../../components/CanvasWrapper";
+import { useForceUpdate } from "../../components/hooks";
+import GalleryItemWidget from "../../components/GalleryItemWidget";
 
 const GraphContext = createContext();
+
+const diagramEngine = SRD.default();
+const activeModel = new SRD.DiagramModel();
+diagramEngine.setModel(activeModel);
 
 const Menu = ({
   toggleShowGallery,
@@ -88,162 +87,63 @@ const Menu = ({
   );
 };
 
-const onDragStart = (event: DragEvent, nodeType: string) => {
-  event.dataTransfer.setData("application/reactflow", nodeType);
-  event.dataTransfer.effectAllowed = "move";
-};
-
 const NodeGallery = () => {
   return (
     <EuiPanel>
       <EuiFlexGroup direction="column" alignItems="center">
         <EuiFlexItem>
-          <div
-            className="react-flow__node-input"
-            onDragStart={(event: DragEvent) => onDragStart(event, "input")}
-            draggable
-          >
-            Input Node
-          </div>
+          <GalleryItemWidget
+            model={{ type: "in", color: "rgb(192,255,0)" }}
+            name="Input Node"
+          />
         </EuiFlexItem>
         <EuiFlexItem>
-          <div
-            className="react-flow__node-default"
-            onDragStart={(event: DragEvent) => onDragStart(event, "default")}
-            draggable
-          >
-            Default Node
-          </div>
-        </EuiFlexItem>
-        <EuiFlexItem>
-          <div
-            className="react-flow__node-output"
-            onDragStart={(event: DragEvent) => onDragStart(event, "output")}
-            draggable
-          >
-            Output Node
-          </div>
+          <GalleryItemWidget
+            model={{ type: "out", color: "rgb(0,192,255)" }}
+            name="Output Node"
+          />
         </EuiFlexItem>
       </EuiFlexGroup>
     </EuiPanel>
   );
 };
 
-const nodeWidth = 172;
-const nodeHeight = 36;
-
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-
-const getLayoutedElements = (elements, direction = "TB") => {
-  const isHorizontal = Boolean(direction === "LR");
-  dagreGraph.setGraph({ rankdir: direction });
-
-  elements.forEach((el) => {
-    if (isNode(el)) {
-      dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
-    } else {
-      dagreGraph.setEdge(el.source, el.target);
-    }
-  });
-
-  dagre.layout(dagreGraph);
-
-  return elements.map((el) => {
-    if (isNode(el)) {
-      const nodeWithPosition = dagreGraph.node(el.id);
-      el.targetPosition = isHorizontal ? "left" : "top";
-      el.sourcePosition = isHorizontal ? "right" : "bottom";
-
-      // unfortunately we need this little hack to pass a slightly different position
-      // to notify react flow about the change. Moreover we are shifting the dagre node position
-      // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
-      el.position = {
-        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
-        y: nodeWithPosition.y - nodeHeight / 2,
-      };
-    }
-
-    return el;
-  });
-};
-
 const FlowCanvas = () => {
-  const { graph, layoutType } = useContext(GraphContext);
-  const [layoutedElements, setLayoutedElements] = useState([]);
-
-  useEffect(() => {
-    const layoutedElements = getLayoutedElements(
-      graph == null ? [] : graph,
-      layoutType
-    );
-    if (graph !== layoutedElements) {
-      setLayoutedElements(layoutedElements);
-    }
-  }, [graph, layoutType]);
-
-  const onConnect = (params) =>
-    setLayoutedElements((els) =>
-      addEdge({ ...params, type: "smoothstep", animated: true }, els)
-    );
-
-  const onElementsRemove = (elementsToRemove) =>
-    setLayoutedElements((els) => removeElements(elementsToRemove, els));
-
-  const reactFlowWrapper = useRef(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-
-  const onLoad = (_reactFlowInstance) =>
-    setReactFlowInstance(_reactFlowInstance);
-
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   };
+  const forceUpdate = useForceUpdate();
 
   const onDrop = (event) => {
     event.preventDefault();
 
-    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-    const type = event.dataTransfer.getData("application/reactflow");
-    const position = reactFlowInstance.project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-      data: { label: `${type} node` },
-    };
-    setLayoutedElements((es) => es.concat(newNode));
-  };
+    const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
+    const nodesCount = _.keys(diagramEngine.getModel().getNodes()).length;
 
+    let node = null;
+    if (data.type === "in") {
+      node = new SRD.DefaultNodeModel(
+        "Node " + (nodesCount + 1),
+        "rgb(192,255,0)"
+      );
+      node.addInPort("In");
+    } else {
+      node = new SRD.DefaultNodeModel(
+        "Node " + (nodesCount + 1),
+        "rgb(0,192,255)"
+      );
+      node.addOutPort("Out");
+    }
+    const point = diagramEngine.getRelativeMousePoint(event);
+    node.setPosition(point);
+    diagramEngine.getModel().addNode(node);
+    forceUpdate();
+  };
   return (
-    <EuiPanel>
-      <EuiFlexGroup>
-        <EuiFlexItem className="dndflow">
-          <ReactFlowProvider>
-            <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-              <ReactFlow
-                elements={layoutedElements}
-                onConnect={onConnect}
-                onElementsRemove={onElementsRemove}
-                onLoad={onLoad}
-                onDrop={onDrop}
-                onDragOver={onDragOver}
-              >
-                <Background variant="dots" gap={15} size={1} />
-                <Controls />
-              </ReactFlow>
-            </div>
-          </ReactFlowProvider>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </EuiPanel>
+    <CanvasWrapper onDrop={onDrop} onDragOver={onDragOver}>
+      <CanvasWidget engine={diagramEngine} className={"canvas-widget"} />
+    </CanvasWrapper>
   );
 };
 
@@ -385,7 +285,7 @@ const FlowEditor = () => {
                     <EuiResizablePanel
                       id="panel-gallery"
                       initialSize={20}
-                      minSize={`${nodeWidth + 30}px`}
+                      minSize={`${200}px`}
                     >
                       <NodeGallery />
                     </EuiResizablePanel>
