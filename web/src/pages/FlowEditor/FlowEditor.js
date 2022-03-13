@@ -172,7 +172,7 @@ const getLayoutedElements = (elements, direction = "TB") => {
 };
 
 const FlowCanvas = () => {
-  const { graph, setGraph, layoutType } = useContext(GraphContext);
+  const { graph, layoutType } = useContext(GraphContext);
   const [layoutedElements, setLayoutedElements] = useState([]);
 
   useEffect(() => {
