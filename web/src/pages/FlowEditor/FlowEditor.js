@@ -1,3 +1,27 @@
+import {
+  EuiButton,
+  EuiButtonEmpty,
+  EuiFilePicker,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiForm,
+  EuiHeader,
+  EuiHeaderSection,
+  EuiHeaderSectionItem,
+  EuiHeaderSectionItemButton,
+  EuiIcon,
+  EuiModal,
+  EuiModalBody,
+  EuiModalFooter,
+  EuiModalHeader,
+  EuiModalHeaderTitle,
+  EuiPageTemplate,
+  EuiPanel,
+  EuiResizableContainer,
+} from "@elastic/eui";
+import { CanvasWidget } from "@projectstorm/react-canvas-core";
+import * as SRD from "@projectstorm/react-diagrams";
+import * as _ from "lodash";
 import React, {
   createContext,
   useContext,
@@ -5,44 +29,17 @@ import React, {
   useRef,
   useState,
 } from "react";
-import logo from "../../logo.svg";
-import { FaFolderOpen, FaSitemap, FaCubes } from "react-icons/fa";
-import {
-  EuiHeader,
-  EuiPageTemplate,
-  EuiHeaderSection,
-  EuiHeaderSectionItem,
-  EuiIcon,
-  EuiHeaderSectionItemButton,
-  EuiPanel,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiResizableContainer,
-  EuiModal,
-  EuiModalHeader,
-  EuiModalHeaderTitle,
-  EuiModalBody,
-  EuiForm,
-  EuiFilePicker,
-  EuiModalFooter,
-  EuiButtonEmpty,
-  EuiButton,
-} from "@elastic/eui";
-import * as SRD from "@projectstorm/react-diagrams";
+import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { v4 } from "uuid";
-import dagre from "dagre";
+
 import { getParsedFlow } from "../../api";
-import * as _ from "lodash";
-import { CanvasWidget } from "@projectstorm/react-canvas-core";
 import CanvasWrapper from "../../components/CanvasWrapper";
-import { useForceUpdate } from "../../components/hooks";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
+import { useForceUpdate } from "../../components/hooks";
+import logo from "../../logo.svg";
 
 const GraphContext = createContext();
-
-const diagramEngine = SRD.default();
-const activeModel = new SRD.DiagramModel();
-diagramEngine.setModel(activeModel);
+const DiagramEngineContext = createContext();
 
 const Menu = ({
   toggleShowGallery,
@@ -107,13 +104,45 @@ const NodeGallery = () => {
     </EuiPanel>
   );
 };
+let count = 0;
 
 const FlowCanvas = () => {
+  const { diagramEngine, dagreEngine } = useContext(DiagramEngineContext);
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   };
   const forceUpdate = useForceUpdate();
+  const createNode = (name) => new SRD.DefaultNodeModel(name, "rgb(0,192,255)");
+
+  const connectNodes = (nodeFrom, nodeTo, engine) => {
+    //just to get id-like structure
+    count++;
+    const portOut = nodeFrom.addPort(
+      new SRD.DefaultPortModel(true, `${nodeFrom.name}-out-${count}`, "Out")
+    );
+    const portTo = nodeTo.addPort(
+      new SRD.DefaultPortModel(false, `${nodeFrom.name}-to-${count}`, "In")
+    );
+    return portOut.link(portTo);
+
+    // ################# UNCOMMENT THIS LINE FOR PATH FINDING #############################
+    // return portOut.link(portTo, engine.getLinkFactories().getFactory(SRD.PathFindingLinkFactory.NAME));
+    // #####################################################################################
+  };
+
+  const reroute = () => {
+    const factory = diagramEngine
+      .getLinkFactories()
+      .getFactory(SRD.PathFindingLinkFactory.NAME);
+    factory.calculateRoutingMatrix();
+  };
+
+  const autoDistribute = () => {
+    dagreEngine.redistribute(diagramEngine.getModel());
+    reroute();
+    diagramEngine.repaintCanvas();
+  };
 
   const onDrop = (event) => {
     event.preventDefault();
@@ -245,6 +274,19 @@ const OpenFileUi = ({ onClose }) => {
 };
 
 const FlowEditor = () => {
+  const diagramEngine = SRD.default();
+  const dagreEngine = new SRD.DagreEngine({
+    graph: {
+      rankdir: "RL",
+      ranker: "longest-path",
+      marginx: 25,
+      marginy: 25,
+    },
+    includeLinks: true,
+  });
+
+  const activeModel = new SRD.DiagramModel();
+  diagramEngine.setModel(activeModel);
   const collapseFn = useRef(() => {});
   const [layoutType, toggleLayoutType] = useReducer(
     (t) => (t === "TB" ? "LR" : "TB"),
@@ -254,49 +296,53 @@ const FlowEditor = () => {
   const [graph, setGraph] = useState();
   const [flow, setFlow] = useState();
   return (
-    <GraphContext.Provider
-      value={{ graph, setGraph, layoutType, flow, setFlow }}
-    >
-      {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
-      <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
-        <Menu
-          toggleShowGallery={() => collapseFn.current("panel-gallery", "right")}
-          toggleShowOpenFileUi={toggleShowOpenFileUi}
-          toggleLayoutType={toggleLayoutType}
-        />
-        <EuiFlexGroup>
-          <EuiFlexItem>
-            <EuiResizableContainer>
-              {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
-                collapseFn.current = (id, direction) =>
-                  togglePanel(id, { direction });
-                return (
-                  <>
-                    <EuiResizablePanel
-                      id="panel-canvas"
-                      initialSize={80}
-                      minSize="50%"
-                    >
-                      <FlowCanvas nodeLayout={layoutType} />
-                    </EuiResizablePanel>
+    <DiagramEngineContext.Provider value={{ diagramEngine, dagreEngine }}>
+      <GraphContext.Provider
+        value={{ graph, setGraph, layoutType, flow, setFlow }}
+      >
+        {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
+        <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
+          <Menu
+            toggleShowGallery={() =>
+              collapseFn.current("panel-gallery", "right")
+            }
+            toggleShowOpenFileUi={toggleShowOpenFileUi}
+            toggleLayoutType={toggleLayoutType}
+          />
+          <EuiFlexGroup>
+            <EuiFlexItem>
+              <EuiResizableContainer>
+                {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
+                  collapseFn.current = (id, direction) =>
+                    togglePanel(id, { direction });
+                  return (
+                    <>
+                      <EuiResizablePanel
+                        id="panel-canvas"
+                        initialSize={80}
+                        minSize="50%"
+                      >
+                        <FlowCanvas nodeLayout={layoutType} />
+                      </EuiResizablePanel>
 
-                    <EuiResizableButton />
+                      <EuiResizableButton />
 
-                    <EuiResizablePanel
-                      id="panel-gallery"
-                      initialSize={20}
-                      minSize={`${200}px`}
-                    >
-                      <NodeGallery />
-                    </EuiResizablePanel>
-                  </>
-                );
-              }}
-            </EuiResizableContainer>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiPageTemplate>
-    </GraphContext.Provider>
+                      <EuiResizablePanel
+                        id="panel-gallery"
+                        initialSize={20}
+                        minSize={`${200}px`}
+                      >
+                        <NodeGallery />
+                      </EuiResizablePanel>
+                    </>
+                  );
+                }}
+              </EuiResizableContainer>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiPageTemplate>
+      </GraphContext.Provider>
+    </DiagramEngineContext.Provider>
   );
 };
 export default FlowEditor;
