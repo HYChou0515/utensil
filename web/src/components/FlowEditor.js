@@ -1,4 +1,10 @@
-import React, {useState, useRef, DragEvent, useCallback, useEffect} from 'react';
+import React, {
+  useState,
+  useRef,
+  DragEvent,
+  useCallback,
+  useEffect,
+} from "react";
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -6,10 +12,10 @@ import ReactFlow, {
   Controls,
   Background,
   isNode,
-} from 'react-flow-renderer';
-import dagre from 'dagre';
+} from "react-flow-renderer";
+import dagre from "dagre";
 
-import '../dnd.css';
+import "../dnd.css";
 import {
   Transition,
   Menu,
@@ -24,53 +30,53 @@ import {
   Header,
   Input,
   Message,
-} from 'semantic-ui-react'
+} from "semantic-ui-react";
 import ConditionNode from "./ConditionNode";
-import {getParsedFlow, listNodeTasks} from "../api"
+import { getParsedFlow, listNodeTasks } from "../api";
 
-import {useDropzone} from 'react-dropzone';
+import { useDropzone } from "react-dropzone";
 
-const OpenFlowFileUi = ({isShow, setAction}) => {
+const OpenFlowFileUi = ({ isShow, setAction }) => {
   const [opened, setOpened] = useState(isShow);
   useEffect(() => {
-    if (isShow !== opened)
-      setOpened(isShow);
+    if (isShow !== opened) setOpened(isShow);
   }, [isShow]);
 
-  const {acceptedFiles, getRootProps, getInputProps} = useDropzone({multiple: false});
+  const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
+    multiple: false,
+  });
 
   useEffect(() => {
-    setAction({action: 'confirm', kwargs: {openedFlowFile: acceptedFiles}})
+    setAction({ action: "confirm", kwargs: { openedFlowFile: acceptedFiles } });
   }, [acceptedFiles]);
 
   return (
     <Modal
-      onClose={() => setAction({action: 'close'})}
-      open={opened==='open-flow-file'}
+      onClose={() => setAction({ action: "close" })}
+      open={opened === "open-flow-file"}
     >
       <Modal.Header>Select a File</Modal.Header>
       <Modal.Content>
         <Modal.Description>
           <Container>
-            <div {...getRootProps({className: 'dropzone'})}>
+            <div {...getRootProps({ className: "dropzone" })}>
               <input {...getInputProps()} />
               <Message
-                icon='inbox'
-                header='Drop a file here or click to select a file'
+                icon="inbox"
+                header="Drop a file here or click to select a file"
               />
             </div>
           </Container>
         </Modal.Description>
       </Modal.Content>
       <Modal.Actions>
-        <Button color='black' onClick={() => setAction({action: 'close'})}>
+        <Button color="black" onClick={() => setAction({ action: "close" })}>
           Cancel
         </Button>
       </Modal.Actions>
     </Modal>
   );
 };
-
 
 const FlowMenu = ({
   toggleShowGallery,
@@ -79,25 +85,24 @@ const FlowMenu = ({
   setNodeLayout,
 }) => {
   const [activeItem, setActivaItem] = useState(null);
-  const toggleActiveItem = (selectedItem) => setActivaItem(activeItem !== selectedItem ? selectedItem: '');
-  const [_nodeLayout, _setNodeLayout] = useState('TB');
+  const toggleActiveItem = (selectedItem) =>
+    setActivaItem(activeItem !== selectedItem ? selectedItem : "");
+  const [_nodeLayout, _setNodeLayout] = useState("TB");
 
-  const onMenuItemCheck = (e, {name}) => {
+  const onMenuItemCheck = (e, { name }) => {
     toggleActiveItem(name);
-    if (name === 'show-gallery')
-      toggleShowGallery();
-    if (name === 'help') {
+    if (name === "show-gallery") toggleShowGallery();
+    if (name === "help") {
       listNodeTasks().then((o) => console.log(o));
     }
-    if (name === 'show-all-nodes') {
+    if (name === "show-all-nodes") {
       toggleShowAllNodes();
     }
-    if (name === 'open-flow')
-      toggleShowOpenFlowFile();
-  }
+    if (name === "open-flow") toggleShowOpenFlowFile();
+  };
 
   const onSetNodeLayout = () => {
-    const newLayout = _nodeLayout === 'TB' ? 'LR' : 'TB';
+    const newLayout = _nodeLayout === "TB" ? "LR" : "TB";
     _setNodeLayout(newLayout);
     setNodeLayout(newLayout);
   };
@@ -105,118 +110,126 @@ const FlowMenu = ({
   return (
     <Menu icon>
       <Menu.Item
-        name='new-flow'
-        active={activeItem === 'new-flow'}
+        name="new-flow"
+        active={activeItem === "new-flow"}
         onClick={onMenuItemCheck}
       >
-        <Icon name='file' />
+        <Icon name="file" />
       </Menu.Item>
 
       <Menu.Item
-        name='open-flow'
-        active={activeItem === 'open-flow'}
+        name="open-flow"
+        active={activeItem === "open-flow"}
         onClick={onMenuItemCheck}
       >
-        <Icon name='folder open' />
+        <Icon name="folder open" />
       </Menu.Item>
 
       <Menu.Item
-        name='save-flow'
-        active={activeItem === 'save-flow'}
+        name="save-flow"
+        active={activeItem === "save-flow"}
         onClick={onMenuItemCheck}
       >
-        <Icon name='save' />
+        <Icon name="save" />
       </Menu.Item>
 
       <Menu.Item
-        name='clone-flow'
-        active={activeItem === 'clone-flow'}
+        name="clone-flow"
+        active={activeItem === "clone-flow"}
         onClick={onMenuItemCheck}
       >
-        <Icon name='clone' />
+        <Icon name="clone" />
       </Menu.Item>
 
-      <Menu.Menu position='right'>
-
-        <Menu.Item
-          name='toggle-node-layout'
-          onClick={onSetNodeLayout}
-        >
-          {
-            _nodeLayout === 'TB' ?
-              <Icon name='sitemap'/> :
-              <Icon name='sitemap' rotated='counterclockwise'/>
-          }
+      <Menu.Menu position="right">
+        <Menu.Item name="toggle-node-layout" onClick={onSetNodeLayout}>
+          {_nodeLayout === "TB" ? (
+            <Icon name="sitemap" />
+          ) : (
+            <Icon name="sitemap" rotated="counterclockwise" />
+          )}
         </Menu.Item>
 
         <Menu.Item
-          name='show-all-nodes'
-          active={activeItem === 'show-all-nodes'}
+          name="show-all-nodes"
+          active={activeItem === "show-all-nodes"}
           onClick={onMenuItemCheck}
         >
-          <Icon name='list layout' />
+          <Icon name="list layout" />
         </Menu.Item>
 
         <Menu.Item
-          name='show-gallery'
-          active={activeItem === 'show-gallery'}
+          name="show-gallery"
+          active={activeItem === "show-gallery"}
           onClick={onMenuItemCheck}
         >
-          <Icon name='sitemap' />
+          <Icon name="sitemap" />
         </Menu.Item>
 
         <Menu.Item
-          name='help'
-          active={activeItem === 'help'}
+          name="help"
+          active={activeItem === "help"}
           onClick={onMenuItemCheck}
         >
           Help
         </Menu.Item>
       </Menu.Menu>
     </Menu>
-  )
+  );
 };
 
 const onDragStart = (event: DragEvent, nodeType: string) => {
-  event.dataTransfer.setData('application/reactflow', nodeType);
-  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData("application/reactflow", nodeType);
+  event.dataTransfer.effectAllowed = "move";
 };
 
-const NodeGallery = ({isShow, zIndex}) => {
+const NodeGallery = ({ isShow, zIndex }) => {
   return (
-    <Transition.Group animation='fly down' duration={500}>
+    <Transition.Group animation="fly down" duration={500}>
       {isShow && (
-        <div style={{zIndex:{zIndex}, position: 'absolute'}}>
-          <Segment raised style={{width: '180px'}}>
+        <div style={{ zIndex: { zIndex }, position: "absolute" }}>
+          <Segment raised style={{ width: "180px" }}>
             <List>
               <List.Item>
-                <div className="react-flow__node-input"
-                   onDragStart={(event: DragEvent) => onDragStart(event, 'input')}
-                   draggable
+                <div
+                  className="react-flow__node-input"
+                  onDragStart={(event: DragEvent) =>
+                    onDragStart(event, "input")
+                  }
+                  draggable
                 >
                   Input Node
                 </div>
               </List.Item>
               <List.Item>
-                <div className="react-flow__node-default"
-                   onDragStart={(event: DragEvent) => onDragStart(event, 'default')}
-                   draggable
+                <div
+                  className="react-flow__node-default"
+                  onDragStart={(event: DragEvent) =>
+                    onDragStart(event, "default")
+                  }
+                  draggable
                 >
                   Default Node
                 </div>
               </List.Item>
               <List.Item>
-                <div className="react-flow__node-condition"
-                   onDragStart={(event: DragEvent) => onDragStart(event, 'condition')}
-                   draggable
+                <div
+                  className="react-flow__node-condition"
+                  onDragStart={(event: DragEvent) =>
+                    onDragStart(event, "condition")
+                  }
+                  draggable
                 >
                   Condition Node
                 </div>
               </List.Item>
               <List.Item>
-                <div className="react-flow__node-output"
-                   onDragStart={(event: DragEvent) => onDragStart(event, 'output')}
-                   draggable
+                <div
+                  className="react-flow__node-output"
+                  onDragStart={(event: DragEvent) =>
+                    onDragStart(event, "output")
+                  }
+                  draggable
                 >
                   Output Node
                 </div>
@@ -226,7 +239,7 @@ const NodeGallery = ({isShow, zIndex}) => {
         </div>
       )}
     </Transition.Group>
-  )
+  );
 };
 
 let id = 0;
@@ -236,15 +249,14 @@ const nodeTypes = {
   condition: ConditionNode,
 };
 
-
 const nodeWidth = 172;
 const nodeHeight = 36;
 
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-const getLayoutedElements = (elements, direction = 'TB') => {
-  const isHorizontal = Boolean(direction === 'LR');
+const getLayoutedElements = (elements, direction = "TB") => {
+  const isHorizontal = Boolean(direction === "LR");
   dagreGraph.setGraph({ rankdir: direction });
 
   elements.forEach((el) => {
@@ -260,8 +272,8 @@ const getLayoutedElements = (elements, direction = 'TB') => {
   return elements.map((el) => {
     if (isNode(el)) {
       const nodeWithPosition = dagreGraph.node(el.id);
-      el.targetPosition = isHorizontal ? 'left' : 'top';
-      el.sourcePosition = isHorizontal ? 'right' : 'bottom';
+      el.targetPosition = isHorizontal ? "left" : "top";
+      el.sourcePosition = isHorizontal ? "right" : "bottom";
 
       // unfortunately we need this little hack to pass a slightly different position
       // to notify react flow about the change. Moreover we are shifting the dagre node position
@@ -276,20 +288,24 @@ const getLayoutedElements = (elements, direction = 'TB') => {
   });
 };
 
-const FlowCanvas = ({unlayoutedElements, nodeLayout}) => {
-
-  const [elements, setElements] = useState(getLayoutedElements(unlayoutedElements == null ? [] : unlayoutedElements, nodeLayout));
+const FlowCanvas = ({ graph, nodeLayout }) => {
+  const [elements, setElements] = useState(
+    getLayoutedElements(graph == null ? [] : graph, nodeLayout)
+  );
 
   useEffect(() => {
-    const layoutedElements = getLayoutedElements(unlayoutedElements == null ? [] : unlayoutedElements, nodeLayout);
-    if (elements !== layoutedElements){
+    const layoutedElements = getLayoutedElements(
+      graph == null ? [] : graph,
+      nodeLayout
+    );
+    if (elements !== layoutedElements) {
       setElements(layoutedElements);
     }
-  }, [unlayoutedElements, nodeLayout]);
+  }, [graph, nodeLayout]);
 
   const onConnect = (params) =>
     setElements((els) =>
-      addEdge({ ...params, type: 'smoothstep', animated: true }, els)
+      addEdge({ ...params, type: "smoothstep", animated: true }, els)
     );
 
   const onElementsRemove = (elementsToRemove) =>
@@ -303,14 +319,14 @@ const FlowCanvas = ({unlayoutedElements, nodeLayout}) => {
 
   const onDragOver = (event) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
   };
 
   const onDrop = (event) => {
     event.preventDefault();
 
     const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-    const type = event.dataTransfer.getData('application/reactflow');
+    const type = event.dataTransfer.getData("application/reactflow");
     const position = reactFlowInstance.project({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
@@ -338,11 +354,7 @@ const FlowCanvas = ({unlayoutedElements, nodeLayout}) => {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
           >
-            <Background
-              variant="dots"
-              gap={15}
-              size={1}
-            />
+            <Background variant="dots" gap={15} size={1} />
             <Controls />
           </ReactFlow>
         </div>
@@ -352,35 +364,36 @@ const FlowCanvas = ({unlayoutedElements, nodeLayout}) => {
 };
 
 const FlowEditor = () => {
-  const [siedColumn, setSideColumn] = useState('')
-  const toggleSideColumn = (_selected) => setSideColumn(siedColumn !== _selected ? _selected: '');
-  const toggleShowGallery = () => toggleSideColumn('node-gallery');
-  const toggleShowAllNodes = () => toggleSideColumn('all-nodes');
+  const [siedColumn, setSideColumn] = useState("");
+  const toggleSideColumn = (_selected) =>
+    setSideColumn(siedColumn !== _selected ? _selected : "");
+  const toggleShowGallery = () => toggleSideColumn("node-gallery");
+  const toggleShowAllNodes = () => toggleSideColumn("all-nodes");
 
-  const [openedModal, setOpenedModal] = useState('');
-  const toggleModal = (_selected) => setOpenedModal(openedModal !== _selected ? _selected: '');
+  const [openedModal, setOpenedModal] = useState("");
+  const toggleModal = (_selected) =>
+    setOpenedModal(openedModal !== _selected ? _selected : "");
 
   const [flow, setFlow] = useState();
   const [unlayoutElements, setUnlayoutElements] = useState([]);
-  const [nodeLayout, setNodeLayout] = useState('TB');
-  const toggleShowOpenFlowFile = () => toggleModal('open-flow-file');
-  const handleSetOpenFlowAction = useCallback(({action, kwargs}) => {
-      if (action === 'close') {
-        setOpenedModal('');
+  const [nodeLayout, setNodeLayout] = useState("TB");
+  const toggleShowOpenFlowFile = () => toggleModal("open-flow-file");
+  const handleSetOpenFlowAction = useCallback(({ action, kwargs }) => {
+    if (action === "close") {
+      setOpenedModal("");
+    }
+    if (action === "confirm") {
+      const openedFile =
+        kwargs.openedFlowFile.length === 0
+          ? undefined
+          : kwargs.openedFlowFile[0];
+      if (openedFile) {
+        let formData = new FormData();
+        formData.append("file", openedFile, openedFile.name);
+        getParsedFlow(formData).then((newFlow) => setFlow(newFlow));
       }
-      if (action === 'confirm') {
-        const openedFile = kwargs.openedFlowFile.length === 0 ? undefined : kwargs.openedFlowFile[0];
-        if (openedFile) {
-          let formData = new FormData();
-          formData.append(
-            "file",
-            openedFile,
-            openedFile.name
-          );
-          getParsedFlow(formData).then((newFlow) => setFlow(newFlow));
-        };
-        setOpenedModal('');
-      }
+      setOpenedModal("");
+    }
   }, []);
 
   useEffect(() => {
@@ -388,13 +401,12 @@ const FlowEditor = () => {
     const els = [];
     //{ id: '7', type: 'output', data: { label: 'output' }, position },
     //{ id: 'e12', source: '1', target: '2', type: edgeType, animated: true },
-    if (flow?.flow?.nodes == null)
-      return;
+    if (flow?.flow?.nodes == null) return;
     flow?.flow?.nodes.forEach((node) => {
       els.push({
         id: node.name,
-        type: node.end_of_flow ? 'output' : node.switchon ? 'input' : 'default',
-        data: {label: node.name},
+        type: node.end_of_flow ? "output" : node.switchon ? "input" : "default",
+        data: { label: node.name },
         position: {
           x: Math.random() * window.innerWidth - 100,
           y: Math.random() * window.innerHeight,
@@ -405,18 +417,18 @@ const FlowEditor = () => {
           id: `${node.name}-send-${recv}`,
           source: node.name,
           target: recv,
-          type: 'smoothstep',
+          type: "smoothstep",
           animated: true,
         });
       });
       node.callees.forEach((_callee) => {
-        const callee = _callee===':self:' ? node.name : _callee;
-        if (callee !== 'SWITCHON') {
+        const callee = _callee === ":self:" ? node.name : _callee;
+        if (callee !== "SWITCHON") {
           els.push({
             id: `${node.name}-call-${callee}`,
             source: node.name,
             target: callee,
-            type: 'smoothstep',
+            type: "smoothstep",
             animated: true,
           });
         }
@@ -437,16 +449,13 @@ const FlowEditor = () => {
         toggleShowOpenFlowFile={toggleShowOpenFlowFile}
         setNodeLayout={setNodeLayout}
       />
-      <Grid stackable columns='equal'>
+      <Grid stackable columns="equal">
         <Grid.Column width={13}>
-          <FlowCanvas
-            unlayoutedElements={unlayoutElements}
-            nodeLayout={nodeLayout}
-          />
+          <FlowCanvas graph={unlayoutElements} nodeLayout={nodeLayout} />
         </Grid.Column>
         <Grid.Column width={1}>
-          <NodeGallery zindex={1} isShow={siedColumn==='node-gallery'}/>
-          <NodeGallery zindex={2} isShow={siedColumn==='all-nodes'}/>
+          <NodeGallery zindex={1} isShow={siedColumn === "node-gallery"} />
+          <NodeGallery zindex={2} isShow={siedColumn === "all-nodes"} />
         </Grid.Column>
       </Grid>
     </Container>
