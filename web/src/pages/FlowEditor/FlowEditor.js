@@ -19,6 +19,8 @@ import {
   EuiModalHeaderTitle,
   EuiPageTemplate,
   EuiPanel,
+  EuiPopover,
+  EuiPopoverFooter,
   EuiResizableContainer,
 } from "@elastic/eui";
 import { CanvasWidget } from "@projectstorm/react-canvas-core";
@@ -41,6 +43,7 @@ import CanvasWrapper from "../../components/CanvasWrapper";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
 import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
 import { InPortIcon, OutPortIcon } from "../../components/Icons";
+import TextPopover from "../../components/TextPopover";
 import logo from "../../logo.svg";
 
 const GraphContext = createContext();
@@ -122,30 +125,32 @@ const NodeGallery = () => {
 
 const EditorTools = () => {
   const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
-  const onAddInPortToSelected = () => {
-    eventQueue.push(["addInPortToSelected"]);
+  const onAddInPortToSelected = (name) => {
+    eventQueue.push(["addInPortToSelected", { name: name }]);
     setNewEventComing(1);
   };
-  const onAddOutPortToSelected = () => {
-    eventQueue.push(["addOutPortToSelected"]);
+  const onAddOutPortToSelected = (name) => {
+    eventQueue.push(["addOutPortToSelected", { name: name }]);
     setNewEventComing(1);
   };
-  // deletePortFromSelectedByName
+
   return (
     <EuiPanel>
       <EuiFlexGrid direction="column" alignitems="center">
         <EuiFlexItem>
-          <EuiButtonIcon
-            display="base"
+          <TextPopover
             iconType={InPortIcon}
-            onClick={onAddInPortToSelected}
+            display="base"
+            placeholder="name of the in port ..."
+            onSubmit={onAddInPortToSelected}
           />
         </EuiFlexItem>
         <EuiFlexItem>
-          <EuiButtonIcon
-            display="base"
+          <TextPopover
             iconType={OutPortIcon}
-            onClick={onAddOutPortToSelected}
+            display="base"
+            placeholder="name of the out port ..."
+            onSubmit={onAddOutPortToSelected}
           />
         </EuiFlexItem>
       </EuiFlexGrid>
@@ -163,9 +168,11 @@ const FlowCanvas = () => {
     while (eventQueue.length > 0) {
       const [event, args] = eventQueue.shift();
       if (event === "addInPortToSelected") {
-        addInPortToSelected();
+        const { name } = args;
+        addInPortToSelected(name);
       } else if (event === "addOutPortToSelected") {
-        addOutPortToSelected();
+        const { name } = args;
+        addOutPortToSelected(name);
       } else if (event === "deletePortFromSelectedByName") {
         const { name } = args;
         deletePortFromSelectedByName(name);
@@ -184,22 +191,26 @@ const FlowCanvas = () => {
 
   const forceUpdate = useForceUpdate();
 
-  const addInPortToSelected = () => {
+  const addInPortToSelected = (name) => {
     let model = diagramEngine.getModel();
 
     _.forEach(model.getSelectedEntities(), (node) => {
-      if (node instanceof DefaultNodeModel)
-        node.addInPort(`in-${node.getInPorts().length + 1}`, false);
+      if (node instanceof DefaultNodeModel) {
+        const portName = name ?? `in-${node.getInPorts().length + 1}`;
+        node.addInPort(portName);
+      }
     });
     forceUpdate();
   };
 
-  const addOutPortToSelected = () => {
+  const addOutPortToSelected = (name) => {
     let model = diagramEngine.getModel();
 
     _.forEach(model.getSelectedEntities(), (node) => {
-      if (node instanceof DefaultNodeModel)
-        node.addOutPort(`out-${node.getOutPorts().length + 1}`, false);
+      if (node instanceof DefaultNodeModel) {
+        const portName = name ?? `out-${node.getOutPorts().length + 1}`;
+        node.addOutPort(portName);
+      }
     });
     forceUpdate();
   };
