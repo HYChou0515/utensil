@@ -1,7 +1,9 @@
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiButtonIcon,
   EuiFilePicker,
+  EuiFlexGrid,
   EuiFlexGroup,
   EuiFlexItem,
   EuiForm,
@@ -21,10 +23,12 @@ import {
 } from "@elastic/eui";
 import { CanvasWidget } from "@projectstorm/react-canvas-core";
 import * as SRD from "@projectstorm/react-diagrams";
+import { DefaultNodeModel } from "@projectstorm/react-diagrams";
 import * as _ from "lodash";
 import React, {
   createContext,
   useContext,
+  useEffect,
   useReducer,
   useRef,
   useState,
@@ -35,19 +39,30 @@ import { v4 } from "uuid";
 import { getParsedFlow } from "../../api";
 import CanvasWrapper from "../../components/CanvasWrapper";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
-import { useForceUpdate } from "../../components/hooks";
+import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
+import { InPortIcon, OutPortIcon } from "../../components/Icons";
 import logo from "../../logo.svg";
 
 const GraphContext = createContext();
 const DiagramEngineContext = createContext();
+const DiagramControlContext = createContext();
 
 const Menu = ({
   toggleShowGallery,
   toggleShowAllNodes,
   toggleShowOpenFileUi,
-  toggleLayoutType,
 }) => {
-  const { layoutType } = useContext(GraphContext);
+  const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
+  const layoutTypeSwitch = (t) => (t === "TB" ? "LR" : "TB");
+  const [layoutType, toggleLayoutType] = useReducer(layoutTypeSwitch, "TB");
+  const onToggleShowGallery = () => {
+    eventQueue.push([
+      "autoDistribute",
+      { rankdir: layoutTypeSwitch(layoutType) },
+    ]);
+    setNewEventComing();
+    toggleLayoutType();
+  };
   return (
     <EuiHeader>
       <EuiHeaderSection grow={false}>
@@ -70,7 +85,7 @@ const Menu = ({
           </EuiHeaderSectionItemButton>
         </EuiHeaderSectionItem>
         <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={toggleLayoutType}>
+          <EuiHeaderSectionItemButton onClick={onToggleShowGallery}>
             <EuiIcon
               type={FaSitemap}
               style={{
@@ -87,7 +102,7 @@ const Menu = ({
 const NodeGallery = () => {
   return (
     <EuiPanel>
-      <EuiFlexGroup direction="column" alignItems="center">
+      <EuiFlexGroup direction="column" alignitems="center">
         <EuiFlexItem>
           <GalleryItemWidget
             model={{ type: "in", color: "rgb(192,255,0)" }}
@@ -104,31 +119,112 @@ const NodeGallery = () => {
     </EuiPanel>
   );
 };
-let count = 0;
+
+const EditorTools = () => {
+  const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
+  const onAddInPortToSelected = () => {
+    eventQueue.push(["addInPortToSelected"]);
+    setNewEventComing(1);
+  };
+  const onAddOutPortToSelected = () => {
+    eventQueue.push(["addOutPortToSelected"]);
+    setNewEventComing(1);
+  };
+  // deletePortFromSelectedByName
+  return (
+    <EuiPanel>
+      <EuiFlexGrid direction="column" alignitems="center">
+        <EuiFlexItem>
+          <EuiButtonIcon
+            display="base"
+            iconType={InPortIcon}
+            onClick={onAddInPortToSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <EuiButtonIcon
+            display="base"
+            iconType={OutPortIcon}
+            onClick={onAddOutPortToSelected}
+          />
+        </EuiFlexItem>
+      </EuiFlexGrid>
+    </EuiPanel>
+  );
+};
 
 const FlowCanvas = () => {
-  const { diagramEngine, dagreEngine } = useContext(DiagramEngineContext);
+  const diagramEngine = useContext(DiagramEngineContext);
+  const { eventQueue, newEventComing, setNewEventComing } = useContext(
+    DiagramControlContext
+  );
+
+  useEffect(() => {
+    while (eventQueue.length > 0) {
+      const [event, args] = eventQueue.shift();
+      if (event === "addInPortToSelected") {
+        addInPortToSelected();
+      } else if (event === "addOutPortToSelected") {
+        addOutPortToSelected();
+      } else if (event === "deletePortFromSelectedByName") {
+        const { name } = args;
+        deletePortFromSelectedByName(name);
+      } else if (event === "autoDistribute") {
+        const { rankdir } = args;
+        autoDistribute(rankdir);
+      }
+    }
+    setNewEventComing(0);
+  }, [newEventComing]);
+
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   };
+
   const forceUpdate = useForceUpdate();
-  const createNode = (name) => new SRD.DefaultNodeModel(name, "rgb(0,192,255)");
 
-  const connectNodes = (nodeFrom, nodeTo, engine) => {
-    //just to get id-like structure
-    count++;
-    const portOut = nodeFrom.addPort(
-      new SRD.DefaultPortModel(true, `${nodeFrom.name}-out-${count}`, "Out")
-    );
-    const portTo = nodeTo.addPort(
-      new SRD.DefaultPortModel(false, `${nodeFrom.name}-to-${count}`, "In")
-    );
-    return portOut.link(portTo);
+  const addInPortToSelected = () => {
+    let model = diagramEngine.getModel();
 
-    // ################# UNCOMMENT THIS LINE FOR PATH FINDING #############################
-    // return portOut.link(portTo, engine.getLinkFactories().getFactory(SRD.PathFindingLinkFactory.NAME));
-    // #####################################################################################
+    _.forEach(model.getSelectedEntities(), (node) => {
+      if (node instanceof DefaultNodeModel)
+        node.addInPort(`in-${node.getInPorts().length + 1}`, false);
+    });
+    forceUpdate();
+  };
+
+  const addOutPortToSelected = () => {
+    let model = diagramEngine.getModel();
+
+    _.forEach(model.getSelectedEntities(), (node) => {
+      if (node instanceof DefaultNodeModel)
+        node.addOutPort(`out-${node.getOutPorts().length + 1}`, false);
+    });
+    forceUpdate();
+  };
+
+  const deletePortFromSelectedByName = (portName) => {
+    let model = diagramEngine.getModel();
+    _.forEach(model.getSelectedEntities(), (node) => {
+      const removedPorts = [];
+      if (node instanceof DefaultNodeModel) {
+        _.forEach(node.getInPorts(), (port) => {
+          if (port.options.label === portName) {
+            removedPorts.push(port);
+          }
+        });
+        _.forEach(node.getOutPorts(), (port) => {
+          if (port.options.label === portName) {
+            removedPorts.push(port);
+          }
+        });
+        _.forEach(removedPorts, (port) => {
+          node.removePort(port);
+        });
+      }
+    });
+    forceUpdate();
   };
 
   const reroute = () => {
@@ -138,7 +234,16 @@ const FlowCanvas = () => {
     factory.calculateRoutingMatrix();
   };
 
-  const autoDistribute = () => {
+  const autoDistribute = (rankdir) => {
+    const dagreEngine = new SRD.DagreEngine({
+      graph: {
+        rankdir: rankdir,
+        ranker: "longest-path",
+        marginx: 25,
+        marginy: 25,
+      },
+      includeLinks: true,
+    });
     dagreEngine.redistribute(diagramEngine.getModel());
     reroute();
     diagramEngine.repaintCanvas();
@@ -169,6 +274,7 @@ const FlowCanvas = () => {
     diagramEngine.getModel().addNode(node);
     forceUpdate();
   };
+
   return (
     <CanvasWrapper onDrop={onDrop} onDragOver={onDragOver}>
       <CanvasWidget engine={diagramEngine} className={"canvas-widget"} />
@@ -273,32 +379,17 @@ const OpenFileUi = ({ onClose }) => {
   );
 };
 
-const FlowEditor = () => {
-  const diagramEngine = SRD.default();
-  const dagreEngine = new SRD.DagreEngine({
-    graph: {
-      rankdir: "RL",
-      ranker: "longest-path",
-      marginx: 25,
-      marginy: 25,
-    },
-    includeLinks: true,
-  });
-
-  const activeModel = new SRD.DiagramModel();
-  diagramEngine.setModel(activeModel);
+const Editor = () => {
   const collapseFn = useRef(() => {});
-  const [layoutType, toggleLayoutType] = useReducer(
-    (t) => (t === "TB" ? "LR" : "TB"),
-    "TB"
-  );
   const [showOpenFileUi, toggleShowOpenFileUi] = useReducer((t) => !t, false);
   const [graph, setGraph] = useState();
   const [flow, setFlow] = useState();
+  const [eventQueue] = useState([]);
+  const [newEventComing, setNewEventComing] = useState(0);
   return (
-    <DiagramEngineContext.Provider value={{ diagramEngine, dagreEngine }}>
-      <GraphContext.Provider
-        value={{ graph, setGraph, layoutType, flow, setFlow }}
+    <GraphContext.Provider value={{ graph, setGraph, flow, setFlow }}>
+      <DiagramControlContext.Provider
+        value={{ eventQueue, newEventComing, setNewEventComing }}
       >
         {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
         <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
@@ -307,7 +398,6 @@ const FlowEditor = () => {
               collapseFn.current("panel-gallery", "right")
             }
             toggleShowOpenFileUi={toggleShowOpenFileUi}
-            toggleLayoutType={toggleLayoutType}
           />
           <EuiFlexGroup>
             <EuiFlexItem>
@@ -322,7 +412,7 @@ const FlowEditor = () => {
                         initialSize={80}
                         minSize="50%"
                       >
-                        <FlowCanvas nodeLayout={layoutType} />
+                        <FlowCanvas />
                       </EuiResizablePanel>
 
                       <EuiResizableButton />
@@ -332,7 +422,14 @@ const FlowEditor = () => {
                         initialSize={20}
                         minSize={`${200}px`}
                       >
-                        <NodeGallery />
+                        <EuiFlexGroup direction="column" alignitems="center">
+                          <EuiFlexItem>
+                            <NodeGallery />
+                          </EuiFlexItem>
+                          <EuiFlexItem>
+                            <EditorTools />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
                       </EuiResizablePanel>
                     </>
                   );
@@ -341,8 +438,18 @@ const FlowEditor = () => {
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPageTemplate>
-      </GraphContext.Provider>
+      </DiagramControlContext.Provider>
+    </GraphContext.Provider>
+  );
+};
+
+const FlowEditor = () => {
+  const diagramEngine = useDiagramEngine();
+  return (
+    <DiagramEngineContext.Provider value={diagramEngine}>
+      <Editor />
     </DiagramEngineContext.Provider>
   );
 };
+
 export default FlowEditor;

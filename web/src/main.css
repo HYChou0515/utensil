@@ -10,10 +10,20 @@ body,
   overflow: hidden;
 }
 
+@media screen and (min-height: 800px) {
+  .canvas-widget {
+    min-height: 700px;
+  }
+}
+@media screen and (min-height: 500px) and (max-height: 800px) {
+  .canvas-widget {
+    min-height: 400px;
+  }
+}
+
 @media screen and (min-width: 768px) {
   .canvas-widget {
     flex-direction: row;
-    min-height: 700px;
   }
 
   .canvas-widget aside {
