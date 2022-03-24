@@ -42,7 +42,12 @@ import { getParsedFlow } from "../../api";
 import CanvasWrapper from "../../components/CanvasWrapper";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
 import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
-import { InPortIcon, OutPortIcon } from "../../components/Icons";
+import {
+  AddInPortIcon,
+  AddOutPortIcon,
+  DeleteInPortIcon,
+  DeleteOutPortIcon,
+} from "../../components/Icons";
 import TextPopover from "../../components/TextPopover";
 import logo from "../../logo.svg";
 
@@ -133,13 +138,21 @@ const EditorTools = () => {
     eventQueue.push(["addOutPortToSelected", { name: name }]);
     setNewEventComing(1);
   };
+  const onDeleteInPortFromSelected = (name) => {
+    eventQueue.push(["deleteInPortFromSelected", { name: name }]);
+    setNewEventComing(1);
+  };
+  const onDeleteOutPortFromSelected = (name) => {
+    eventQueue.push(["deleteOutPortFromSelected", { name: name }]);
+    setNewEventComing(1);
+  };
 
   return (
     <EuiPanel>
       <EuiFlexGrid direction="column" alignitems="center">
         <EuiFlexItem>
           <TextPopover
-            iconType={InPortIcon}
+            iconType={AddInPortIcon}
             display="base"
             placeholder="name of the in port ..."
             onSubmit={onAddInPortToSelected}
@@ -147,10 +160,26 @@ const EditorTools = () => {
         </EuiFlexItem>
         <EuiFlexItem>
           <TextPopover
-            iconType={OutPortIcon}
+            iconType={AddOutPortIcon}
             display="base"
             placeholder="name of the out port ..."
             onSubmit={onAddOutPortToSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <TextPopover
+            iconType={DeleteInPortIcon}
+            display="base"
+            placeholder="name of the in port ..."
+            onSubmit={onDeleteInPortFromSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <TextPopover
+            iconType={DeleteOutPortIcon}
+            display="base"
+            placeholder="name of the out port ..."
+            onSubmit={onDeleteOutPortFromSelected}
           />
         </EuiFlexItem>
       </EuiFlexGrid>
@@ -173,9 +202,12 @@ const FlowCanvas = () => {
       } else if (event === "addOutPortToSelected") {
         const { name } = args;
         addOutPortToSelected(name);
-      } else if (event === "deletePortFromSelectedByName") {
+      } else if (event === "deleteInPortFromSelected") {
         const { name } = args;
-        deletePortFromSelectedByName(name);
+        deleteInPortFromSelected(name);
+      } else if (event === "deleteOutPortFromSelected") {
+        const { name } = args;
+        deleteOutPortFromSelected(name);
       } else if (event === "autoDistribute") {
         const { rankdir } = args;
         autoDistribute(rankdir);
@@ -215,7 +247,7 @@ const FlowCanvas = () => {
     forceUpdate();
   };
 
-  const deletePortFromSelectedByName = (portName) => {
+  const deleteInPortFromSelected = (portName) => {
     let model = diagramEngine.getModel();
     _.forEach(model.getSelectedEntities(), (node) => {
       const removedPorts = [];
@@ -225,6 +257,19 @@ const FlowCanvas = () => {
             removedPorts.push(port);
           }
         });
+        _.forEach(removedPorts, (port) => {
+          node.removePort(port);
+        });
+      }
+    });
+    forceUpdate();
+  };
+
+  const deleteOutPortFromSelected = (portName) => {
+    let model = diagramEngine.getModel();
+    _.forEach(model.getSelectedEntities(), (node) => {
+      const removedPorts = [];
+      if (node instanceof DefaultNodeModel) {
         _.forEach(node.getOutPorts(), (port) => {
           if (port.options.label === portName) {
             removedPorts.push(port);
@@ -295,8 +340,6 @@ const FlowCanvas = () => {
 
 const parseFlowToGraph = (flow) => {
   const els = [];
-  //{ id: '7', type: 'output', data: { label: 'output' }, position },
-  //{ id: 'e12', source: '1', target: '2', type: edgeType, animated: true },
   if (flow?.nodes == null) return;
   flow?.nodes.forEach((node) => {
     els.push({

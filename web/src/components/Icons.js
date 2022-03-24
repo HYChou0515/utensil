@@ -1,5 +1,6 @@
 import styled from "@emotion/styled";
 import {
+  AiFillMinusCircle,
   AiFillPlusCircle,
   AiOutlineLogin,
   AiOutlineLogout,
@@ -12,7 +13,7 @@ export const IconStack = styled.span`
   }
 `;
 
-export const InPortIcon = () => (
+export const AddInPortIcon = () => (
   <IconStack>
     <AiOutlineLogin style={{ transform: "translate(-15%, -15%)" }} />
     <AiFillPlusCircle
@@ -21,10 +22,28 @@ export const InPortIcon = () => (
   </IconStack>
 );
 
-export const OutPortIcon = () => (
+export const AddOutPortIcon = () => (
   <IconStack>
     <AiOutlineLogout style={{ transform: "translate(-15%, -15%)" }} />
     <AiFillPlusCircle
+      style={{ transform: "translate(30%, 30%) scale(0.8,0.8)" }}
+    />
+  </IconStack>
+);
+
+export const DeleteInPortIcon = () => (
+  <IconStack>
+    <AiOutlineLogin style={{ transform: "translate(-15%, -15%)" }} />
+    <AiFillMinusCircle
+      style={{ transform: "translate(30%, 30%) scale(0.8,0.8)" }}
+    />
+  </IconStack>
+);
+
+export const DeleteOutPortIcon = () => (
+  <IconStack>
+    <AiOutlineLogout style={{ transform: "translate(-15%, -15%)" }} />
+    <AiFillMinusCircle
       style={{ transform: "translate(30%, 30%) scale(0.8,0.8)" }}
     />
   </IconStack>
