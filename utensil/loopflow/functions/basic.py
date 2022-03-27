@@ -6,8 +6,8 @@ Example:
 .. code-block:: python
 
     from utensil.loopflow.functions import basic
-    from utensil.loopflow.loopflow import register_node_process_functions
-    register_node_process_functions(basic)
+    from utensil.loopflow.loopflow import register_node_tasks
+    register_node_tasks(basic)
 """
 from collections import namedtuple
 from typing import Any

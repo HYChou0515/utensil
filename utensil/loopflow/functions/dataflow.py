@@ -6,8 +6,8 @@ Example:
 .. code-block:: python
 
     from utensil.loopflow.functions import dataflow
-    from utensil.loopflow.loopflow import register_node_process_functions
-    register_node_process_functions(dataflow)
+    from utensil.loopflow.loopflow import register_node_tasks
+    register_node_tasks(dataflow)
 """
 
 from __future__ import annotations
@@ -901,7 +901,7 @@ class Score(NodeTask):
 
 
 class ChangeTypeTo(NodeTask):
-    """Change the type of a given `arr`.
+    """Change the type of given `arr`.
 
     Attributes:
         to_type (str):

@@ -118,7 +118,7 @@ class NodeTask(abc.ABC):
 
     Parsing
     =======
-    To parse an object to a executable `NodeTask`,
+    To parse an object to an executable `NodeTask`,
     a derived class must be defined and registered in the global task map.
 
     As a subclass of `NodeTask`, Mytask is defined as
@@ -280,7 +280,7 @@ class NodeWorker(BaseNodeWorker):
 
     When a node is ready (either its senders or callers are ready),
     it starts a worker, with parameters from its senders, to execute
-    some specific tasks. The worker has a shorter life time than a `Node`,
+    some specific tasks. The worker has a shorter lifetime than a `Node`,
     meaning it is terminated after finished the tasks.
 
     The parameters from its senders will be passed to the first task.
@@ -488,7 +488,7 @@ class ParentSpecifierToken:
 
     .. todo::
         Though currently a list of tokens is equivalent to
-        a string of tokens join by "|".
+        a string of tokens joined by "|".
         it has an oppurtunity to represent a logical-and,
         rather than a logical-or, i.e., "|".
         So that `['A|B', 'C', 'D|E|F']` represents
@@ -721,11 +721,11 @@ class Node(BaseNode):
     can also get to its child.
 
     A node is consistently listening to its parents and has a longer
-    life time than a `NodeWorker`. If its parents are ready,
+    lifetime than a `NodeWorker`. If its parents are ready,
     the node will create a `NodeWorker` to run the attached list of `NodeTask`.
 
     A parent and its child communicate through a multiprocessing Queue.
-    A node can receives some parameters from its parens, the senders.
+    A node can receive some parameters from its parents, the senders.
     A node can be triggered by its parents, the callers,
     or as a starting point, for which the parent is defined as
     a special token, SWITCHON.
@@ -769,19 +769,19 @@ class Node(BaseNode):
     ... )
     >>> simple_node.triggered_by(TriggerToken(), _S.SWITCHON)
     >>> simple_node.run()
-    >>> # >>> HELLO: world
+    >>> # >>> HELLO: World
     >>> result_q.get()
     ('HELLO', 'World')
 
     Attributes:
         name: the name of a node.
-            It should be unique within a flow to be used as a identifier.
-        end: defines whether the node is the end point of the flow
-            If so, the node send a termination message to all the nodes
+            It should be unique within a flow to be used as an identifier.
+        end: defines whether the node is the end point of the flow.
+            If so, the node sends a termination message to all the nodes
             in the flow to stop the flow.
         tasks: a list of `NodeTask` to be done.
         end_q: a node-shared message queue to decide when to stop the flow.
-            The end point of the flow sends message to this queue to notifies
+            The end point of the flow sends message to this queue to notify
             all nodes to stop.
         result_q: a node-shared message queue for flow to gather the results.
             If a node is defined to export its results to the flow returns,
@@ -940,7 +940,7 @@ class Node(BaseNode):
                 time.sleep(0.1)
                 continue
 
-            # if callers ok but senders not ok, use whatever it have
+            # if callers ok but senders not ok, use whatever it has
             # args are the values with ordered integer keys in inputs
             args = [
                 inputs.pop(i)
@@ -1228,7 +1228,7 @@ def register_node_tasks(
 
     3. using an entire module of `sub-NodeTask`
         To register all `sub-NodeTask` in a module.
-        Internally, every members of this module will be checked
+        Internally, every member of this module will be checked
         if it is a subclass of `NodeTask` and register it if true.
 
         .. highlight:: python
