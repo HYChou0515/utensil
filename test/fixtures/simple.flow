@@ -8,7 +8,7 @@ FLOW:
     TASK:
       CONSTANT:
         VALUE: 2
-    CALLERS: SWITCHON | IF_1.C/False=V
+    CALLERS: SWITCHON
   ADD_1:
     TASK:
       ADD_VALUE:
@@ -32,7 +32,7 @@ FLOW:
       LIST_ADD_SUM
     SENDERS:
       - CONSTANT_1
-      - CONSTANT_2
+      - CONSTANT_2 | IF_1.C/False=V
       - ADD_1
       - ADD
       - ADD: TIMES_1

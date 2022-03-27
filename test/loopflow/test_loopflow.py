@@ -57,7 +57,8 @@ class TestParseNodeTask(ut.TestCase):
 
         class MyTask(loopflow.NodeTask):
 
-            def __init__(self, a=1, b=2, c=3, d=4):
+            def __init__(self, *args, a=1, b=2, c=3, d=4, **kwargs):
+                super().__init__(*args, **kwargs)
                 self.a = a
                 self.b = b
                 self.c = c
@@ -75,7 +76,8 @@ class TestParseNodeTask(ut.TestCase):
 
         class MyTask(loopflow.NodeTask):
 
-            def __init__(self, x):
+            def __init__(self, x, *args, **kwargs):
+                super().__init__(*args, **kwargs)
                 self.x = x
 
             def main(self):
@@ -90,7 +92,8 @@ class TestParseNodeTask(ut.TestCase):
 
         class MyTask(loopflow.NodeTask):
 
-            def __init__(self, *summed):
+            def __init__(self, *summed, **kwargs):
+                super().__init__(*summed, **kwargs)
                 self.summed = summed
 
             def main(self):
@@ -346,7 +349,7 @@ class TestSimpleFlow(ut.TestCase):
 
         with open("simple.output", "rb") as f:
             output = pickle.load(f)
-        self.assertEqual(115, output)
+        self.assertEqual(200.5, output)
 
         os.remove("simple.output")
 
@@ -385,6 +388,35 @@ class TestCovtypeFlow(ut.TestCase):
             self.assertEqual("TEST_DATA", result[1][0][1])
             self.assertGreaterEqual(1, result[1][0][2])
             self.assertLessEqual(0, result[1][0][2])
+
+
+class TestForloopFlow(ut.TestCase):
+
+    @pytest.mark.timeout(60)
+    @pytest.mark.xfail(
+        condition=not LOOPFLOW_INSTALLED,
+        reason="loopflow not installed",
+        raises=ImportError,
+    )
+    @pytest.mark.skipif(
+        condition=sys.platform == "darwin",
+        reason="skipped for macos, may cause seg fault",
+    )
+    def test_end_to_end(self):
+        from utensil.loopflow.functions import basic, dataflow
+        from utensil.loopflow.loopflow import (Flow, register_node_tasks,
+                                               reset_node_tasks)
+
+        reset_node_tasks()
+        register_node_tasks(task_module=basic)
+        register_node_tasks(task_module=dataflow)
+
+        flow_path = os.path.join(FIXTURE_BASE, "forloop.flow")
+        flow = Flow.parse_yaml(flow_path)
+        results = flow.start()
+        logger.debug(results)
+        self.assertEqual(1, len(results))
+        self.assertEqual(25, results[0][1])
 
 
 if __name__ == "__main__":
