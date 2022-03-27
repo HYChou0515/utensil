@@ -1,57 +1,76 @@
+import {
+  EuiButton,
+  EuiButtonEmpty,
+  EuiButtonIcon,
+  EuiFilePicker,
+  EuiFlexGrid,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiForm,
+  EuiHeader,
+  EuiHeaderSection,
+  EuiHeaderSectionItem,
+  EuiHeaderSectionItemButton,
+  EuiIcon,
+  EuiModal,
+  EuiModalBody,
+  EuiModalFooter,
+  EuiModalHeader,
+  EuiModalHeaderTitle,
+  EuiPageTemplate,
+  EuiPanel,
+  EuiPopover,
+  EuiPopoverFooter,
+  EuiResizableContainer,
+} from "@elastic/eui";
+import { CanvasWidget } from "@projectstorm/react-canvas-core";
+import * as SRD from "@projectstorm/react-diagrams";
+import { DefaultNodeModel } from "@projectstorm/react-diagrams";
+import * as _ from "lodash";
 import React, {
   createContext,
-  DragEvent,
   useContext,
   useEffect,
   useReducer,
   useRef,
   useState,
 } from "react";
-import logo from "../../logo.svg";
-import { FaFolderOpen, FaSitemap, FaCubes } from "react-icons/fa";
-import {
-  EuiHeader,
-  EuiPageTemplate,
-  EuiHeaderSection,
-  EuiHeaderSectionItem,
-  EuiIcon,
-  EuiHeaderSectionItemButton,
-  EuiPanel,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiResizableContainer,
-  EuiModal,
-  EuiModalHeader,
-  EuiModalHeaderTitle,
-  EuiModalBody,
-  EuiForm,
-  EuiFilePicker,
-  EuiModalFooter,
-  EuiButtonEmpty,
-  EuiButton,
-} from "@elastic/eui";
-import ReactFlow, {
-  addEdge,
-  Background,
-  Controls,
-  isNode,
-  ReactFlowProvider,
-  removeElements,
-} from "react-flow-renderer";
+import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { v4 } from "uuid";
-import dagre from "dagre";
-import "../../dnd.css";
+
 import { getParsedFlow } from "../../api";
+import CanvasWrapper from "../../components/CanvasWrapper";
+import GalleryItemWidget from "../../components/GalleryItemWidget";
+import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
+import {
+  AddInPortIcon,
+  AddOutPortIcon,
+  DeleteInPortIcon,
+  DeleteOutPortIcon,
+} from "../../components/Icons";
+import TextPopover from "../../components/TextPopover";
+import logo from "../../logo.svg";
 
 const GraphContext = createContext();
+const DiagramEngineContext = createContext();
+const DiagramControlContext = createContext();
 
 const Menu = ({
   toggleShowGallery,
   toggleShowAllNodes,
   toggleShowOpenFileUi,
-  toggleLayoutType,
 }) => {
-  const { layoutType } = useContext(GraphContext);
+  const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
+  const layoutTypeSwitch = (t) => (t === "TB" ? "LR" : "TB");
+  const [layoutType, toggleLayoutType] = useReducer(layoutTypeSwitch, "TB");
+  const onToggleShowGallery = () => {
+    eventQueue.push([
+      "autoDistribute",
+      { rankdir: layoutTypeSwitch(layoutType) },
+    ]);
+    setNewEventComing();
+    toggleLayoutType();
+  };
   return (
     <EuiHeader>
       <EuiHeaderSection grow={false}>
@@ -74,7 +93,7 @@ const Menu = ({
           </EuiHeaderSectionItemButton>
         </EuiHeaderSectionItem>
         <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={toggleLayoutType}>
+          <EuiHeaderSectionItemButton onClick={onToggleShowGallery}>
             <EuiIcon
               type={FaSitemap}
               style={{
@@ -88,169 +107,239 @@ const Menu = ({
   );
 };
 
-const onDragStart = (event: DragEvent, nodeType: string) => {
-  event.dataTransfer.setData("application/reactflow", nodeType);
-  event.dataTransfer.effectAllowed = "move";
-};
-
 const NodeGallery = () => {
   return (
     <EuiPanel>
-      <EuiFlexGroup direction="column" alignItems="center">
+      <EuiFlexGroup direction="column" alignitems="center">
         <EuiFlexItem>
-          <div
-            className="react-flow__node-input"
-            onDragStart={(event: DragEvent) => onDragStart(event, "input")}
-            draggable
-          >
-            Input Node
-          </div>
+          <GalleryItemWidget
+            model={{ type: "in", color: "rgb(192,255,0)" }}
+            name="Input Node"
+          />
         </EuiFlexItem>
         <EuiFlexItem>
-          <div
-            className="react-flow__node-default"
-            onDragStart={(event: DragEvent) => onDragStart(event, "default")}
-            draggable
-          >
-            Default Node
-          </div>
-        </EuiFlexItem>
-        <EuiFlexItem>
-          <div
-            className="react-flow__node-output"
-            onDragStart={(event: DragEvent) => onDragStart(event, "output")}
-            draggable
-          >
-            Output Node
-          </div>
+          <GalleryItemWidget
+            model={{ type: "out", color: "rgb(0,192,255)" }}
+            name="Output Node"
+          />
         </EuiFlexItem>
       </EuiFlexGroup>
     </EuiPanel>
   );
 };
 
-const nodeWidth = 172;
-const nodeHeight = 36;
+const EditorTools = () => {
+  const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
+  const onAddInPortToSelected = (name) => {
+    eventQueue.push(["addInPortToSelected", { name: name }]);
+    setNewEventComing(1);
+  };
+  const onAddOutPortToSelected = (name) => {
+    eventQueue.push(["addOutPortToSelected", { name: name }]);
+    setNewEventComing(1);
+  };
+  const onDeleteInPortFromSelected = (name) => {
+    eventQueue.push(["deleteInPortFromSelected", { name: name }]);
+    setNewEventComing(1);
+  };
+  const onDeleteOutPortFromSelected = (name) => {
+    eventQueue.push(["deleteOutPortFromSelected", { name: name }]);
+    setNewEventComing(1);
+  };
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-let id = 0;
-const getId = () => `dndnode_${id++}`;
-
-const getLayoutedElements = (elements, direction = "TB") => {
-  const isHorizontal = Boolean(direction === "LR");
-  dagreGraph.setGraph({ rankdir: direction });
-
-  elements.forEach((el) => {
-    if (isNode(el)) {
-      dagreGraph.setNode(el.id, { width: nodeWidth, height: nodeHeight });
-    } else {
-      dagreGraph.setEdge(el.source, el.target);
-    }
-  });
-
-  dagre.layout(dagreGraph);
-
-  return elements.map((el) => {
-    if (isNode(el)) {
-      const nodeWithPosition = dagreGraph.node(el.id);
-      el.targetPosition = isHorizontal ? "left" : "top";
-      el.sourcePosition = isHorizontal ? "right" : "bottom";
-
-      // unfortunately we need this little hack to pass a slightly different position
-      // to notify react flow about the change. Moreover we are shifting the dagre node position
-      // (anchor=center center) to the top left so it matches the react flow node anchor point (top left).
-      el.position = {
-        x: nodeWithPosition.x - nodeWidth / 2 + Math.random() / 1000,
-        y: nodeWithPosition.y - nodeHeight / 2,
-      };
-    }
-
-    return el;
-  });
+  return (
+    <EuiPanel>
+      <EuiFlexGrid direction="column" alignitems="center">
+        <EuiFlexItem>
+          <TextPopover
+            iconType={AddInPortIcon}
+            display="base"
+            placeholder="name of the in port ..."
+            onSubmit={onAddInPortToSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <TextPopover
+            iconType={AddOutPortIcon}
+            display="base"
+            placeholder="name of the out port ..."
+            onSubmit={onAddOutPortToSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <TextPopover
+            iconType={DeleteInPortIcon}
+            display="base"
+            placeholder="name of the in port ..."
+            onSubmit={onDeleteInPortFromSelected}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <TextPopover
+            iconType={DeleteOutPortIcon}
+            display="base"
+            placeholder="name of the out port ..."
+            onSubmit={onDeleteOutPortFromSelected}
+          />
+        </EuiFlexItem>
+      </EuiFlexGrid>
+    </EuiPanel>
+  );
 };
 
 const FlowCanvas = () => {
-  const { graph, layoutType } = useContext(GraphContext);
-  const [layoutedElements, setLayoutedElements] = useState([]);
+  const diagramEngine = useContext(DiagramEngineContext);
+  const { eventQueue, newEventComing, setNewEventComing } = useContext(
+    DiagramControlContext
+  );
 
   useEffect(() => {
-    const layoutedElements = getLayoutedElements(
-      graph == null ? [] : graph,
-      layoutType
-    );
-    if (graph !== layoutedElements) {
-      setLayoutedElements(layoutedElements);
+    while (eventQueue.length > 0) {
+      const [event, args] = eventQueue.shift();
+      if (event === "addInPortToSelected") {
+        const { name } = args;
+        addInPortToSelected(name);
+      } else if (event === "addOutPortToSelected") {
+        const { name } = args;
+        addOutPortToSelected(name);
+      } else if (event === "deleteInPortFromSelected") {
+        const { name } = args;
+        deleteInPortFromSelected(name);
+      } else if (event === "deleteOutPortFromSelected") {
+        const { name } = args;
+        deleteOutPortFromSelected(name);
+      } else if (event === "autoDistribute") {
+        const { rankdir } = args;
+        autoDistribute(rankdir);
+      }
     }
-  }, [graph, layoutType]);
-
-  const onConnect = (params) =>
-    setLayoutedElements((els) =>
-      addEdge({ ...params, type: "smoothstep", animated: true }, els)
-    );
-
-  const onElementsRemove = (elementsToRemove) =>
-    setLayoutedElements((els) => removeElements(elementsToRemove, els));
-
-  const reactFlowWrapper = useRef(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-
-  const onLoad = (_reactFlowInstance) =>
-    setReactFlowInstance(_reactFlowInstance);
+    setNewEventComing(0);
+  }, [newEventComing]);
 
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   };
 
+  const forceUpdate = useForceUpdate();
+
+  const addInPortToSelected = (name) => {
+    let model = diagramEngine.getModel();
+
+    _.forEach(model.getSelectedEntities(), (node) => {
+      if (node instanceof DefaultNodeModel) {
+        const portName = name ?? `in-${node.getInPorts().length + 1}`;
+        node.addInPort(portName);
+      }
+    });
+    forceUpdate();
+  };
+
+  const addOutPortToSelected = (name) => {
+    let model = diagramEngine.getModel();
+
+    _.forEach(model.getSelectedEntities(), (node) => {
+      if (node instanceof DefaultNodeModel) {
+        const portName = name ?? `out-${node.getOutPorts().length + 1}`;
+        node.addOutPort(portName);
+      }
+    });
+    forceUpdate();
+  };
+
+  const deleteInPortFromSelected = (portName) => {
+    let model = diagramEngine.getModel();
+    _.forEach(model.getSelectedEntities(), (node) => {
+      const removedPorts = [];
+      if (node instanceof DefaultNodeModel) {
+        _.forEach(node.getInPorts(), (port) => {
+          if (port.options.label === portName) {
+            removedPorts.push(port);
+          }
+        });
+        _.forEach(removedPorts, (port) => {
+          node.removePort(port);
+        });
+      }
+    });
+    forceUpdate();
+  };
+
+  const deleteOutPortFromSelected = (portName) => {
+    let model = diagramEngine.getModel();
+    _.forEach(model.getSelectedEntities(), (node) => {
+      const removedPorts = [];
+      if (node instanceof DefaultNodeModel) {
+        _.forEach(node.getOutPorts(), (port) => {
+          if (port.options.label === portName) {
+            removedPorts.push(port);
+          }
+        });
+        _.forEach(removedPorts, (port) => {
+          node.removePort(port);
+        });
+      }
+    });
+    forceUpdate();
+  };
+
+  const reroute = () => {
+    const factory = diagramEngine
+      .getLinkFactories()
+      .getFactory(SRD.PathFindingLinkFactory.NAME);
+    factory.calculateRoutingMatrix();
+  };
+
+  const autoDistribute = (rankdir) => {
+    const dagreEngine = new SRD.DagreEngine({
+      graph: {
+        rankdir: rankdir,
+        ranker: "longest-path",
+        marginx: 25,
+        marginy: 25,
+      },
+      includeLinks: true,
+    });
+    dagreEngine.redistribute(diagramEngine.getModel());
+    reroute();
+    diagramEngine.repaintCanvas();
+  };
+
   const onDrop = (event) => {
     event.preventDefault();
 
-    const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-    const type = event.dataTransfer.getData("application/reactflow");
-    const position = reactFlowInstance.project({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-    const newNode = {
-      id: getId(),
-      type,
-      position,
-      data: { label: `${type} node` },
-    };
-    setLayoutedElements((es) => es.concat(newNode));
+    const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
+    const nodesCount = _.keys(diagramEngine.getModel().getNodes()).length;
+
+    let node = null;
+    if (data.type === "in") {
+      node = new SRD.DefaultNodeModel(
+        "Node " + (nodesCount + 1),
+        "rgb(192,255,0)"
+      );
+      node.addInPort("In");
+    } else {
+      node = new SRD.DefaultNodeModel(
+        "Node " + (nodesCount + 1),
+        "rgb(0,192,255)"
+      );
+      node.addOutPort("Out");
+    }
+    const point = diagramEngine.getRelativeMousePoint(event);
+    node.setPosition(point);
+    diagramEngine.getModel().addNode(node);
+    forceUpdate();
   };
 
   return (
-    <EuiPanel>
-      <EuiFlexGroup>
-        <EuiFlexItem className="dndflow">
-          <ReactFlowProvider>
-            <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-              <ReactFlow
-                elements={layoutedElements}
-                onConnect={onConnect}
-                onElementsRemove={onElementsRemove}
-                onLoad={onLoad}
-                onDrop={onDrop}
-                onDragOver={onDragOver}
-              >
-                <Background variant="dots" gap={15} size={1} />
-                <Controls />
-              </ReactFlow>
-            </div>
-          </ReactFlowProvider>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </EuiPanel>
+    <CanvasWrapper onDrop={onDrop} onDragOver={onDragOver}>
+      <CanvasWidget engine={diagramEngine} className={"canvas-widget"} />
+    </CanvasWrapper>
   );
 };
 
 const parseFlowToGraph = (flow) => {
   const els = [];
-  //{ id: '7', type: 'output', data: { label: 'output' }, position },
-  //{ id: 'e12', source: '1', target: '2', type: edgeType, animated: true },
   if (flow?.nodes == null) return;
   flow?.nodes.forEach((node) => {
     els.push({
@@ -344,59 +433,77 @@ const OpenFileUi = ({ onClose }) => {
   );
 };
 
-const FlowEditor = () => {
+const Editor = () => {
   const collapseFn = useRef(() => {});
-  const [layoutType, toggleLayoutType] = useReducer(
-    (t) => (t === "TB" ? "LR" : "TB"),
-    "TB"
-  );
   const [showOpenFileUi, toggleShowOpenFileUi] = useReducer((t) => !t, false);
   const [graph, setGraph] = useState();
   const [flow, setFlow] = useState();
+  const [eventQueue] = useState([]);
+  const [newEventComing, setNewEventComing] = useState(0);
   return (
-    <GraphContext.Provider
-      value={{ graph, setGraph, layoutType, flow, setFlow }}
-    >
-      {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
-      <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
-        <Menu
-          toggleShowGallery={() => collapseFn.current("panel-gallery", "right")}
-          toggleShowOpenFileUi={toggleShowOpenFileUi}
-          toggleLayoutType={toggleLayoutType}
-        />
-        <EuiFlexGroup>
-          <EuiFlexItem>
-            <EuiResizableContainer>
-              {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
-                collapseFn.current = (id, direction) =>
-                  togglePanel(id, { direction });
-                return (
-                  <>
-                    <EuiResizablePanel
-                      id="panel-canvas"
-                      initialSize={80}
-                      minSize="50%"
-                    >
-                      <FlowCanvas nodeLayout={layoutType} />
-                    </EuiResizablePanel>
+    <GraphContext.Provider value={{ graph, setGraph, flow, setFlow }}>
+      <DiagramControlContext.Provider
+        value={{ eventQueue, newEventComing, setNewEventComing }}
+      >
+        {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
+        <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
+          <Menu
+            toggleShowGallery={() =>
+              collapseFn.current("panel-gallery", "right")
+            }
+            toggleShowOpenFileUi={toggleShowOpenFileUi}
+          />
+          <EuiFlexGroup>
+            <EuiFlexItem>
+              <EuiResizableContainer>
+                {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
+                  collapseFn.current = (id, direction) =>
+                    togglePanel(id, { direction });
+                  return (
+                    <>
+                      <EuiResizablePanel
+                        id="panel-canvas"
+                        initialSize={80}
+                        minSize="50%"
+                      >
+                        <FlowCanvas />
+                      </EuiResizablePanel>
 
-                    <EuiResizableButton />
+                      <EuiResizableButton />
 
-                    <EuiResizablePanel
-                      id="panel-gallery"
-                      initialSize={20}
-                      minSize={`${nodeWidth + 30}px`}
-                    >
-                      <NodeGallery />
-                    </EuiResizablePanel>
-                  </>
-                );
-              }}
-            </EuiResizableContainer>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiPageTemplate>
+                      <EuiResizablePanel
+                        id="panel-gallery"
+                        initialSize={20}
+                        minSize={`${200}px`}
+                      >
+                        <EuiFlexGroup direction="column" alignitems="center">
+                          <EuiFlexItem>
+                            <NodeGallery />
+                          </EuiFlexItem>
+                          <EuiFlexItem>
+                            <EditorTools />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </EuiResizablePanel>
+                    </>
+                  );
+                }}
+              </EuiResizableContainer>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiPageTemplate>
+      </DiagramControlContext.Provider>
     </GraphContext.Provider>
   );
 };
+
+const FlowEditor = () => {
+  const diagramEngine = useDiagramEngine();
+  return (
+    <DiagramEngineContext.Provider value={diagramEngine}>
+      <Editor />
+    </DiagramEngineContext.Provider>
+  );
+};
+
 export default FlowEditor;

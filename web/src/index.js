@@ -1,8 +1,12 @@
+import "@elastic/eui/dist/eui_theme_light.css";
+
+import "./main.css";
+
+import { EuiProvider } from "@elastic/eui";
 import React from "react";
 import ReactDOM from "react-dom";
+
 import App from "./App";
-import "@elastic/eui/dist/eui_theme_light.css";
-import { EuiProvider } from "@elastic/eui";
 import reportWebVitals from "./reportWebVitals";
 
 ReactDOM.render(
