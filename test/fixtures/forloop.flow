@@ -1,0 +1,29 @@
+#  x = 10
+#  for i in range(5):
+#    x = x+3
+#  print(x)
+FLOW:
+  X:
+    CALLERS: SWITCHON
+    TASK:
+      DEFAULT: 10
+  PLUS3:
+    CALLERS:
+      - X | PLUS3
+      - COUNTER.C/True
+    SENDERS: X | PLUS3
+    TASK:
+      ADD: 3
+  COUNTER:
+    CALLERS: SWITCHON | PLUS3
+    SENDERS: COUNTER.C/True=V
+    TASK:
+      - DEFAULT: 0
+      - ADD: 1
+      - LESS_EQUAL: 5
+  TERMINAL:
+    CALLERS: COUNTER.C/False
+    SENDERS: PLUS3
+    TASK: DUMMY
+    END: true
+    EXPORT: [PRINT, RETURN]

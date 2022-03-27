@@ -332,10 +332,17 @@ class NodeWorker(BaseNodeWorker):
                 print(f"{self.meta.node_name}: {ret}")
             if _ExportOperator.RETURN in self.meta.export:
                 self.meta.result_q.put((self.meta.node_name, ret))
-            for callee in self.meta.callees:
-                callee.triggered_by(ret, self.meta.node_name)
+            # MUST send before trigger.
+            # Receivers wait for callers, but callees do not wait for senders.
+            # That is, it might happen that receiver got triggered before
+            # sender ready.
+            # For example, A triggers B, B triggers C, and A send C.
+            # If trigger before send, after A ready,
+            # C might get triggered by B (triggered by A) before A send C.
             for receiver in self.meta.receivers:
                 receiver.receive(ret, self.meta.node_name)
+            for callee in self.meta.callees:
+                callee.triggered_by(ret, self.meta.node_name)
         except Exception as err:
             logger.exception(err)
             self.meta.end_q.put(EndOfFlowToken())
@@ -915,13 +922,12 @@ class Node(BaseNode):
             """Used to check if the given queue is ready"""
             _ok = True
             for key, q in qs.items():
-                if key in _q_vals:
-                    # got this key already
-                    continue
                 try:
+                    # Use the latest value
                     _q_vals[key] = q.get(block=False)
                 except Empty:
-                    _ok = False
+                    if key not in _q_vals:
+                        _ok = False
             return _ok, _q_vals
 
         inputs = {}
