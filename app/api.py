@@ -40,6 +40,13 @@ async def query_list_node_tasks(service: Service = Depends()):
     return service.get_all_tasks()
 
 
+@app.get("/task-source-code/{module}/{task_name}")
+async def query_get_source_code_of_task(module: str,
+                                        task_name: str,
+                                        service: Service = Depends()):
+    return service.get_source_code_of_node_task(module, task_name)
+
+
 @app.post("/parse-flow", response_model=MFlow)
 async def query_parse_flow(file: UploadFile = File(...),
                            flow_service: FlowService = Depends(FlowService)):
