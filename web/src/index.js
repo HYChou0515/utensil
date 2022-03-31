@@ -5,15 +5,19 @@ import "./main.css";
 import { EuiProvider } from "@elastic/eui";
 import React from "react";
 import ReactDOM from "react-dom";
+import { Provider } from "react-redux";
 
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
+import store from "./store/store";
 
 ReactDOM.render(
   <React.StrictMode>
-    <EuiProvider colorMode="light">
-      <App />
-    </EuiProvider>
+    <Provider store={store}>
+      <EuiProvider colorMode="light">
+        <App />
+      </EuiProvider>
+    </Provider>
   </React.StrictMode>,
   document.getElementById("root")
 );

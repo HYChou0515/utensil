@@ -38,7 +38,8 @@ import React, {
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { v4 } from "uuid";
 
-import { getParsedFlow } from "../../api";
+import { getParsedFlow } from "../../../api/api";
+import logo from "../../../logo.svg";
 import CanvasWrapper from "../../components/CanvasWrapper";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
 import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
@@ -49,63 +50,10 @@ import {
   DeleteOutPortIcon,
 } from "../../components/Icons";
 import TextPopover from "../../components/TextPopover";
-import logo from "../../logo.svg";
 
 const GraphContext = createContext();
 const DiagramEngineContext = createContext();
 const DiagramControlContext = createContext();
-
-const Menu = ({
-  toggleShowGallery,
-  toggleShowAllNodes,
-  toggleShowOpenFileUi,
-}) => {
-  const { eventQueue, setNewEventComing } = useContext(DiagramControlContext);
-  const layoutTypeSwitch = (t) => (t === "TB" ? "LR" : "TB");
-  const [layoutType, toggleLayoutType] = useReducer(layoutTypeSwitch, "TB");
-  const onToggleShowGallery = () => {
-    eventQueue.push([
-      "autoDistribute",
-      { rankdir: layoutTypeSwitch(layoutType) },
-    ]);
-    setNewEventComing();
-    toggleLayoutType();
-  };
-  return (
-    <EuiHeader>
-      <EuiHeaderSection grow={false}>
-        <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={() => console.log("ho")}>
-            <EuiIcon type={logo} size="l" />
-          </EuiHeaderSectionItemButton>
-        </EuiHeaderSectionItem>
-        <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={toggleShowOpenFileUi}>
-            <EuiIcon type={FaFolderOpen} />
-          </EuiHeaderSectionItemButton>
-        </EuiHeaderSectionItem>
-      </EuiHeaderSection>
-
-      <EuiHeaderSection side="right">
-        <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={toggleShowGallery}>
-            <EuiIcon type={FaCubes} />
-          </EuiHeaderSectionItemButton>
-        </EuiHeaderSectionItem>
-        <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={onToggleShowGallery}>
-            <EuiIcon
-              type={FaSitemap}
-              style={{
-                transform: `rotate(${layoutType === "TB" ? 0 : 270}deg)`,
-              }}
-            />
-          </EuiHeaderSectionItemButton>
-        </EuiHeaderSectionItem>
-      </EuiHeaderSection>
-    </EuiHeader>
-  );
-};
 
 const NodeGallery = () => {
   return (
