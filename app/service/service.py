@@ -1,4 +1,5 @@
 import itertools
+from typing import List
 
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
@@ -16,7 +17,15 @@ class Service:
                 name = loopflow.default_node_task_name(task)
                 yield name, task
 
-    def get_all_tasks(self):
+    def get_all_tasks(self) -> List[MNodeTaskListed]:
+        """List all node tasks from all default modules.
+
+        >>> service = Service()
+        >>> service.get_all_tasks()
+        [MNodeTaskListed(...), ...]
+
+        :return: list of node tasks
+        """
         return [
             MNodeTaskListed(key=name,
                             module=task.__module__,
