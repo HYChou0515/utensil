@@ -5,7 +5,7 @@ import {
   EuiHeaderSectionItemButton,
   EuiIcon,
 } from "@elastic/eui";
-import React, { createContext } from "react";
+import React from "react";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -60,3 +60,5 @@ const Menu = () => {
     </EuiHeader>
   );
 };
+
+export default Menu;

@@ -1,9 +1,22 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+import { getParsedFlow } from "../../../api/api";
+import { parseFlowToGraph } from "../../../domain/domain";
+import { uploadFlow } from "../../actions";
+
+const getParsedFlowThunk = createAsyncThunk(
+  uploadFlow.type,
+  async (formData, thunkAPI) => {
+    return await getParsedFlow(formData);
+  }
+);
 
 export const flowEditor = createSlice({
   name: "flowEditor",
   initialState: {
-    value: 0,
+    flow: null,
+    graph: null,
+    isLoading: "",
     isShowOpenFileUi: false,
     isShowGallery: false,
     usedLayout: "TB",
@@ -11,6 +24,9 @@ export const flowEditor = createSlice({
   reducers: {
     toggleShowOpenFileUi: (state) => {
       state.isShowOpenFileUi = !state.isShowOpenFileUi;
+    },
+    closeOpenFileUi: (state) => {
+      state.isShowOpenFileUi = false;
     },
     toggleShowGallery: (state) => {
       state.showGallery = !state.showGallery;
@@ -22,19 +38,17 @@ export const flowEditor = createSlice({
       console.log(newLayout);
       state.usedLayout = newLayout;
     },
-    increment: (state) => {
-      // Redux Toolkit allows us to write "mutating" logic in reducers. It
-      // doesn't actually mutate the state because it uses the Immer library,
-      // which detects changes to a "draft state" and produces a brand new
-      // immutable state based off those changes
-      state.value += 1;
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
     },
-    decrement: (state) => {
-      state.value -= 1;
-    },
-    incrementByAmount: (state, action) => {
-      state.value += action.payload;
-    },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(getParsedFlowThunk.fulfilled, (state, action) => {
+      state.flow = action.payload;
+      state.graph = parseFlowToGraph(action.payload);
+      state.isLoading = "";
+      state.isShowOpenFileUi = false;
+    });
   },
 });
 
@@ -43,8 +57,7 @@ export const {
   toggleShowOpenFileUi,
   toggleShowGallery,
   toggleUsedLayout,
-  increment,
-  decrement,
-  incrementByAmount,
+  closeOpenFileUi,
+  setLoading,
 } = flowEditor.actions;
 export default flowEditor.reducer;

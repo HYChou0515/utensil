@@ -36,10 +36,18 @@ import React, {
   useState,
 } from "react";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
+import { useDispatch, useSelector } from "react-redux";
 import { v4 } from "uuid";
 
 import { getParsedFlow } from "../../../api/api";
+import { parseFlowToGraph } from "../../../domain/domain";
 import logo from "../../../logo.svg";
+import { uploadFlow } from "../../../store/actions";
+import {
+  closeOpenFileUi,
+  setLoading,
+  toggleShowOpenFileUi,
+} from "../../../store/features/canvas/flowEditor";
 import CanvasWrapper from "../../components/CanvasWrapper";
 import GalleryItemWidget from "../../components/GalleryItemWidget";
 import { useDiagramEngine, useForceUpdate } from "../../components/hooks";
@@ -50,6 +58,7 @@ import {
   DeleteOutPortIcon,
 } from "../../components/Icons";
 import TextPopover from "../../components/TextPopover";
+import Menu from "./Menu";
 
 const GraphContext = createContext();
 const DiagramEngineContext = createContext();
@@ -286,68 +295,27 @@ const FlowCanvas = () => {
   );
 };
 
-const parseFlowToGraph = (flow) => {
-  const els = [];
-  if (flow?.nodes == null) return;
-  flow?.nodes.forEach((node) => {
-    els.push({
-      id: node.name,
-      type: node.end_of_flow ? "output" : node.switchon ? "input" : "default",
-      data: { label: node.name },
-      position: {
-        x: Math.random() * window.innerWidth - 100,
-        y: Math.random() * window.innerHeight,
-      },
-    });
-    node.receivers.forEach((recv) => {
-      els.push({
-        id: `${node.name}-send-${recv}`,
-        source: node.name,
-        target: recv,
-        type: "smoothstep",
-        animated: true,
-      });
-    });
-    node.callees.forEach((_callee) => {
-      const callee = _callee === ":self:" ? node.name : _callee;
-      if (callee !== "SWITCHON") {
-        els.push({
-          id: `${node.name}-call-${callee}`,
-          source: node.name,
-          target: callee,
-          type: "smoothstep",
-          animated: true,
-        });
-      }
-    });
-  });
-  return els;
-};
-
 const OpenFileUi = ({ onClose }) => {
-  const { setGraph, setFlow } = useContext(GraphContext);
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.isLoading);
+
   const formId = v4();
   const [file, setFile] = useState();
-  const [isLoading, setIsLoading] = useState(false);
   const [isInvalidFile, setIsInvalidFile] = useState(false);
+  const isLoadingUpload = isLoading === "upload file";
   const onOpenClick = () => {
     if (file) {
       setIsInvalidFile(false);
-      setIsLoading(true);
-      let formData = new FormData();
+      dispatch(setLoading("upload file"));
+      const formData = new FormData();
       formData.append("file", file, file.name);
-      getParsedFlow(formData).then((newFlow) => {
-        setFlow(newFlow);
-        setGraph(parseFlowToGraph(newFlow));
-        setIsLoading(false);
-        onClose();
-      });
+      dispatch({ type: uploadFlow.type, payload: formData });
     } else {
       setIsInvalidFile(true);
     }
   };
   return (
-    <EuiModal onClose={onClose}>
+    <EuiModal onClose={() => dispatch(closeOpenFileUi())}>
       <EuiModalHeader>
         <EuiModalHeaderTitle>
           <h1>Drop a file here or click to select a file</h1>
@@ -358,21 +326,23 @@ const OpenFileUi = ({ onClose }) => {
         <EuiForm id={formId}>
           <EuiFilePicker
             onChange={(f) => setFile(f.item(0))}
-            isLoading={isLoading}
+            isLoading={isLoadingUpload}
             isInvalid={isInvalidFile}
           />
         </EuiForm>
       </EuiModalBody>
 
       <EuiModalFooter>
-        <EuiButtonEmpty onClick={onClose}>Cancel</EuiButtonEmpty>
+        <EuiButtonEmpty onClick={() => dispatch(closeOpenFileUi())}>
+          Cancel
+        </EuiButtonEmpty>
         <EuiButton
           type="submit"
           form={formId}
           fill
           onClick={onOpenClick}
           isDisabled={(file?.size ?? 0) === 0}
-          isLoading={isLoading}
+          isLoading={isLoadingUpload}
         >
           Open
         </EuiButton>
@@ -382,65 +352,57 @@ const OpenFileUi = ({ onClose }) => {
 };
 
 const Editor = () => {
+  const isShowOpenFileUi = useSelector(
+    (state) => state.flowEditor.isShowOpenFileUi
+  );
+
   const collapseFn = useRef(() => {});
-  const [showOpenFileUi, toggleShowOpenFileUi] = useReducer((t) => !t, false);
   const [graph, setGraph] = useState();
   const [flow, setFlow] = useState();
-  const [eventQueue] = useState([]);
-  const [newEventComing, setNewEventComing] = useState(0);
   return (
     <GraphContext.Provider value={{ graph, setGraph, flow, setFlow }}>
-      <DiagramControlContext.Provider
-        value={{ eventQueue, newEventComing, setNewEventComing }}
-      >
-        {showOpenFileUi && <OpenFileUi onClose={toggleShowOpenFileUi} />}
-        <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
-          <Menu
-            toggleShowGallery={() =>
-              collapseFn.current("panel-gallery", "right")
-            }
-            toggleShowOpenFileUi={toggleShowOpenFileUi}
-          />
-          <EuiFlexGroup>
-            <EuiFlexItem>
-              <EuiResizableContainer>
-                {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
-                  collapseFn.current = (id, direction) =>
-                    togglePanel(id, { direction });
-                  return (
-                    <>
-                      <EuiResizablePanel
-                        id="panel-canvas"
-                        initialSize={80}
-                        minSize="50%"
-                      >
-                        <FlowCanvas />
-                      </EuiResizablePanel>
+      {isShowOpenFileUi && <OpenFileUi />}
+      <EuiPageTemplate pageContentProps={{ paddingSize: "none" }}>
+        <Menu />
+        <EuiFlexGroup>
+          <EuiFlexItem>
+            <EuiResizableContainer>
+              {(EuiResizablePanel, EuiResizableButton, { togglePanel }) => {
+                collapseFn.current = (id, direction) =>
+                  togglePanel(id, { direction });
+                return (
+                  <>
+                    <EuiResizablePanel
+                      id="panel-canvas"
+                      initialSize={80}
+                      minSize="50%"
+                    >
+                      <FlowCanvas />
+                    </EuiResizablePanel>
 
-                      <EuiResizableButton />
+                    <EuiResizableButton />
 
-                      <EuiResizablePanel
-                        id="panel-gallery"
-                        initialSize={20}
-                        minSize={`${200}px`}
-                      >
-                        <EuiFlexGroup direction="column" alignitems="center">
-                          <EuiFlexItem>
-                            <NodeGallery />
-                          </EuiFlexItem>
-                          <EuiFlexItem>
-                            <EditorTools />
-                          </EuiFlexItem>
-                        </EuiFlexGroup>
-                      </EuiResizablePanel>
-                    </>
-                  );
-                }}
-              </EuiResizableContainer>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </EuiPageTemplate>
-      </DiagramControlContext.Provider>
+                    <EuiResizablePanel
+                      id="panel-gallery"
+                      initialSize={20}
+                      minSize={`${200}px`}
+                    >
+                      <EuiFlexGroup direction="column" alignitems="center">
+                        <EuiFlexItem>
+                          <NodeGallery />
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                          <EditorTools />
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+                    </EuiResizablePanel>
+                  </>
+                );
+              }}
+            </EuiResizableContainer>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPageTemplate>
     </GraphContext.Provider>
   );
 };
