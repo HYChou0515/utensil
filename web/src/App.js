@@ -2,7 +2,7 @@ import "./main.css";
 
 import React from "react";
 
-import FlowEditor from "./pages/FlowEditor/FlowEditor";
+import FlowEditor from "./view/pages/FlowEditor/FlowEditor";
 
 const App = () => {
   return (
