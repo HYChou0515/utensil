@@ -1,13 +1,12 @@
-import itertools
 from typing import Optional
 
 from fastapi import Depends, FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from utensil.loopflow import loopflow
-from utensil.loopflow.functions import basic, dataflow
 
-from model import MFlow, MFlowJob, MFlowJobCreateByFlow, MNodeTask
+from model import MFlow, MFlowJob, MFlowJobCreateByFlow
+from model.node_task import MNodeTaskListed
 from service import FlowJobService, FlowService
+from service.service import Service
 
 app = FastAPI()
 
@@ -26,18 +25,6 @@ app.add_middleware(
 )
 
 
-def all_tasks(task_module):
-    for task in task_module.__dict__.values():
-        if (isinstance(task, type) and task is not loopflow.NodeTask and
-                issubclass(task, loopflow.NodeTask)):
-            name = loopflow.default_node_task_name(task)
-            yield name, task
-
-
-basic_tasks = list(all_tasks(basic))
-dataflow_tasks = list(all_tasks(dataflow))
-
-
 @app.get("/")
 async def read_root():
     return {"Hello": "World"}
@@ -48,12 +35,16 @@ async def read_item(item_id: int, q: Optional[str] = None):
     return {"item_id": item_id, "q": q}
 
 
-@app.get("/node-tasks", response_model=list[MNodeTask])
-async def query_list_node_tasks():
-    return [
-        MNodeTask(name=name)
-        for name, _ in itertools.chain(basic_tasks, dataflow_tasks)
-    ]
+@app.get("/node-tasks", response_model=list[MNodeTaskListed])
+async def query_list_node_tasks(service: Service = Depends()):
+    return service.get_all_tasks()
+
+
+@app.get("/task-source-code/{module}/{task_name}")
+async def query_get_source_code_of_task(module: str,
+                                        task_name: str,
+                                        service: Service = Depends()):
+    return service.get_source_code_of_node_task(module, task_name)
 
 
 @app.post("/parse-flow", response_model=MFlow)

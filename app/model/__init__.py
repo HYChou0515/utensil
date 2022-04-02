@@ -8,6 +8,10 @@ from bson import ObjectId
 from pydantic import BaseModel, Field
 
 
+class Model(BaseModel):
+    pass
+
+
 class PyObjectId(ObjectId):
 
     @classmethod
@@ -25,7 +29,7 @@ class PyObjectId(ObjectId):
         field_schema.update(type="string")
 
 
-class DbModel(BaseModel):
+class DbModel(Model):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
     class Config:
@@ -39,11 +43,11 @@ class MFlowFile(DbModel):
     content: str
 
 
-class MNodeTask(BaseModel):
+class MNodeTask(Model):
     name: str
 
 
-class MNode(BaseModel):
+class MNode(Model):
     name: str
     receivers: list[Union[MNode, str]]
     callees: list[Union[MNode, str]]
@@ -264,7 +268,7 @@ class JobStatusState(str, Enum):
     ERROR = "error"
 
 
-class MJobStatus(BaseModel):
+class MJobStatus(Model):
     state: JobStatusState
 
 
@@ -273,12 +277,12 @@ class NodeStatusState(str, Enum):
     WAIT = "wait"
 
 
-class MNodeStatus(BaseModel):
+class MNodeStatus(Model):
     current_task: str
     state: NodeStatusState
 
 
-class MFlowJobCreateByFlow(BaseModel):
+class MFlowJobCreateByFlow(Model):
     flow_id: str
 
 
