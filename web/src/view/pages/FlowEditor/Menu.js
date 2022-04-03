@@ -6,6 +6,7 @@ import {
   EuiIcon,
 } from "@elastic/eui";
 import React from "react";
+import { BsGearFill } from "react-icons/bs";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -13,6 +14,7 @@ import logo from "../../../logo.svg";
 import {
   toggleShowGallery,
   toggleShowOpenFileUi,
+  toggleShowSettingUi,
   toggleUsedLayout,
 } from "../../../store/features/canvas/flowEditor";
 
@@ -37,6 +39,13 @@ const Menu = () => {
       </EuiHeaderSection>
 
       <EuiHeaderSection side="right">
+        <EuiHeaderSectionItem>
+          <EuiHeaderSectionItemButton
+            onClick={() => dispatch(toggleShowSettingUi())}
+          >
+            <EuiIcon type={BsGearFill} />
+          </EuiHeaderSectionItemButton>
+        </EuiHeaderSectionItem>
         <EuiHeaderSectionItem>
           <EuiHeaderSectionItemButton
             onClick={() => dispatch(toggleShowGallery())}

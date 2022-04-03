@@ -1,32 +1,26 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
-import { getParsedFlow } from "../../../api/api";
-import domain from "../../../domain/CanvasDomain";
-import { uploadFlow } from "../../actions";
-
-const getParsedFlowThunk = createAsyncThunk(
-  uploadFlow.type,
-  async (formData, thunkAPI) => {
-    return await getParsedFlow(formData);
-  }
-);
+import { listNodeTasks } from "../../../api/thunk";
+import canvasDomain from "../../../domain/CanvasDomain";
 
 export const flowEditor = createSlice({
   name: "flowEditor",
   initialState: {
     flow: null,
     graph: null,
-    diagramEngine: domain.diagramEngine,
-    collapseFn: null,
+    collapseRightSideFunc: null,
+    collapseTopSideFunc: null,
     forceUpdate: 0,
     isLoading: "",
     isShowOpenFileUi: false,
     isShowGallery: false,
+    isShowSettingUi: false,
     usedLayout: "TB",
+    nodeTasks: [],
   },
   reducers: {
-    createCollapseFn: (state, action) => {
-      state.collapseFn = action.payload;
+    createCollapseRightSideFunc: (state, action) => {
+      state.collapseRightSideFunc = action.payload;
     },
     toggleShowOpenFileUi: (state) => {
       state.isShowOpenFileUi = !state.isShowOpenFileUi;
@@ -36,7 +30,13 @@ export const flowEditor = createSlice({
     },
     toggleShowGallery: (state) => {
       state.showGallery = !state.showGallery;
-      state.collapseFn("panel-gallery", "right");
+      state.collapseRightSideFunc("panel-gallery", "right");
+    },
+    toggleShowSettingUi: (state) => {
+      state.isShowSettingUi = !state.isShowSettingUi;
+    },
+    closeSettingUi: (state) => {
+      state.isShowSettingUi = false;
     },
     toggleUsedLayout: (state) => {
       let newLayout;
@@ -49,31 +49,29 @@ export const flowEditor = createSlice({
     },
     addInPortToSelected: (state, action) => {
       const name = action.payload;
-      domain.addInPortToSelected(name);
+      canvasDomain.addInPortToSelected(name);
     },
     addOutPortToSelected: (state, action) => {
       const name = action.payload;
-      domain.addOutPortToSelected(name);
+      canvasDomain.addOutPortToSelected(name);
     },
     deleteInPortFromSelected: (state, action) => {
       const name = action.payload;
-      domain.deleteInPortFromSelected(name);
+      canvasDomain.deleteInPortFromSelected(name);
     },
     deleteOutPortFromSelected: (state, action) => {
       const name = action.payload;
-      domain.deleteOutPortFromSelected(name);
+      canvasDomain.deleteOutPortFromSelected(name);
     },
     autoDistribute: (state, action) => {
       const rankdir = action.payload;
-      domain.autoDistribute(rankdir);
+      canvasDomain.autoDistribute(rankdir);
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getParsedFlowThunk.fulfilled, (state, action) => {
-      state.flow = action.payload;
-      state.graph = domain.parseFlowToGraph(action.payload);
-      state.isLoading = "";
-      state.isShowOpenFileUi = false;
+    builder.addCase(listNodeTasks.fulfilled, (state, action) => {
+      console.log(action.payload);
+      state.nodeTasks = action.payload;
     });
   },
 });
@@ -81,15 +79,17 @@ export const flowEditor = createSlice({
 // Action creators are generated for each case reducer function
 export default flowEditor.reducer;
 export const {
-  createCollapseFn,
+  createCollapseRightSideFunc,
   toggleShowOpenFileUi,
   toggleShowGallery,
   toggleUsedLayout,
   closeOpenFileUi,
+  closeSettingUi,
   setLoading,
   addInPortToSelected,
   addOutPortToSelected,
   deleteInPortFromSelected,
   autoDistribute,
   deleteOutPortFromSelected,
+  toggleShowSettingUi,
 } = flowEditor.actions;

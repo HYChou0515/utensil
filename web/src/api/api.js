@@ -6,11 +6,11 @@ const instance = axios.create({
   timeout: 20000,
 });
 
-const restGet = async (url) => {
+export const restGet = async (url) => {
   return (await instance.get(url)).data;
 };
 
-const restPost = async (url, data) => {
+export const restPost = async (url, data) => {
   return (await instance.post(url, data)).data;
 };
 
