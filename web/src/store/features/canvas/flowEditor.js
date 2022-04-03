@@ -70,7 +70,6 @@ export const flowEditor = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(listNodeTasks.fulfilled, (state, action) => {
-      console.log(action.payload);
       state.nodeTasks = action.payload;
     });
   },

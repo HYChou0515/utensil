@@ -6,18 +6,26 @@ const instance = axios.create({
   timeout: 20000,
 });
 
-export const restGet = async (url) => {
+const restGet = async (url) => {
   return (await instance.get(url)).data;
 };
 
-export const restPost = async (url, data) => {
+const restPost = async (url, data) => {
   return (await instance.post(url, data)).data;
 };
 
-export const listNodeTasks = async () => {
-  return await restGet("/node-tasks");
-};
+class ApiClient {
+  listNodeTasks = async () => {
+    return await restGet("/node-tasks");
+  };
 
-export const getParsedFlow = async (data) => {
-  return await restPost("/parse-flow", data);
-};
+  getSourceCode = async (module, taskName) => {
+    return await restGet(`/task-source-code/${module}/${taskName}`);
+  };
+
+  getParsedFlow = async (data) => {
+    return await restPost("/parse-flow", data);
+  };
+}
+
+export default new ApiClient();

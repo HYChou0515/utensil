@@ -7,6 +7,7 @@ const DataGrid = ({
   initColumnVis,
   initSorting,
   initPageSizeOptions,
+  leadingControlColumns,
 }) => {
   const [columnVis, setColumnVis] = useState(
     initColumnVis ?? columns.map((c) => c.id)
@@ -14,6 +15,13 @@ const DataGrid = ({
   const [sorting, setSorting] = useState(initSorting ?? []);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const pageSizeOptions = initPageSizeOptions ?? [10, 20, 30];
+
+  const _leadingControlColumns = leadingControlColumns.map((controlColumn) => ({
+    ...controlColumn,
+    rowCellRender: ({ rowIndex }) =>
+      controlColumn.rowCellRender(data[rowIndex]),
+  }));
+
   const onChangeItemsPerPage = useCallback(
     (pageSize) =>
       setPagination((pagination) => ({
@@ -52,6 +60,7 @@ const DataGrid = ({
         onChangePage: onChangePage,
         onChangeItemsPerPage: onChangeItemsPerPage,
       }}
+      leadingControlColumns={_leadingControlColumns}
       gridStyle={{
         border: "all",
         fontSize: "m",
