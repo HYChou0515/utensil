@@ -86,8 +86,8 @@ const SettingUi = () => {
   const nodeTasks = useSelector((state) => state.flowEditor.nodeTasks);
 
   useEffect(() => {
-    dispatch(listNodeTasks());
-  }, []);
+    if (nodeTasks == null) dispatch(listNodeTasks());
+  }, [nodeTasks]);
 
   const columns = [
     { id: "key", actions: false },
@@ -107,7 +107,7 @@ const SettingUi = () => {
 
       <EuiModalBody>
         <DataGrid
-          data={nodeTasks}
+          data={nodeTasks ?? []}
           columns={columns}
           leadingControlColumns={[
             {

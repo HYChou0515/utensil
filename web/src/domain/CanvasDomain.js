@@ -12,7 +12,7 @@ class FlowNodeWidget extends React.Component {
     const inPorts = this.props.node.inPorts.map((p) => (
       <EuiFlexItem className="left-port" key={htmlIdGenerator("left-port")()}>
         <EuiFlexGroup gutterSize={"none"}>
-          <EuiFlexItem>
+          <EuiFlexItem grow={false}>
             <PortWidget
               engine={this.props.engine}
               port={this.props.node.getPort(p)}
@@ -72,7 +72,11 @@ class FlowNodeWidget extends React.Component {
     ));
     return (
       <div className="custom-node">
-        <EuiFlexGroup direction="column" gutterSize={"none"}>
+        <EuiFlexGroup
+          direction="column"
+          gutterSize={"none"}
+          justifyContent="spaceAround"
+        >
           <EuiFlexItem className="node-title-box">
             <h3>{this.props.node.name}</h3>
           </EuiFlexItem>
@@ -258,20 +262,13 @@ class CanvasDomain {
     const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
     const nodesCount = _.keys(this.diagramEngine.getModel().getNodes()).length;
 
-    let node = null;
-    if (data.type === "in") {
-      node = new FlowNodeModel({
-        name: "Node " + (nodesCount + 1),
-        color: "rgb(192,255,0)",
-      });
-      node.addInPort("In");
-    } else {
-      node = new FlowNodeModel({
-        name: "Node " + (nodesCount + 1),
-        color: "rgb(0,192,255)",
-      });
-      node.addOutPort("Out");
-    }
+    const node = new FlowNodeModel({
+      name: data.taskName,
+      tasks: [data.taskName],
+      inPorts: data.inputs,
+      color: "rgb(192,255,0)",
+    });
+    node.addInPort("In");
     const point = this.diagramEngine.getRelativeMousePoint(event);
     node.setPosition(point);
     this.diagramEngine.getModel().addNode(node);

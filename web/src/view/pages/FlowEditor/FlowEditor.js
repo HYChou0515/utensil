@@ -55,10 +55,10 @@ const FlowEditor = () => {
                 >
                   <EuiFlexGroup direction="column" alignitems="center">
                     <EuiFlexItem>
-                      <NodeGallery />
+                      <EditorTools />
                     </EuiFlexItem>
                     <EuiFlexItem>
-                      <EditorTools />
+                      <NodeGallery />
                     </EuiFlexItem>
                   </EuiFlexGroup>
                 </EuiResizablePanel>

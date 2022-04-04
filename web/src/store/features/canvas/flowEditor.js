@@ -16,7 +16,7 @@ export const flowEditor = createSlice({
     isShowGallery: false,
     isShowSettingUi: false,
     usedLayout: "TB",
-    nodeTasks: [],
+    nodeTasks: null,
   },
   reducers: {
     createCollapseRightSideFunc: (state, action) => {

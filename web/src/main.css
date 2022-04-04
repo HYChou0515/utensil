@@ -47,6 +47,7 @@ body,
   border-bottom: solid 2px gray;
   padding: 5px;
   flex-grow: 1;
+  text-align: center;
 }
 
 .custom-node-color {
