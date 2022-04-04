@@ -10,6 +10,7 @@ import { BsGearFill } from "react-icons/bs";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 
+import canvasDomain from "../../../domain/CanvasDomain";
 import logo from "../../../logo.svg";
 import {
   toggleShowGallery,
@@ -25,7 +26,11 @@ const Menu = () => {
     <EuiHeader>
       <EuiHeaderSection grow={false}>
         <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={() => console.log("ho")}>
+          <EuiHeaderSectionItemButton
+            onClick={() =>
+              console.log(canvasDomain.diagramEngine.getModel().serialize())
+            }
+          >
             <EuiIcon type={logo} size="l" />
           </EuiHeaderSectionItemButton>
         </EuiHeaderSectionItem>

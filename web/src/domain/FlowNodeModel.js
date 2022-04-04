@@ -50,7 +50,11 @@ class FlowNodeModel extends DefaultNodeModel {
   serialize() {
     return {
       ...super.serialize(),
+      name: this.name,
+      color: this.color,
       tasks: this.tasks,
+      inPorts: this.inPorts,
+      outPorts: this.outPorts,
     };
   }
 

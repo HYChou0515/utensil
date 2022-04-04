@@ -1,11 +1,68 @@
-import { EuiFlexGroup, EuiFlexItem, htmlIdGenerator } from "@elastic/eui";
+import {
+  EuiButtonIcon,
+  EuiFieldText,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiText,
+  htmlIdGenerator,
+} from "@elastic/eui";
 import { AbstractReactFactory } from "@projectstorm/react-canvas-core";
 import { DefaultNodeModel, PortWidget } from "@projectstorm/react-diagrams";
 import * as SRD from "@projectstorm/react-diagrams";
 import * as _ from "lodash";
-import React from "react";
+import React, { useState } from "react";
 
 import FlowNodeModel from "./FlowNodeModel";
+
+const FlowNodeNameWidget = ({ initName, onSetName }) => {
+  const [name, setName] = useState(initName);
+  const [formTmpName, setFormTmpName] = useState(name);
+  const [isChangeName, setIsChangeName] = useState(false);
+  const onConfirm = () => {
+    setIsChangeName(false);
+    setName(formTmpName);
+    onSetName(formTmpName);
+  };
+  const onCancel = () => {
+    setIsChangeName(false);
+    setFormTmpName(name);
+  };
+  return (
+    <EuiFlexItem
+      className="node-title-box"
+      onDoubleClick={() => setIsChangeName(true)}
+    >
+      {isChangeName ? (
+        <EuiFlexGroup gutterSize={"xs"} alignItems="center">
+          <EuiFlexItem>
+            <EuiFieldText
+              value={formTmpName}
+              onChange={(e) => setFormTmpName(e.target.value)}
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonIcon
+              iconType={"check"}
+              color={"success"}
+              onClick={onConfirm}
+              display="fill"
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonIcon
+              iconType={"cross"}
+              color={"danger"}
+              onClick={onCancel}
+              display="fill"
+            />
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      ) : (
+        <EuiText>{name}</EuiText>
+      )}
+    </EuiFlexItem>
+  );
+};
 
 class FlowNodeWidget extends React.Component {
   render() {
@@ -77,9 +134,12 @@ class FlowNodeWidget extends React.Component {
           gutterSize={"none"}
           justifyContent="spaceAround"
         >
-          <EuiFlexItem className="node-title-box">
-            <h3>{this.props.node.name}</h3>
-          </EuiFlexItem>
+          <FlowNodeNameWidget
+            initName={this.props.node.name}
+            onSetName={(newName) => {
+              this.props.node.name = newName;
+            }}
+          />
 
           <EuiFlexItem>
             <EuiFlexGroup gutterSize={"none"}>
@@ -260,7 +320,6 @@ class CanvasDomain {
     event.preventDefault();
 
     const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
-    const nodesCount = _.keys(this.diagramEngine.getModel().getNodes()).length;
 
     const node = new FlowNodeModel({
       name: data.taskName,
