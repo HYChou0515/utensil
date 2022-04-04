@@ -35,12 +35,18 @@ body,
 .custom-node {
   border: solid 2px gray;
   border-radius: 5px;
-  width: 50px;
-  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
+}
+
+.node-title-box {
+  border-bottom: solid 2px gray;
+  padding: 5px;
+  flex-grow: 1;
 }
 
 .custom-node-color {
@@ -51,6 +57,38 @@ body,
   height: 20px;
   transform: translate(-50%, -50%);
   border-radius: 10px;
+}
+
+.left-port {
+  border-bottom: solid 2px gray;
+  transform: translate(0px, 2px);
+  padding: 5px;
+}
+
+.left-port-column {
+  border-right: solid 2px gray;
+  min-width: 50px;
+}
+
+.right-port {
+  border-bottom: solid 2px gray;
+  transform: translate(0px, 2px);
+  padding: 5px;
+}
+
+.right-port-column {
+  border-left: solid 2px gray;
+  min-width: 50px;
+}
+
+.task-box {
+  border-bottom: solid 2px gray;
+  transform: translate(0px, 2px);
+  padding: 5px;
+}
+
+.task-box-column {
+  min-width: 50px;
 }
 
 .circle-port {
@@ -64,4 +102,42 @@ body,
 
 .circle-port:hover {
   background: mediumpurple;
+}
+
+.trigger-port {
+  border: 2px solid rgba(0, 0, 0, 0);
+  border-bottom: 12px solid #ffdf00;
+  transform: rotateZ(-160deg);
+  padding: 2px;
+  width: 0;
+  height: 0;
+  margin: 0;
+  overflow: visible;
+  border-top: 0 solid;
+  border-radius: 0;
+  transform-origin: 50% 45% 0;
+  cursor: pointer;
+}
+
+.trigger-port:after {
+  content: "";
+  top: -4.5px;
+  left: -4px;
+  border: 3px solid rgba(0, 0, 0, 0);
+  border-bottom: 13px solid #ffdf00;
+  transform: rotateZ(4deg);
+  padding: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+  margin: 0;
+  overflow: visible;
+  border-top: 0 solid;
+  border-radius: 0;
+  transform-origin: 50% 50% 0;
+  cursor: pointer;
+}
+
+.trigger-port:hover {
+  transform: rotateZ(-220deg);
 }

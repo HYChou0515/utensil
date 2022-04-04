@@ -1,11 +1,136 @@
-import { DefaultNodeModel } from "@projectstorm/react-diagrams";
+import { EuiFlexGroup, EuiFlexItem, htmlIdGenerator } from "@elastic/eui";
+import { AbstractReactFactory } from "@projectstorm/react-canvas-core";
+import { DefaultNodeModel, PortWidget } from "@projectstorm/react-diagrams";
 import * as SRD from "@projectstorm/react-diagrams";
 import * as _ from "lodash";
+import React from "react";
+
+import FlowNodeModel from "./FlowNodeModel";
+
+class FlowNodeWidget extends React.Component {
+  render() {
+    const inPorts = this.props.node.inPorts.map((p) => (
+      <EuiFlexItem className="left-port" key={htmlIdGenerator("left-port")()}>
+        <EuiFlexGroup gutterSize={"none"}>
+          <EuiFlexItem>
+            <PortWidget
+              engine={this.props.engine}
+              port={this.props.node.getPort(p)}
+            >
+              <div className="circle-port" />
+            </PortWidget>
+          </EuiFlexItem>
+          <EuiFlexItem>
+            <div>
+              <h3>{p}</h3>
+            </div>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlexItem>
+    ));
+    inPorts.push(
+      <EuiFlexItem className="left-port" key={htmlIdGenerator("left-port")()}>
+        <EuiFlexGroup gutterSize={"none"}>
+          <EuiFlexItem>
+            <PortWidget
+              engine={this.props.engine}
+              port={this.props.node.getPort("trigger")}
+            >
+              <div className="trigger-port" />
+            </PortWidget>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlexItem>
+    );
+    const outPorts = this.props.node.outPorts.map((p) => (
+      <EuiFlexItem
+        className="right-port"
+        key={htmlIdGenerator("right-port")()}
+        grow={false}
+      >
+        <EuiFlexGroup gutterSize={"none"}>
+          <EuiFlexItem>
+            <div>
+              <h3>{p}</h3>
+            </div>
+          </EuiFlexItem>
+          <EuiFlexItem>
+            <PortWidget
+              engine={this.props.engine}
+              port={this.props.node.getPort(p)}
+            >
+              <div className="circle-port" />
+            </PortWidget>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlexItem>
+    ));
+    const tasks = this.props.node.tasks.map((p) => (
+      <EuiFlexItem className="task-box" key={htmlIdGenerator("task-box")()}>
+        <h3>{p}</h3>
+      </EuiFlexItem>
+    ));
+    return (
+      <div className="custom-node">
+        <EuiFlexGroup direction="column" gutterSize={"none"}>
+          <EuiFlexItem className="node-title-box">
+            <h3>{this.props.node.name}</h3>
+          </EuiFlexItem>
+
+          <EuiFlexItem>
+            <EuiFlexGroup gutterSize={"none"}>
+              <EuiFlexItem>
+                <EuiFlexGroup
+                  direction="column"
+                  gutterSize={"none"}
+                  className="left-port-column"
+                >
+                  {inPorts}
+                </EuiFlexGroup>
+              </EuiFlexItem>
+
+              <EuiFlexItem>
+                <EuiFlexGroup direction="column" className="task-box-column">
+                  {tasks}
+                </EuiFlexGroup>
+              </EuiFlexItem>
+
+              <EuiFlexItem>
+                <EuiFlexGroup
+                  direction="column"
+                  gutterSize={"none"}
+                  className="right-port-column"
+                >
+                  {outPorts}
+                </EuiFlexGroup>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    );
+  }
+}
+
+class FlowNodeFactory extends AbstractReactFactory {
+  constructor() {
+    super("flow-node");
+  }
+
+  generateModel(event) {
+    return new FlowNodeModel();
+  }
+
+  generateReactWidget(event) {
+    return <FlowNodeWidget engine={this.engine} node={event.model} />;
+  }
+}
 
 class CanvasDomain {
   constructor() {
     const diagramEngine = SRD.default();
     diagramEngine.setModel(new SRD.DiagramModel());
+    diagramEngine.getNodeFactories().registerFactory(new FlowNodeFactory());
     this.diagramEngine = diagramEngine;
   }
   parseFlowToGraph = (flow) => {
@@ -135,16 +260,16 @@ class CanvasDomain {
 
     let node = null;
     if (data.type === "in") {
-      node = new SRD.DefaultNodeModel(
-        "Node " + (nodesCount + 1),
-        "rgb(192,255,0)"
-      );
+      node = new FlowNodeModel({
+        name: "Node " + (nodesCount + 1),
+        color: "rgb(192,255,0)",
+      });
       node.addInPort("In");
     } else {
-      node = new SRD.DefaultNodeModel(
-        "Node " + (nodesCount + 1),
-        "rgb(0,192,255)"
-      );
+      node = new FlowNodeModel({
+        name: "Node " + (nodesCount + 1),
+        color: "rgb(0,192,255)",
+      });
       node.addOutPort("Out");
     }
     const point = this.diagramEngine.getRelativeMousePoint(event);
