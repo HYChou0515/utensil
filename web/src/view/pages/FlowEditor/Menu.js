@@ -6,13 +6,16 @@ import {
   EuiIcon,
 } from "@elastic/eui";
 import React from "react";
+import { BsGearFill } from "react-icons/bs";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 
+import canvasDomain from "../../../domain/CanvasDomain";
 import logo from "../../../logo.svg";
 import {
   toggleShowGallery,
   toggleShowOpenFileUi,
+  toggleShowSettingUi,
   toggleUsedLayout,
 } from "../../../store/features/canvas/flowEditor";
 
@@ -23,7 +26,11 @@ const Menu = () => {
     <EuiHeader>
       <EuiHeaderSection grow={false}>
         <EuiHeaderSectionItem>
-          <EuiHeaderSectionItemButton onClick={() => console.log("ho")}>
+          <EuiHeaderSectionItemButton
+            onClick={() =>
+              console.log(canvasDomain.diagramEngine.getModel().serialize())
+            }
+          >
             <EuiIcon type={logo} size="l" />
           </EuiHeaderSectionItemButton>
         </EuiHeaderSectionItem>
@@ -37,6 +44,13 @@ const Menu = () => {
       </EuiHeaderSection>
 
       <EuiHeaderSection side="right">
+        <EuiHeaderSectionItem>
+          <EuiHeaderSectionItemButton
+            onClick={() => dispatch(toggleShowSettingUi())}
+          >
+            <EuiIcon type={BsGearFill} />
+          </EuiHeaderSectionItemButton>
+        </EuiHeaderSectionItem>
         <EuiHeaderSectionItem>
           <EuiHeaderSectionItemButton
             onClick={() => dispatch(toggleShowGallery())}

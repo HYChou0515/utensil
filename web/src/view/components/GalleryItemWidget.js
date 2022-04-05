@@ -1,5 +1,8 @@
 import styled from "@emotion/styled";
-import React from "react";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
+
+import apiClient from "../../api/api";
 
 const GalleryItemContent = styled.div`
   color: black;

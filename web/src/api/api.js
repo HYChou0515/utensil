@@ -14,10 +14,18 @@ const restPost = async (url, data) => {
   return (await instance.post(url, data)).data;
 };
 
-export const listNodeTasks = async () => {
-  return await restGet("/node-tasks");
-};
+class ApiClient {
+  listNodeTasks = async () => {
+    return await restGet("/node-tasks");
+  };
 
-export const getParsedFlow = async (data) => {
-  return await restPost("/parse-flow", data);
-};
+  getSourceCode = async (module, taskName) => {
+    return await restGet(`/task-source-code/${module}/${taskName}`);
+  };
+
+  getParsedFlow = async (data) => {
+    return await restPost("/parse-flow", data);
+  };
+}
+
+export default new ApiClient();

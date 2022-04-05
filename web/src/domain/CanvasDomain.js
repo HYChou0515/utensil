@@ -1,11 +1,16 @@
-import { DefaultNodeModel } from "@projectstorm/react-diagrams";
 import * as SRD from "@projectstorm/react-diagrams";
+import { DefaultNodeModel } from "@projectstorm/react-diagrams";
 import * as _ from "lodash";
+import React from "react";
+
+import FlowNodeFactory from "./components/FlowNodeFactory";
+import FlowNodeModel from "./FlowNodeModel";
 
 class CanvasDomain {
   constructor() {
     const diagramEngine = SRD.default();
     diagramEngine.setModel(new SRD.DiagramModel());
+    diagramEngine.getNodeFactories().registerFactory(new FlowNodeFactory());
     this.diagramEngine = diagramEngine;
   }
   parseFlowToGraph = (flow) => {
@@ -131,22 +136,14 @@ class CanvasDomain {
     event.preventDefault();
 
     const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
-    const nodesCount = _.keys(this.diagramEngine.getModel().getNodes()).length;
 
-    let node = null;
-    if (data.type === "in") {
-      node = new SRD.DefaultNodeModel(
-        "Node " + (nodesCount + 1),
-        "rgb(192,255,0)"
-      );
-      node.addInPort("In");
-    } else {
-      node = new SRD.DefaultNodeModel(
-        "Node " + (nodesCount + 1),
-        "rgb(0,192,255)"
-      );
-      node.addOutPort("Out");
-    }
+    const node = new FlowNodeModel({
+      task: data.taskName,
+      inPorts: data.inputs,
+      params: data.params,
+      color: "rgb(192,255,0)",
+    });
+    node.addInPort("In");
     const point = this.diagramEngine.getRelativeMousePoint(event);
     node.setPosition(point);
     this.diagramEngine.getModel().addNode(node);

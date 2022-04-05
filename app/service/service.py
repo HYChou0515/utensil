@@ -31,14 +31,33 @@ class Service:
 
         :return: list of node tasks
         """
-        return [
-            MNodeTaskListed(key=name,
-                            module=task.__module__,
-                            task_name=task.__name__)
-            for name, task in itertools.chain.from_iterable(
+        ret = []
+
+        for name, task in itertools.chain.from_iterable(
                 self.get_all_tasks_from_module(module)
-                for module in self._all_modules)
-        ]
+                for module in self._all_modules):
+            arg_names = list(inspect.getfullargspec(task.main).args[1:])
+            if (varargs :=
+                    inspect.getfullargspec(task.main).varargs) is not None:
+                arg_names.append(f"*{varargs}")
+            signature = inspect.signature(task.__init__)
+            params = []
+            for k, v in signature.parameters.items():
+                if k == 'self':
+                    continue
+                if v.kind in (v.VAR_POSITIONAL, v.KEYWORD_ONLY, v.VAR_KEYWORD):
+                    params.append((k, 'optional'))
+                elif v.default is inspect.Parameter.empty:
+                    params.append((k, 'required'))
+                else:
+                    params.append((k, 'optional'))
+            ret.append(
+                MNodeTaskListed(key=name,
+                                module=task.__module__,
+                                task_name=task.__name__,
+                                arg_names=arg_names,
+                                params=params))
+        return ret
 
     def get_source_code_of_node_task(self, module: str, task_name: str) -> str:
         """Get source code of a given task in a module.
