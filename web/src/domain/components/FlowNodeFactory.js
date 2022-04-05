@@ -126,50 +126,51 @@ class FlowNodeWidget extends React.Component {
       </EuiFlexItem>
     ));
     return (
-      <div className="custom-node">
-        <EuiFlexGroup
-          direction="column"
-          gutterSize={"none"}
-          justifyContent="spaceAround"
-        >
-          <FlowNodeNameWidget
-            initName={this.props.node.name}
-            onSetName={(newName) => {
-              this.props.node.name = newName;
-            }}
-          />
+      <EuiFlexGroup
+        direction="column"
+        gutterSize={"none"}
+        className={`custom-node ${
+          this.props.node.isSelected() ? "selected-custom-node" : ""
+        }`}
+        justifyContent="spaceAround"
+      >
+        <FlowNodeNameWidget
+          initName={this.props.node.name}
+          onSetName={(newName) => {
+            this.props.node.name = newName;
+          }}
+        />
 
-          <EuiFlexItem>
-            <EuiFlexGroup gutterSize={"none"}>
-              <EuiFlexItem>
-                <EuiFlexGroup
-                  direction="column"
-                  gutterSize={"none"}
-                  className="left-port-column"
-                >
-                  {inPorts}
-                </EuiFlexGroup>
-              </EuiFlexItem>
+        <EuiFlexItem>
+          <EuiFlexGroup gutterSize={"none"}>
+            <EuiFlexItem>
+              <EuiFlexGroup
+                direction="column"
+                gutterSize={"none"}
+                className="left-port-column"
+              >
+                {inPorts}
+              </EuiFlexGroup>
+            </EuiFlexItem>
 
-              <EuiFlexItem>
-                <EuiFlexGroup direction="column" className="task-box-column">
-                  {tasks}
-                </EuiFlexGroup>
-              </EuiFlexItem>
+            <EuiFlexItem>
+              <EuiFlexGroup direction="column" className="task-box-column">
+                {tasks}
+              </EuiFlexGroup>
+            </EuiFlexItem>
 
-              <EuiFlexItem>
-                <EuiFlexGroup
-                  direction="column"
-                  gutterSize={"none"}
-                  className="right-port-column"
-                >
-                  {outPorts}
-                </EuiFlexGroup>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </div>
+            <EuiFlexItem>
+              <EuiFlexGroup
+                direction="column"
+                gutterSize={"none"}
+                className="right-port-column"
+              >
+                {outPorts}
+              </EuiFlexGroup>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFlexItem>
+      </EuiFlexGroup>
     );
   }
 }
