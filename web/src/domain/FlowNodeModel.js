@@ -18,11 +18,12 @@ class FlowNodeModel extends DefaultNodeModel {
       ...options,
       type: "flow-node",
     });
-    this.tasks = options.tasks || [];
+    this.task = options.task;
     this.color = options.color || { options: "red" };
-    this.name = options.name;
     this.inPorts = options.inPorts || [];
     this.outPorts = options.outPorts || ["out"];
+    this.params = options.params || [];
+    this.paramValues = options.params.map(() => null);
     _.forEach(this.inPorts, (p) =>
       this.addPort(
         new DefaultPortModel({
@@ -50,11 +51,12 @@ class FlowNodeModel extends DefaultNodeModel {
   serialize() {
     return {
       ...super.serialize(),
-      name: this.name,
       color: this.color,
-      tasks: this.tasks,
+      task: this.task,
       inPorts: this.inPorts,
       outPorts: this.outPorts,
+      params: this.params,
+      paramValues: this.paramValues,
     };
   }
 

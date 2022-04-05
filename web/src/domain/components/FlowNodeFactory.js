@@ -1,5 +1,5 @@
 import {
-  EuiButtonIcon,
+  EuiAccordion,
   EuiFieldText,
   EuiFlexGroup,
   EuiFlexItem,
@@ -8,55 +8,49 @@ import {
 } from "@elastic/eui";
 import { AbstractReactFactory } from "@projectstorm/react-canvas-core";
 import { PortWidget } from "@projectstorm/react-diagrams";
+import * as _ from "lodash";
 import React, { useState } from "react";
 
 import FlowNodeModel from "../FlowNodeModel";
 
-const FlowNodeNameWidget = ({ initName, onSetName }) => {
-  const [name, setName] = useState(initName);
-  const [formTmpName, setFormTmpName] = useState(name);
-  const [isChangeName, setIsChangeName] = useState(false);
-  const onConfirm = () => {
-    setIsChangeName(false);
-    setName(formTmpName);
-    onSetName(formTmpName);
-  };
-  const onCancel = () => {
-    setIsChangeName(false);
-    setFormTmpName(name);
-  };
+const FlowNodeNameWidget = ({ name }) => {
+  return (
+    <EuiFlexItem className="node-title-box">
+      <EuiText>{name}</EuiText>
+    </EuiFlexItem>
+  );
+};
+
+const FlowNodeParamWidget = ({ param, value, setValue }) => {
+  const [isMod, setIsMod] = useState(false);
+  const [shownValue, setShownValue] = useState(value);
+  const [tmpVal, setTmpVal] = useState(shownValue ?? "");
   return (
     <EuiFlexItem
-      className="node-title-box"
-      onDoubleClick={() => setIsChangeName(true)}
+      style={{ marginLeft: "3px", marginRight: "3px" }}
+      onDoubleClick={() => setIsMod(true)}
     >
-      {isChangeName ? (
-        <EuiFlexGroup gutterSize={"xs"} alignItems="center">
-          <EuiFlexItem>
+      {isMod ? (
+        <EuiFlexGroup gutterSize={"none"} alignitems={"center"}>
+          <EuiFlexItem grow={false}>
+            <EuiText size={"xs"}>{`${param}=`}</EuiText>
+          </EuiFlexItem>
+          <EuiFlexItem style={{ fontSize: "12px", height: "16px" }}>
             <EuiFieldText
-              value={formTmpName}
-              onChange={(e) => setFormTmpName(e.target.value)}
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType={"check"}
-              color={"success"}
-              onClick={onConfirm}
-              display="fill"
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiButtonIcon
-              iconType={"cross"}
-              color={"danger"}
-              onClick={onCancel}
-              display="fill"
+              style={{ fontSize: "12px", height: "16px" }}
+              autoFocus
+              onBlur={() => {
+                setIsMod(false);
+                setShownValue(tmpVal);
+                setValue(tmpVal);
+              }}
+              value={tmpVal}
+              onChange={(e) => setTmpVal(e.target.value)}
             />
           </EuiFlexItem>
         </EuiFlexGroup>
       ) : (
-        <EuiText>{name}</EuiText>
+        <EuiText size={"xs"}>{`${param}=${shownValue}`}</EuiText>
       )}
     </EuiFlexItem>
   );
@@ -65,7 +59,11 @@ const FlowNodeNameWidget = ({ initName, onSetName }) => {
 class FlowNodeWidget extends React.Component {
   render() {
     const inPorts = this.props.node.inPorts.map((p) => (
-      <EuiFlexItem className="left-port" key={htmlIdGenerator("left-port")()}>
+      <EuiFlexItem
+        className="left-port"
+        key={htmlIdGenerator("left-port")()}
+        grow={false}
+      >
         <EuiFlexGroup gutterSize={"none"}>
           <EuiFlexItem grow={false}>
             <PortWidget
@@ -84,9 +82,13 @@ class FlowNodeWidget extends React.Component {
       </EuiFlexItem>
     ));
     inPorts.push(
-      <EuiFlexItem className="left-port" key={htmlIdGenerator("left-port")()}>
+      <EuiFlexItem
+        className="left-port"
+        key={htmlIdGenerator("left-port")()}
+        grow={false}
+      >
         <EuiFlexGroup gutterSize={"none"}>
-          <EuiFlexItem>
+          <EuiFlexItem grow={false}>
             <PortWidget
               engine={this.props.engine}
               port={this.props.node.getPort("trigger")}
@@ -120,11 +122,40 @@ class FlowNodeWidget extends React.Component {
         </EuiFlexGroup>
       </EuiFlexItem>
     ));
-    const tasks = this.props.node.tasks.map((p) => (
-      <EuiFlexItem className="task-box" key={htmlIdGenerator("task-box")()}>
-        <h3>{p}</h3>
-      </EuiFlexItem>
-    ));
+    const requiredParams = _.zip(
+      this.props.node.params,
+      this.props.node.paramValues
+    )
+      .filter(([[par, req], v]) => req === "required")
+      .map(([[par, req], v], index) => (
+        <FlowNodeParamWidget
+          key={`required-param-${index}`}
+          param={par}
+          value={v}
+          setValue={(newV) => {
+            this.props.node.paramValues[index] = newV;
+          }}
+        />
+      ));
+    const requiredAllFulfilled =
+      _.zip(this.props.node.params, this.props.node.paramValues).filter(
+        ([[par, req], v]) => req === "required" && !v
+      ).length === 0;
+    const optionalParams = _.zip(
+      this.props.node.params,
+      this.props.node.paramValues
+    )
+      .filter(([[par, req], v]) => req === "optional")
+      .map(([[par, req], v], index) => (
+        <FlowNodeParamWidget
+          key={`optional-param-${index}`}
+          param={par}
+          value={v}
+          setValue={(newV) => {
+            this.props.node.paramValues[index] = newV;
+          }}
+        />
+      ));
     return (
       <EuiFlexGroup
         direction="column"
@@ -134,12 +165,7 @@ class FlowNodeWidget extends React.Component {
         }`}
         justifyContent="spaceAround"
       >
-        <FlowNodeNameWidget
-          initName={this.props.node.name}
-          onSetName={(newName) => {
-            this.props.node.name = newName;
-          }}
-        />
+        <FlowNodeNameWidget name={this.props.node.task} />
 
         <EuiFlexItem>
           <EuiFlexGroup gutterSize={"none"}>
@@ -153,10 +179,38 @@ class FlowNodeWidget extends React.Component {
               </EuiFlexGroup>
             </EuiFlexItem>
 
-            <EuiFlexItem>
-              <EuiFlexGroup direction="column" className="task-box-column">
-                {tasks}
-              </EuiFlexGroup>
+            <EuiFlexItem
+              style={{
+                marginLeft: "5px",
+                marginRight: "5px",
+                marginBottom: "5px",
+              }}
+            >
+              {requiredParams.length > 0 && (
+                <EuiAccordion
+                  initialIsOpen={true}
+                  id={htmlIdGenerator("accordion")()}
+                  buttonContent={
+                    <EuiText size={"xs"} color={!requiredAllFulfilled && "red"}>
+                      required
+                    </EuiText>
+                  }
+                >
+                  <EuiFlexGroup direction="column" gutterSize={"none"}>
+                    {requiredParams}
+                  </EuiFlexGroup>
+                </EuiAccordion>
+              )}
+              {optionalParams.length > 0 && (
+                <EuiAccordion
+                  id={htmlIdGenerator("accordion")()}
+                  buttonContent="optional"
+                >
+                  <EuiFlexGroup direction="column" gutterSize={"none"}>
+                    {optionalParams}
+                  </EuiFlexGroup>
+                </EuiAccordion>
+              )}
             </EuiFlexItem>
 
             <EuiFlexItem>

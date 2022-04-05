@@ -138,9 +138,9 @@ class CanvasDomain {
     const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
 
     const node = new FlowNodeModel({
-      name: data.taskName,
-      tasks: [data.taskName],
+      task: data.taskName,
       inPorts: data.inputs,
+      params: data.params,
       color: "rgb(192,255,0)",
     });
     node.addInPort("In");

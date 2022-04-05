@@ -15,7 +15,11 @@ const NodeGallery = () => {
   const itemWidgets = (nodeTasks ?? []).map((task) => (
     <GalleryItemWidget
       key={htmlIdGenerator("gallery-widget")()}
-      model={{ taskName: task.task_name, inputs: task.arg_names }}
+      model={{
+        taskName: task.task_name,
+        inputs: task.arg_names,
+        params: task.params,
+      }}
       name={task.task_name}
     />
   ));
