@@ -9,27 +9,11 @@ body,
   height: 100%;
   overflow: hidden;
 }
-
-@media screen and (min-height: 800px) {
-  .canvas-widget {
-    min-height: 700px;
-  }
-}
-@media screen and (min-height: 500px) and (max-height: 800px) {
-  .canvas-widget {
-    min-height: 400px;
-  }
-}
-
-@media screen and (min-width: 768px) {
-  .canvas-widget {
-    flex-direction: row;
-  }
-
-  .canvas-widget aside {
-    width: 20%;
-    max-width: 180px;
-  }
+.canvas-widget {
+  display: flex;
+  height: 100%;
+  min-height: 800px;
+  width: 100%;
 }
 
 .custom-node {
