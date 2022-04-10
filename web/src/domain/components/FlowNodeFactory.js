@@ -163,6 +163,7 @@ class FlowNodeWidget extends React.Component {
         className={`custom-node ${
           this.props.node.isSelected() ? "selected-custom-node" : ""
         }`}
+        style={{ backgroundColor: this.props.node.color }}
         justifyContent="spaceAround"
       >
         <FlowNodeNameWidget name={this.props.node.task} />

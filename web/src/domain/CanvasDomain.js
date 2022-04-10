@@ -144,7 +144,7 @@ class CanvasDomain {
       task: data.taskName,
       inPorts: data.inputs,
       params: data.params,
-      color: "rgb(192,255,0)",
+      color: data.color,
     });
     node.addInPort("In");
     const point = this.diagramEngine.getRelativeMousePoint(event);

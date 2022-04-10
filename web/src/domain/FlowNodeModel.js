@@ -19,7 +19,7 @@ class FlowNodeModel extends DefaultNodeModel {
       type: "flow-node",
     });
     this.task = options.task;
-    this.color = options.color || { options: "red" };
+    this.color = options.color;
     this.inPorts = options.inPorts || [];
     this.outPorts = options.outPorts || ["out"];
     this.params = options.params || [];
