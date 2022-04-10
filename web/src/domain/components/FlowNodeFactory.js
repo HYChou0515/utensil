@@ -169,7 +169,7 @@ class FlowNodeWidget extends React.Component {
         style={{ backgroundColor: this.props.node.color }}
         justifyContent="spaceAround"
       >
-        <FlowNodeNameWidget name={this.props.node.task} />
+        <FlowNodeNameWidget name={this.props.node.name} />
 
         <EuiFlexItem>
           <EuiFlexGroup gutterSize={"none"}>

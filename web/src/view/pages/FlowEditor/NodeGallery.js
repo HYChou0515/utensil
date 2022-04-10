@@ -19,8 +19,16 @@ const NodeGallery = () => {
       model={{
         type: "switch-on",
         color: "#ff471a",
+        name: "Switch On",
       }}
-      name="Switch On"
+    />,
+    <GalleryItemWidget
+      key={htmlIdGenerator("gallery-widget")()}
+      model={{
+        type: "end-of-flow",
+        color: "#ff471a",
+        name: "End of Flow",
+      }}
     />,
   ];
   const taskItemWidgets = (nodeTasks ?? []).map((task) => (
@@ -29,11 +37,10 @@ const NodeGallery = () => {
       model={{
         type: "task",
         color: strToColor(task.module),
-        taskName: task.task_name,
+        name: task.task_name,
         inputs: task.arg_names,
         params: task.params,
       }}
-      name={task.task_name}
     />
   ));
   return (

@@ -18,7 +18,7 @@ class FlowNodeModel extends DefaultNodeModel {
       ...options,
       type: "flow-node",
     });
-    this.task = options.task;
+    this.name = options.name;
     this.color = options.color;
     this.hasTrigger = options.hasTrigger ?? true;
     this.inPorts = options.inPorts || [];
@@ -55,7 +55,7 @@ class FlowNodeModel extends DefaultNodeModel {
     return {
       ...super.serialize(),
       color: this.color,
-      task: this.task,
+      name: this.name,
       inPorts: this.inPorts,
       outPorts: this.outPorts,
       params: this.params,

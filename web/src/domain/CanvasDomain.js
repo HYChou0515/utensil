@@ -140,27 +140,36 @@ class CanvasDomain {
 
     const data = JSON.parse(event.dataTransfer.getData("dnd-flow-node"));
 
-    let node;
+    let nodeOption;
     switch (data.type) {
       case "task":
-        node = new FlowNodeModel({
-          task: data.taskName,
+        nodeOption = {
+          name: data.name,
           inPorts: data.inputs,
           params: data.params,
           color: data.color,
-          hasTrigger: true,
-        });
+        };
         break;
       case "switch-on":
-        node = new FlowNodeModel({
-          task: "Switch On",
+        nodeOption = {
+          name: data.name,
           inPorts: [],
           params: [],
           color: data.color,
           hasTrigger: false,
-        });
+        };
+        break;
+      case "end-of-flow":
+        nodeOption = {
+          name: data.name,
+          inPorts: [],
+          params: [],
+          color: data.color,
+          outPorts: [],
+        };
+        break;
     }
-    node.addInPort("In");
+    const node = new FlowNodeModel(nodeOption);
     const point = this.diagramEngine.getRelativeMousePoint(event);
     node.setPosition(point);
     this.diagramEngine.getModel().addNode(node);

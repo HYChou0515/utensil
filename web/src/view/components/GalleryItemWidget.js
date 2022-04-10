@@ -31,7 +31,7 @@ const GalleryItemWidget = ({ model, name }) => {
           event.dataTransfer.setData("dnd-flow-node", JSON.stringify(model));
         }}
       >
-        {name}
+        {model.name}
       </GalleryItemContent>
     </GalleryItemBox>
   );
