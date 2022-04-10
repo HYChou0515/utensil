@@ -18,8 +18,9 @@ class FlowNodeModel extends DefaultNodeModel {
       ...options,
       type: "flow-node",
     });
-    this.task = options.task;
-    this.color = options.color || { options: "red" };
+    this.name = options.name;
+    this.color = options.color;
+    this.hasTrigger = options.hasTrigger ?? true;
     this.inPorts = options.inPorts || [];
     this.outPorts = options.outPorts || ["out"];
     this.params = options.params || [];
@@ -32,12 +33,14 @@ class FlowNodeModel extends DefaultNodeModel {
         })
       )
     );
-    this.addPort(
-      new TriggerPortModel({
-        in: true,
-        name: "trigger",
-      })
-    );
+    if (this.hasTrigger) {
+      this.addPort(
+        new TriggerPortModel({
+          in: true,
+          name: "trigger",
+        })
+      );
+    }
     _.forEach(this.outPorts, (p) =>
       this.addPort(
         new DefaultPortModel({
@@ -52,7 +55,7 @@ class FlowNodeModel extends DefaultNodeModel {
     return {
       ...super.serialize(),
       color: this.color,
-      task: this.task,
+      name: this.name,
       inPorts: this.inPorts,
       outPorts: this.outPorts,
       params: this.params,

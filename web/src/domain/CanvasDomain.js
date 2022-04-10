@@ -138,15 +138,38 @@ class CanvasDomain {
   onDrop = (event) => {
     event.preventDefault();
 
-    const data = JSON.parse(event.dataTransfer.getData("storm-diagram-node"));
+    const data = JSON.parse(event.dataTransfer.getData("dnd-flow-node"));
 
-    const node = new FlowNodeModel({
-      task: data.taskName,
-      inPorts: data.inputs,
-      params: data.params,
-      color: "rgb(192,255,0)",
-    });
-    node.addInPort("In");
+    let nodeOption;
+    switch (data.type) {
+      case "task":
+        nodeOption = {
+          name: data.name,
+          inPorts: data.inputs,
+          params: data.params,
+          color: data.color,
+        };
+        break;
+      case "switch-on":
+        nodeOption = {
+          name: data.name,
+          inPorts: [],
+          params: [],
+          color: data.color,
+          hasTrigger: false,
+        };
+        break;
+      case "end-of-flow":
+        nodeOption = {
+          name: data.name,
+          inPorts: [],
+          params: [],
+          color: data.color,
+          outPorts: [],
+        };
+        break;
+    }
+    const node = new FlowNodeModel(nodeOption);
     const point = this.diagramEngine.getRelativeMousePoint(event);
     node.setPosition(point);
     this.diagramEngine.getModel().addNode(node);

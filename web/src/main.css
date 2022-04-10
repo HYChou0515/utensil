@@ -22,7 +22,7 @@ body,
 }
 
 .selected-custom-node {
-  box-shadow: 0px 0px 5px #0000cf;
+  box-shadow: 0 0 25px #40408f;
 }
 
 .node-title-box {
@@ -60,8 +60,11 @@ body,
 }
 
 .right-port-column {
-  border-left: solid 2px gray;
   min-width: 50px;
+}
+
+.right-port-column-left-border {
+  border-left: solid 2px gray;
 }
 
 .task-box {
@@ -72,6 +75,12 @@ body,
 
 .task-box-column {
   min-width: 50px;
+}
+
+.args-column {
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-bottom: 5px;
 }
 
 .circle-port {

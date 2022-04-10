@@ -81,24 +81,26 @@ class FlowNodeWidget extends React.Component {
         </EuiFlexGroup>
       </EuiFlexItem>
     ));
-    inPorts.push(
-      <EuiFlexItem
-        className="left-port"
-        key={htmlIdGenerator("left-port")()}
-        grow={false}
-      >
-        <EuiFlexGroup gutterSize={"none"}>
-          <EuiFlexItem grow={false}>
-            <PortWidget
-              engine={this.props.engine}
-              port={this.props.node.getPort("trigger")}
-            >
-              <div className="trigger-port" />
-            </PortWidget>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiFlexItem>
-    );
+    if (this.props.node.getPort("trigger") != null) {
+      inPorts.push(
+        <EuiFlexItem
+          className="left-port"
+          key={htmlIdGenerator("left-port")()}
+          grow={false}
+        >
+          <EuiFlexGroup gutterSize={"none"}>
+            <EuiFlexItem grow={false}>
+              <PortWidget
+                engine={this.props.engine}
+                port={this.props.node.getPort("trigger")}
+              >
+                <div className="trigger-port" />
+              </PortWidget>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFlexItem>
+      );
+    }
     const outPorts = this.props.node.outPorts.map((p) => (
       <EuiFlexItem
         className="right-port"
@@ -156,6 +158,7 @@ class FlowNodeWidget extends React.Component {
           }}
         />
       ));
+    const hasParams = requiredParams.length > 0 || optionalParams.length > 0;
     return (
       <EuiFlexGroup
         direction="column"
@@ -163,9 +166,10 @@ class FlowNodeWidget extends React.Component {
         className={`custom-node ${
           this.props.node.isSelected() ? "selected-custom-node" : ""
         }`}
+        style={{ backgroundColor: this.props.node.color }}
         justifyContent="spaceAround"
       >
-        <FlowNodeNameWidget name={this.props.node.task} />
+        <FlowNodeNameWidget name={this.props.node.name} />
 
         <EuiFlexItem>
           <EuiFlexGroup gutterSize={"none"}>
@@ -179,45 +183,45 @@ class FlowNodeWidget extends React.Component {
               </EuiFlexGroup>
             </EuiFlexItem>
 
-            <EuiFlexItem
-              style={{
-                marginLeft: "5px",
-                marginRight: "5px",
-                marginBottom: "5px",
-              }}
-            >
-              {requiredParams.length > 0 && (
-                <EuiAccordion
-                  initialIsOpen={true}
-                  id={htmlIdGenerator("accordion")()}
-                  buttonContent={
-                    <EuiText size={"xs"} color={!requiredAllFulfilled && "red"}>
-                      required
-                    </EuiText>
-                  }
-                >
-                  <EuiFlexGroup direction="column" gutterSize={"none"}>
-                    {requiredParams}
-                  </EuiFlexGroup>
-                </EuiAccordion>
-              )}
-              {optionalParams.length > 0 && (
-                <EuiAccordion
-                  id={htmlIdGenerator("accordion")()}
-                  buttonContent="optional"
-                >
-                  <EuiFlexGroup direction="column" gutterSize={"none"}>
-                    {optionalParams}
-                  </EuiFlexGroup>
-                </EuiAccordion>
-              )}
-            </EuiFlexItem>
-
+            {hasParams && (
+              <EuiFlexItem className={"args-column"}>
+                {requiredParams.length > 0 && (
+                  <EuiAccordion
+                    initialIsOpen={true}
+                    id={htmlIdGenerator("accordion")()}
+                    buttonContent={
+                      <EuiText
+                        size={"xs"}
+                        color={!requiredAllFulfilled && "red"}
+                      >
+                        required
+                      </EuiText>
+                    }
+                  >
+                    <EuiFlexGroup direction="column" gutterSize={"none"}>
+                      {requiredParams}
+                    </EuiFlexGroup>
+                  </EuiAccordion>
+                )}
+                {optionalParams.length > 0 && (
+                  <EuiAccordion
+                    id={htmlIdGenerator("accordion")()}
+                    buttonContent="optional"
+                  >
+                    <EuiFlexGroup direction="column" gutterSize={"none"}>
+                      {optionalParams}
+                    </EuiFlexGroup>
+                  </EuiAccordion>
+                )}
+              </EuiFlexItem>
+            )}
             <EuiFlexItem>
               <EuiFlexGroup
                 direction="column"
                 gutterSize={"none"}
-                className="right-port-column"
+                className={`right-port-column ${
+                  hasParams && "right-port-column-left-border"
+                }`}
               >
                 {outPorts}
               </EuiFlexGroup>
