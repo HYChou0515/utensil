@@ -5,6 +5,7 @@ from typing import List
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
 
+from model.flow_graph import MFlowGraph
 from model.node_task import MNodeTaskListed
 
 
@@ -83,3 +84,11 @@ class Service:
         except KeyError:
             pass
         raise KeyError(f'module {module}, task {task_name} not found')
+
+    def create_graph(self, graph_body: MFlowGraph):
+        """Create a loop flow from a graph.
+
+        :param graph_body: a serialized graph
+        :return:
+        """
+        print(graph_body)
