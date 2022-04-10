@@ -51,17 +51,23 @@ export class BackgroundLayerWidget extends React.Component {
     this.state = {};
   }
 
-  getTransform() {
-    const model = this.props.layer.getParent();
-    return `
-			${model.getOffsetX()}px ${model.getOffsetY()}px
-  	`;
-  }
-
   getTransformStyle() {
+    const model = this.props.layer.getParent();
     if (this.props.layer.getOptions().transformed) {
+      let zl = (model.getZoomLevel() / 100) * 50;
+      let factor = Math.log2(zl / 50);
+      if (factor >= 1) {
+        factor = Math.floor(factor);
+      } else if (factor <= -1) {
+        factor = Math.ceil(factor);
+      } else {
+        factor = 0;
+      }
+      zl /= Math.pow(2, factor);
+
       return {
-        backgroundPosition: this.getTransform(),
+        backgroundPosition: `${model.getOffsetX()}px ${model.getOffsetY()}px`,
+        backgroundSize: `${zl}px ${zl}px`,
       };
     }
     return {};

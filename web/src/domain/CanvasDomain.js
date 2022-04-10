@@ -4,10 +4,14 @@ import React from "react";
 
 import FlowNodeFactory from "./components/FlowNodeFactory";
 import FlowNodeModel from "./FlowNodeModel";
+import { MyZoomCanvasAction } from "./MyZoomCanvasAction";
 
 class CanvasDomain {
   constructor() {
-    const diagramEngine = SRD.default();
+    const diagramEngine = SRD.default({
+      registerDefaultZoomCanvasAction: false,
+    });
+    diagramEngine.eventBus.registerAction(new MyZoomCanvasAction());
     diagramEngine.setModel(new SRD.DiagramModel());
     diagramEngine.getNodeFactories().registerFactory(new FlowNodeFactory());
     this.diagramEngine = diagramEngine;
