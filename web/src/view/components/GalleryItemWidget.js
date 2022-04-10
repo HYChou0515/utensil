@@ -28,10 +28,7 @@ const GalleryItemWidget = ({ model, name }) => {
         color={model.color}
         draggable
         onDragStart={(event) => {
-          event.dataTransfer.setData(
-            "storm-diagram-node",
-            JSON.stringify(model)
-          );
+          event.dataTransfer.setData("dnd-flow-node", JSON.stringify(model));
         }}
       >
         {name}

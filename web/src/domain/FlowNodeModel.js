@@ -20,6 +20,7 @@ class FlowNodeModel extends DefaultNodeModel {
     });
     this.task = options.task;
     this.color = options.color;
+    this.hasTrigger = options.hasTrigger ?? true;
     this.inPorts = options.inPorts || [];
     this.outPorts = options.outPorts || ["out"];
     this.params = options.params || [];
@@ -32,12 +33,14 @@ class FlowNodeModel extends DefaultNodeModel {
         })
       )
     );
-    this.addPort(
-      new TriggerPortModel({
-        in: true,
-        name: "trigger",
-      })
-    );
+    if (this.hasTrigger) {
+      this.addPort(
+        new TriggerPortModel({
+          in: true,
+          name: "trigger",
+        })
+      );
+    }
     _.forEach(this.outPorts, (p) =>
       this.addPort(
         new DefaultPortModel({
