@@ -1,14 +1,17 @@
 import * as SRD from "@projectstorm/react-diagrams";
-import { DefaultNodeModel } from "@projectstorm/react-diagrams";
 import * as _ from "lodash";
 import React from "react";
 
 import FlowNodeFactory from "./components/FlowNodeFactory";
 import FlowNodeModel from "./FlowNodeModel";
+import { MyZoomCanvasAction } from "./MyZoomCanvasAction";
 
 class CanvasDomain {
   constructor() {
-    const diagramEngine = SRD.default();
+    const diagramEngine = SRD.default({
+      registerDefaultZoomCanvasAction: false,
+    });
+    diagramEngine.eventBus.registerAction(new MyZoomCanvasAction());
     diagramEngine.setModel(new SRD.DiagramModel());
     diagramEngine.getNodeFactories().registerFactory(new FlowNodeFactory());
     this.diagramEngine = diagramEngine;
@@ -55,7 +58,7 @@ class CanvasDomain {
     let model = this.diagramEngine.getModel();
 
     _.forEach(model.getSelectedEntities(), (node) => {
-      if (node instanceof DefaultNodeModel) {
+      if (node instanceof SRD.DefaultNodeModel) {
         const portName = name ?? `in-${node.getInPorts().length + 1}`;
         node.addInPort(portName);
       }
@@ -66,7 +69,7 @@ class CanvasDomain {
     let model = this.diagramEngine.getModel();
 
     _.forEach(model.getSelectedEntities(), (node) => {
-      if (node instanceof DefaultNodeModel) {
+      if (node instanceof SRD.DefaultNodeModel) {
         const portName = name ?? `out-${node.getOutPorts().length + 1}`;
         node.addOutPort(portName);
       }
@@ -78,7 +81,7 @@ class CanvasDomain {
     let model = this.diagramEngine.getModel();
     _.forEach(model.getSelectedEntities(), (node) => {
       const removedPorts = [];
-      if (node instanceof DefaultNodeModel) {
+      if (node instanceof SRD.DefaultNodeModel) {
         _.forEach(node.getInPorts(), (port) => {
           if (port.options.label === portName) {
             removedPorts.push(port);
@@ -96,7 +99,7 @@ class CanvasDomain {
     let model = this.diagramEngine.getModel();
     _.forEach(model.getSelectedEntities(), (node) => {
       const removedPorts = [];
-      if (node instanceof DefaultNodeModel) {
+      if (node instanceof SRD.DefaultNodeModel) {
         _.forEach(node.getOutPorts(), (port) => {
           if (port.options.label === portName) {
             removedPorts.push(port);
