@@ -26,6 +26,10 @@ class ApiClient {
   getParsedFlow = async (data) => {
     return await restPost("/parse-flow", data);
   };
+
+  postGraph = async (data) => {
+    return await restPost("/graph", data);
+  };
 }
 
 export default new ApiClient();

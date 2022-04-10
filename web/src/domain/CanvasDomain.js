@@ -144,14 +144,17 @@ class CanvasDomain {
     switch (data.type) {
       case "task":
         nodeOption = {
+          nodeType: data.type,
           name: data.name,
           inPorts: data.inputs,
           params: data.params,
+          module: data.module,
           color: data.color,
         };
         break;
       case "switch-on":
         nodeOption = {
+          nodeType: data.type,
           name: data.name,
           inPorts: [],
           params: [],
@@ -161,6 +164,7 @@ class CanvasDomain {
         break;
       case "end-of-flow":
         nodeOption = {
+          nodeType: data.type,
           name: data.name,
           inPorts: [],
           params: [],
