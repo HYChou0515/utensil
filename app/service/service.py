@@ -105,27 +105,27 @@ class Service:
                 if isinstance(model, MFlowGraphLink):
                     links[model.id] = model
                 if isinstance(model, MFlowGraphNode):
-                    if model.nodeType == 'switch-on':
+                    if model.node_type == 'switch-on':
                         switch_on_id = model.id
-                    if model.nodeType == 'end-of-flow':
+                    if model.node_type == 'end-of-flow':
                         eof_id = model.id
         for layer in graph_body.layers:
             for model in layer.models.values():
                 if isinstance(model,
-                              MFlowGraphNode) and model.nodeType == 'task':
+                              MFlowGraphNode) and model.node_type == 'task':
                     task_cls = import_module(model.module)
                     task_map[f'{model.module}.{model.name}'] = getattr(
                         task_cls, model.name)
                     params = {
                         par_name: var
                         for var, (par_name,
-                                  _) in zip(model.paramValues, model.params)
+                                  _) in zip(model.param_values, model.params)
                     }
                     senders = {}
                     callers_str = None
                     eof = False
                     for port in model.ports:
-                        if port.isIn:
+                        if port.is_in:
                             if port.name == 'trigger':
                                 callers = []
                                 for lnk_id in port.links:
@@ -158,4 +158,4 @@ class Service:
                         flow[model.id]['END'] = True
 
         register_node_tasks(task_map=task_map)
-        Flow.parse(flow)
+        Flow.parse(flow).start()

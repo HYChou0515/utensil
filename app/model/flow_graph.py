@@ -10,27 +10,25 @@ GraphObjectId = str
 class MFlowGraphLink(Model):
     id: GraphObjectId
     source: GraphObjectId
-    sourcePort: GraphObjectId
     target: GraphObjectId
-    targetPort: GraphObjectId
 
 
 class MFlowGraphPort(Model):
     id: GraphObjectId
-    isIn: bool = Field(alias="in")
+    is_in: bool = Field(alias="in")
     name: str
-    parentNode: GraphObjectId
     links: List[GraphObjectId]
 
 
 class MFlowGraphNode(Model):
     id: GraphObjectId
-    nodeType: Literal['task', 'switch-on', 'end-of-flow']
+    node_type: Literal['task', 'switch-on',
+                       'end-of-flow'] = Field(alias='nodeType')
     module: Optional[str]
     params: List[Tuple[str, Literal['required', 'optional']]]
     ports: List[MFlowGraphPort]
     name: Optional[str]
-    paramValues: List[Any]
+    param_values: List[Any] = Field(alias='paramValues')
 
 
 MFlowGraphModel = Union[MFlowGraphLink, MFlowGraphNode]
@@ -80,12 +78,8 @@ class MFlowGraph(Model):
                 }, {
                     'models': {
                         '8560a6b3-080b-483f-89b2-ed81724fbce7': {
-                            'id':
-                                '8560a6b3-080b-483f-89b2-ed81724fbce7',
-                            'nodeType':
-                                'switch-on',
-                            'module':
-                                None,
+                            'id': '8560a6b3-080b-483f-89b2-ed81724fbce7',
+                            'nodeType': 'switch-on',
                             'params': [],
                             'ports': [{
                                 'id':
@@ -99,15 +93,14 @@ class MFlowGraph(Model):
                                 'links': [
                                     'f7a24266-e53f-4efc-8ec0-1040fbe16da2'
                                 ]
-                            }]
+                            }],
+                            'name': 'Switch On',
+                            'paramValues': []
                         },
                         '8c93173f-de95-45d6-9dcb-e40e0897dc62': {
-                            'id':
-                                '8c93173f-de95-45d6-9dcb-e40e0897dc62',
-                            'nodeType':
-                                'task',
-                            'module':
-                                'utensil.loopflow.functions.basic',
+                            'id': '8c93173f-de95-45d6-9dcb-e40e0897dc62',
+                            'nodeType': 'task',
+                            'module': 'utensil.loopflow.functions.basic',
                             'params': [('default', 'required')],
                             'ports': [{
                                 'id':
@@ -143,15 +136,13 @@ class MFlowGraph(Model):
                                 'links': [
                                     '5c1a5131-5b43-4a1f-ac98-07404521532e'
                                 ]
-                            }]
+                            }],
+                            'name': 'Default',
+                            'paramValues': ['100']
                         },
                         '369c73a7-2744-49cc-8ef2-3511de070e5f': {
-                            'id':
-                                '369c73a7-2744-49cc-8ef2-3511de070e5f',
-                            'nodeType':
-                                'end-of-flow',
-                            'module':
-                                None,
+                            'id': '369c73a7-2744-49cc-8ef2-3511de070e5f',
+                            'nodeType': 'end-of-flow',
                             'params': [],
                             'ports': [{
                                 'id':
@@ -165,7 +156,9 @@ class MFlowGraph(Model):
                                 'links': [
                                     '5c1a5131-5b43-4a1f-ac98-07404521532e'
                                 ]
-                            }]
+                            }],
+                            'name': 'End of Flow',
+                            'paramValues': []
                         }
                     }
                 }]
