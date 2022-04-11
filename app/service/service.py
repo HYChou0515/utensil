@@ -1,8 +1,11 @@
 import inspect
 import itertools
+import json
+from copy import deepcopy
 from importlib import import_module
-from typing import List
+from typing import List, Any
 
+import yaml
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
 from utensil.loopflow.loopflow import reset_node_tasks, register_node_tasks, Flow
@@ -93,8 +96,12 @@ class Service:
         :param graph_body: a serialized graph
         :return:
         """
+
+        def id_to_name(_id):
+            return f"ID_{_id.replace('-', '_')}"
+
         reset_node_tasks()
-        flow = {}
+        flow: dict[str, Any] = {}
         links = {}
         task_map = {}
 
@@ -113,11 +120,12 @@ class Service:
             for model in layer.models.values():
                 if isinstance(model,
                               MFlowGraphNode) and model.node_type == 'task':
+                    model_name = id_to_name(model.id)
                     task_cls = import_module(model.module)
                     task_map[f'{model.module}.{model.name}'] = getattr(
                         task_cls, model.name)
                     params = {
-                        par_name: var
+                        par_name: json.loads(var)
                         for var, (par_name,
                                   _) in zip(model.param_values, model.params)
                     }
@@ -132,11 +140,13 @@ class Service:
                                     if links[lnk_id].source == switch_on_id:
                                         callers.append('SWITCHON')
                                     else:
-                                        callers.append(links[lnk_id].source)
-                                callers_str = '|'.join(callers)
+                                        callers.append(
+                                            id_to_name(links[lnk_id].source))
+                                if len(callers) > 0:
+                                    callers_str = '|'.join(callers)
                             elif len(port.links) > 0:
                                 senders[port.name] = '|'.join([
-                                    links[lnk_id].source
+                                    id_to_name(links[lnk_id].source)
                                     for lnk_id in port.links
                                 ])
                         else:
@@ -145,17 +155,23 @@ class Service:
                                     if links[lnk_id].target == eof_id:
                                         eof = True
 
-                    flow[model.id] = {
-                        'TASK': {
-                            f'{model.module}.{model.name}': params
-                        },
-                        'SENDERS': senders,
+                    flow[model_name] = {
                         'EXPORT': ['PRINT', 'RETURN'],
                     }
+                    if len(senders) > 0:
+                        flow[model_name]['SENDERS'] = senders
+                    if len(params) > 0:
+                        flow[model_name]['TASK'] = {
+                            f'{model.module}.{model.name}': params
+                        }
+                    else:
+                        flow[model_name][
+                            'TASK'] = f'{model.module}.{model.name}'
                     if callers_str is not None:
-                        flow[model.id]['CALLERS'] = callers_str
+                        flow[model_name]['CALLERS'] = callers_str
                     if eof:
-                        flow[model.id]['END'] = True
+                        flow[model_name]['END'] = True
 
         register_node_tasks(task_map=task_map)
-        Flow.parse(flow).start()
+        Flow.parse(deepcopy(flow))  # try flow is valid
+        return yaml.dump(flow)

@@ -66,4 +66,4 @@ async def create_flow_job(
 
 @app.post("/graph")
 async def create_graph(graph_body: MFlowGraph, service: Service = Depends()):
-    service.create_graph(graph_body)
+    return service.create_graph(graph_body)
