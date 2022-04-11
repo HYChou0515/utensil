@@ -30,9 +30,9 @@ const Menu = () => {
           <EuiHeaderSectionItemButton
             onClick={() => {
               console.log(canvasDomain.diagramEngine.getModel().serialize());
-              apiClient.postGraph(
-                canvasDomain.diagramEngine.getModel().serialize()
-              );
+              apiClient
+                .postGraph(canvasDomain.diagramEngine.getModel().serialize())
+                .then((a) => console.log(a));
             }}
           >
             <EuiIcon type={logo} size="l" />
