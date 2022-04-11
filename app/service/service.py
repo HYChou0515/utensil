@@ -1,11 +1,13 @@
 import inspect
 import itertools
+from importlib import import_module
 from typing import List
 
 from utensil.loopflow import loopflow
 from utensil.loopflow.functions import basic, dataflow
+from utensil.loopflow.loopflow import reset_node_tasks, register_node_tasks, Flow
 
-from model.flow_graph import MFlowGraph
+from model.flow_graph import MFlowGraph, MFlowGraphLink, MFlowGraphNode
 from model.node_task import MNodeTaskListed
 
 
@@ -91,4 +93,69 @@ class Service:
         :param graph_body: a serialized graph
         :return:
         """
-        print(graph_body)
+        reset_node_tasks()
+        flow = {}
+        links = {}
+        task_map = {}
+
+        switch_on_id = None
+        eof_id = None
+        for layer in graph_body.layers:
+            for model in layer.models.values():
+                if isinstance(model, MFlowGraphLink):
+                    links[model.id] = model
+                if isinstance(model, MFlowGraphNode):
+                    if model.nodeType == 'switch-on':
+                        switch_on_id = model.id
+                    if model.nodeType == 'end-of-flow':
+                        eof_id = model.id
+        for layer in graph_body.layers:
+            for model in layer.models.values():
+                if isinstance(model,
+                              MFlowGraphNode) and model.nodeType == 'task':
+                    task_cls = import_module(model.module)
+                    task_map[f'{model.module}.{model.name}'] = getattr(
+                        task_cls, model.name)
+                    params = {
+                        par_name: var
+                        for var, (par_name,
+                                  _) in zip(model.paramValues, model.params)
+                    }
+                    senders = {}
+                    callers_str = None
+                    eof = False
+                    for port in model.ports:
+                        if port.isIn:
+                            if port.name == 'trigger':
+                                callers = []
+                                for lnk_id in port.links:
+                                    if links[lnk_id].source == switch_on_id:
+                                        callers.append('SWITCHON')
+                                    else:
+                                        callers.append(links[lnk_id].source)
+                                callers_str = '|'.join(callers)
+                            elif len(port.links) > 0:
+                                senders[port.name] = '|'.join([
+                                    links[lnk_id].source
+                                    for lnk_id in port.links
+                                ])
+                        else:
+                            if port.name == 'out':
+                                for lnk_id in port.links:
+                                    if links[lnk_id].target == eof_id:
+                                        eof = True
+
+                    flow[model.id] = {
+                        'TASK': {
+                            f'{model.module}.{model.name}': params
+                        },
+                        'SENDERS': senders,
+                        'EXPORT': ['PRINT', 'RETURN'],
+                    }
+                    if callers_str is not None:
+                        flow[model.id]['CALLERS'] = callers_str
+                    if eof:
+                        flow[model.id]['END'] = True
+
+        register_node_tasks(task_map=task_map)
+        Flow.parse(flow)

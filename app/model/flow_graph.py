@@ -29,10 +29,15 @@ class MFlowGraphNode(Model):
     module: Optional[str]
     params: List[Tuple[str, Literal['required', 'optional']]]
     ports: List[MFlowGraphPort]
+    name: Optional[str]
+    paramValues: List[Any]
 
 
-class MFlowGraphModel(Model):
-    models: Dict[GraphObjectId, Union[MFlowGraphLink, MFlowGraphNode]]
+MFlowGraphModel = Union[MFlowGraphLink, MFlowGraphNode]
+
+
+class MFlowGraphModels(Model):
+    models: Dict[GraphObjectId, MFlowGraphModel]
 
 
 class MFlowGraph(Model):
@@ -40,7 +45,7 @@ class MFlowGraph(Model):
     >>> MFlowGraph.parse_obj(MFlowGraph.Config.schema_extra["example"])
     MFlowGraph(...)
     """
-    layers: List[MFlowGraphModel]
+    layers: List[MFlowGraphModels]
 
     class Config(Model.Config):
         schema_extra = {
