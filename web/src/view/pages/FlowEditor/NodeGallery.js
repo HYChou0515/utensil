@@ -38,6 +38,7 @@ const NodeGallery = () => {
         type: "task",
         color: strToColor(task.module),
         name: task.task_name,
+        module: task.module,
         inputs: task.arg_names,
         params: task.params,
       }}

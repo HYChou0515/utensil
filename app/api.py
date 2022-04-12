@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Optional, Any
 
-from fastapi import Depends, FastAPI, File, UploadFile
+from fastapi import Depends, FastAPI, File, UploadFile, Body
 from fastapi.middleware.cors import CORSMiddleware
 
 from model import MFlow, MFlowJob, MFlowJobCreateByFlow
+from model.flow_graph import MFlowGraph
 from model.node_task import MNodeTaskListed
 from service import FlowJobService, FlowService
 from service.service import Service
@@ -61,3 +62,8 @@ async def create_flow_job(
         flow_job_service: FlowJobService = Depends(FlowJobService),
 ):
     return await flow_job_service.create_flow_job(flow_job_create)
+
+
+@app.post("/graph")
+async def create_graph(graph_body: MFlowGraph, service: Service = Depends()):
+    return service.create_graph(graph_body)

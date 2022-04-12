@@ -10,6 +10,7 @@ import { BsGearFill } from "react-icons/bs";
 import { FaCubes, FaFolderOpen, FaSitemap } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 
+import apiClient from "../../../api/api";
 import canvasDomain from "../../../domain/CanvasDomain";
 import logo from "../../../logo.svg";
 import {
@@ -27,9 +28,12 @@ const Menu = () => {
       <EuiHeaderSection grow={false}>
         <EuiHeaderSectionItem>
           <EuiHeaderSectionItemButton
-            onClick={() =>
-              console.log(canvasDomain.diagramEngine.getModel().serialize())
-            }
+            onClick={() => {
+              console.log(canvasDomain.diagramEngine.getModel().serialize());
+              apiClient
+                .postGraph(canvasDomain.diagramEngine.getModel().serialize())
+                .then((a) => console.log(a));
+            }}
           >
             <EuiIcon type={logo} size="l" />
           </EuiHeaderSectionItemButton>

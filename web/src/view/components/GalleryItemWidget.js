@@ -21,7 +21,7 @@ const GalleryItemBox = styled.div`
   flex-shrink: 0;
 `;
 
-const GalleryItemWidget = ({ model, name }) => {
+const GalleryItemWidget = ({ model }) => {
   return (
     <GalleryItemBox>
       <GalleryItemContent
