@@ -42,6 +42,7 @@ export const flowEditor = createSlice({
       let newLayout;
       if (state.usedLayout === "TB") newLayout = "LR";
       else if (state.usedLayout === "LR") newLayout = "TB";
+      canvasDomain.autoDistribute(newLayout);
       state.usedLayout = newLayout;
     },
     setLoading: (state, action) => {
@@ -62,10 +63,6 @@ export const flowEditor = createSlice({
     deleteOutPortFromSelected: (state, action) => {
       const name = action.payload;
       canvasDomain.deleteOutPortFromSelected(name);
-    },
-    autoDistribute: (state, action) => {
-      const rankdir = action.payload;
-      canvasDomain.autoDistribute(rankdir);
     },
   },
   extraReducers: (builder) => {
@@ -88,7 +85,6 @@ export const {
   addInPortToSelected,
   addOutPortToSelected,
   deleteInPortFromSelected,
-  autoDistribute,
   deleteOutPortFromSelected,
   toggleShowSettingUi,
 } = flowEditor.actions;

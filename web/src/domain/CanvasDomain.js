@@ -124,9 +124,9 @@ class CanvasDomain {
     const dagreEngine = new SRD.DagreEngine({
       graph: {
         rankdir: rankdir,
-        ranker: "longest-path",
-        marginx: 25,
-        marginy: 25,
+        ranker: "network-simplex",
+        marginx: 3,
+        marginy: 3,
       },
       includeLinks: true,
     });
